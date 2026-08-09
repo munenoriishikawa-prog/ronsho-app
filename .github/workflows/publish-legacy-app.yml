@@ -1,0 +1,20 @@
+name: Publish legacy app HTML
+on:
+  push:
+    branches: [feature/github-pages]
+    paths:
+      - '.github/workflows/publish-legacy-app.yml'
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp 'legacy:ronsho_app_v18.7_with_past_exam_log_v2.html' index.html
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'build: publish legacy app as index.html'
+          git push

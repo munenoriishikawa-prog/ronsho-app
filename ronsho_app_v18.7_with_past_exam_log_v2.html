@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>論証集アプリ v18.7（ランダム出題を学習回数最少の論点に限定）＋過去問ログ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+body {
+  font-family: "Meiryo", sans-serif;
+  margin: 40px;
+  background: #e5f0ff;
+  color: #0c2340;
+}
+h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #0057e7, #00c2ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+#drop {
+  border: 2px dashed #9dc4f2;
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  background: #fff;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 87, 231, 0.08);
+}
+#drop:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 87, 231, 0.15); }
+#drop.dragover { background: #d6ebff; border-color: #0057e7; }
+.clearEntriesLink { font-size: 12px; color: #4a6a90; cursor: pointer; text-decoration: underline; margin-bottom: 16px; display: inline-block; }
+.clearEntriesLink:hover { color: #0057e7; }
+table { border-collapse: collapse; width: 100%; background:#fff; font-size: 13px; table-layout: fixed; }
+th, td { border: 1px solid #cfe3ff; padding: 6px 8px; vertical-align: top; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; }
+th {
+  background: #cfe3ff;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  white-space: normal;
+  text-align: center;
+  vertical-align: middle;
+  letter-spacing: 1px;
+  padding: 8px 4px;
+  height: 90px;
+  color: #0c2340;
+}
+#tableWrap, #csvTableWrap, #memorizedTableWrap { max-height: 500px; overflow: auto; border-radius: 12px; box-shadow: 0 4px 14px rgba(0, 87, 231, 0.06); }
+.verticalCol {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  white-space: normal;
+  text-align: start;
+  vertical-align: middle;
+  letter-spacing: 1px;
+}
+.checkCell { vertical-align: middle; text-align: center; position: relative; }
+.entryRow { cursor: default; transition: background 0.3s ease, box-shadow 0.3s ease; }
+.entryRow:hover { background: #f0f7ff; }
+.entryRow.overdueRow { background: #fff0f0; }
+.entryRow.overdueRow:hover { background: #ffe4e4; }
+.entryRow.starredRow { box-shadow: inset 4px 0 0 #ff9f1c; }
+.entryRow.starredRow.overdueRow { box-shadow: inset 4px 0 0 #ff9f1c; }
+.entryRow.justClicked {
+  background: #cfe6ff !important;
+  box-shadow: inset 0 0 0 3px rgba(0, 87, 231, 0.25);
+  transition: background 0.05s ease;
+}
+.countCell { text-align: center; white-space: nowrap; }
+.undoLastBtn2 {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #d32f2f;
+  background: #fff5f5;
+  border: 1px solid #f0c2c2;
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+  display: inline-block;
+}
+.undoLastBtn2:hover { background: #ffe4e4; }
+.bodyCellArea {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: background 0.15s ease;
+}
+.bodyCellArea:hover { background: #eef6ff; }
+.bodyCellArea.collapsedState {
+  color: #78350f;
+  font-size: 12px;
+  background: #fef9c3;
+  border: 1px solid #f0d878;
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: inline-block;
+}
+.bodyCellArea.collapsedState:hover { background: #fdf2a3; }
+mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; padding: 0 1px; }
+#status { margin: 10px 0; color: #0c2340; font-weight: 600; min-height: 20px; }
+.progressCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 4px 16px rgba(0, 87, 231, 0.1);
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.progressBigPct {
+  font-size: 34px;
+  font-weight: 800;
+  color: #0057e7;
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
+}
+.progressBarSection { flex: 1; min-width: 220px; }
+.progressBarOuter {
+  background: #d6ebff;
+  border-radius: 999px;
+  height: 14px;
+  overflow: hidden;
+}
+.progressBarInner {
+  height: 100%;
+  background: linear-gradient(90deg, #0057e7, #00c2ff);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+.progressLabel { font-size: 12px; color: #4a6a90; margin-top: 4px; }
+.subjectProgressCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 4px 16px rgba(0, 87, 231, 0.1);
+  margin-bottom: 20px;
+}
+.subjectProgressTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 8px; }
+.subjectProgressItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #2c4a70;
+  padding: 6px 0;
+  border-bottom: 1px solid #e6f0fc;
+}
+.subjectProgressItem:last-child { border-bottom: none; }
+.subjectProgressName { flex: 0 0 auto; min-width: 110px; }
+.subjectProgressBarOuter {
+  flex: 1;
+  background: #d6ebff;
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+.subjectProgressBarInner {
+  height: 100%;
+  background: linear-gradient(90deg, #0057e7, #00c2ff);
+  border-radius: 999px;
+}
+.subjectProgressPct { flex: 0 0 auto; font-weight: 700; color: #0057e7; min-width: 40px; text-align: right; }
+.searchBox { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.searchBox input {
+  flex: 1;
+  max-width: 360px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #9dc4f2;
+  border-radius: 999px;
+  outline: none;
+}
+.searchBox input:focus { border-color: #0057e7; box-shadow: 0 0 0 2px rgba(0,87,231,0.15); }
+.searchClearBtn {
+  font-size: 12px;
+  color: #4a6a90;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef6ff;
+}
+.searchClearBtn:hover { background: #d6ebff; }
+.searchResultCount { font-size: 12px; color: #4a6a90; }
+/* --- 花火×LEVEL UP 演出 --- */
+.fwParticle {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  animation: fwBurst 1s ease-out forwards;
+}
+@keyframes fwBurst { to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
+.levelUpBadge {
+  position: fixed;
+  transform: translateX(-50%);
+  color: #fff;
+  font-weight: 800;
+  white-space: nowrap;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  background: linear-gradient(135deg, #0057e7, #00c2ff);
+  box-shadow: 0 6px 16px rgba(0, 87, 231, 0.4);
+  pointer-events: none;
+  z-index: 9999;
+  animation: levelUpPop 1.1s ease-out forwards;
+}
+@keyframes levelUpPop {
+  0% { transform: translateX(-50%) scale(0) rotate(-10deg); opacity: 0; }
+  40% { transform: translateX(-50%) scale(1.2) rotate(5deg); opacity: 1; }
+  70% { transform: translateX(-50%) scale(1) rotate(0deg); }
+  100% { transform: translateX(-50%) scale(0.9) translateY(-24px); opacity: 0; }
+}
+
+/* --- 暗記度3段階評価ボタン（マテリアルトーナル風） --- */
+.confidenceGroup { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.confBtn {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.confBtn:hover { opacity: 0.85; transform: scale(1.12); }
+.confBtn.active { opacity: 1; transform: scale(1.15); box-shadow: 0 2px 6px rgba(0,0,0,0.18); }
+.confBtn.confGood { background: #bbf7d0; color: #15803d; }
+.confBtn.confGood.active { background: #22c55e; color: #fff; }
+.confBtn.confUnsure { background: #fde68a; color: #b45309; }
+.confBtn.confUnsure.active { background: #f59e0b; color: #fff; }
+.confBtn.confBad { background: #fecaca; color: #b91c1c; }
+.confBtn.confBad.active { background: #ef4444; color: #fff; }
+
+/* --- 苦手フラグ --- */
+.titleCellWrap { display: flex; align-items: flex-start; gap: 6px; }
+.starToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
+.starToggle:hover { opacity: 0.7; transform: scale(1.2); }
+.starToggle.active { opacity: 1; }
+.titleText { flex: 1; }
+/* --- 学習推移グラフ --- */
+.trendCard { background: #fff; border-radius: 16px; padding: 18px 22px; box-shadow: 0 4px 16px rgba(0, 87, 231, 0.08); margin-bottom: 20px; }
+.trendHeader { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.trendTitle { font-size: 15px; font-weight: 700; color: #0c2340; }
+.trendToggle { display: flex; gap: 6px; }
+.trendToggleBtn { padding: 4px 12px; font-size: 11px; border-radius: 999px; border: 1px solid #cfe3ff; background: #eef6ff; color: #2c4a70; cursor: pointer; }
+.trendToggleBtn.active { background: linear-gradient(135deg, #0057e7, #00c2ff); color: #fff; border-color: transparent; font-weight: 700; }
+.trendSummary { font-size: 12px; color: #4a6a90; margin-bottom: 6px; }
+.trendSvgWrap { overflow-x: auto; }
+.trendPoint { cursor: pointer; }
+.trendPoint:hover { r: 5; }
+button {
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  border: 1px solid rgba(0, 87, 231, 0.15);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(230,242,255,0.94) 100%);
+  color: #0c2340;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 1px rgba(0, 87, 231, 0.06), inset 0 1px 0 rgba(255,255,255,0.80);
+  transition: background 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+button:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(214,235,255,0.98) 100%);
+  border-color: rgba(0, 87, 231, 0.3);
+  color: #0057e7;
+  box-shadow: 0 5px 16px rgba(0, 87, 231, 0.12), inset 0 1px 0 rgba(255,255,255,0.86);
+  transform: translateY(-1px) scale(1.03);
+}
+button:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 1px 3px rgba(0, 87, 231, 0.08);
+}
+button:focus-visible {
+  outline: 2px solid rgba(0, 87, 231, 0.6);
+  outline-offset: 2px;
+}
+input[type=file] { display:none; }
+.tabs { margin-bottom: 20px; }
+.tabBtn {
+  padding: 7px 14px;
+  margin-right: 5px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 87, 231, 0.1);
+  background: #dce8fa;
+  border-radius: 11px 11px 0 0;
+  font-size: 12px;
+  color: #2c4a70;
+  box-shadow: none;
+}
+.tabBtn:hover {
+  background: #ceddf5;
+  color: #0c2340;
+  transform: none;
+}
+.tabBtn.active {
+  background: linear-gradient(135deg, #0057e7, #00c2ff);
+  color: #fff;
+  border-color: transparent;
+  border-bottom: 2px solid #0057e7;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 87, 231, 0.3);
+}
+.subjectTabs { margin-bottom: 8px; }
+.subjectTabBtn {
+  padding: 4px 14px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 87, 231, 0.15);
+  background: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #2c4a70;
+}
+.subjectTabBtn:hover { background: #eef6ff; }
+.subjectTabBtn.active {
+  background: linear-gradient(135deg, #0057e7, #00c2ff);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(0, 87, 231, 0.3);
+}
+.categoryTabs { margin-bottom: 8px; }
+.categoryTabBtn {
+  padding: 3px 11px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 87, 231, 0.12);
+  background: #eef6ff;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #2c4a70;
+}
+.categoryTabBtn:hover { background: #d6ebff; }
+.categoryTabBtn.active {
+  background: linear-gradient(135deg, #0057e7, #38bdf8);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 0 3px 8px rgba(0, 87, 231, 0.3);
+}
+.starFilterTabs { margin-bottom: 14px; }
+.starFilterBtn {
+  padding: 3px 12px;
+  margin-right: 6px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 159, 28, 0.3);
+  background: #fff4e6;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #b45309;
+}
+.starFilterBtn:hover { background: #ffe8c8; }
+.starFilterBtn.active {
+  background: linear-gradient(135deg, #ff9f1c, #ffd93d);
+  color: #78350f;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 0 3px 8px rgba(255, 159, 28, 0.35);
+}
+.page { display: none; }
+.page.active { display: block; }
+.calWeekRow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 4px; }
+.calWeekday {
+  background: #cfe3ff;
+  text-align: center;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 4px 0;
+  border-radius: 4px;
+  color: #0c2340;
+}
+.calGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 24px; }
+.calCell { background: #fff; border: 1px solid #cfe3ff; border-radius: 8px; padding: 10px; min-height: 120px; font-size: 13px; transition: box-shadow 0.2s ease; }
+.calCell.calDayClickable:hover { box-shadow: 0 4px 12px rgba(0, 87, 231, 0.18); }
+.calCell.empty { background: transparent; border: none; }
+.calCell.selectedDay { outline: 3px solid #0057e7; }
+.calCount { font-weight: bold; color: #0057e7; font-size: 20px; }
+.calDate { color: #4a6a90; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.monthNav { margin-bottom: 10px; }
+.monthNav button { padding: 6px 14px; margin-right: 8px; }
+.reviewList { background:#fff; border:1px solid #cfe3ff; border-radius:14px; padding:12px 16px; margin-bottom:20px; box-shadow: 0 4px 14px rgba(0, 87, 231, 0.06); }
+.reviewItem { padding: 6px 0; border-bottom: 1px solid #e6f0fc; }
+.reviewItem:last-child { border-bottom: none; }
+.overdueTag { color: #d32f2f; font-weight: bold; margin-left: 8px; }
+.manualForm input { margin: 6px 6px 6px 0; padding: 5px 8px; font-size: 12px; border: 1px solid #ccc; border-radius: 6px; }
+.legendNote { font-size: 12px; color: #4a6a90; margin: -10px 0 16px 0; }
+.legendSwatch { display: inline-block; width: 12px; height: 12px; background: #fff0f0; border: 1px solid #f0c2c2; vertical-align: middle; margin-right: 4px; }
+/* --- ランダム出題モード --- */
+.quizControls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.quizControls label { font-size: 12px; color: #2c4a70; display: flex; align-items: center; gap: 4px; }
+.quizPriorityNote { font-size: 12px; color: #4a6a90; margin-bottom: 16px; }
+.quizPriorityNote strong { color: #0057e7; }
+.quizCard {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 8px 24px rgba(0, 87, 231, 0.12);
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.quizProgress { font-size: 12px; color: #4a6a90; margin-bottom: 10px; }
+.quizMeta { font-size: 12px; color: #4a6a90; margin-bottom: 6px; }
+.quizTitle { font-size: 20px; font-weight: 800; color: #0c2340; margin: 12px 0 20px; line-height: 1.5; }
+.quizShowBtn {
+  background: linear-gradient(135deg, #0057e7, #00c2ff);
+  color: #fff;
+  padding: 10px 24px;
+  font-size: 14px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.quizBody { text-align: left; font-size: 14px; line-height: 1.8; background: #f7fafe; border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
+.quizYear { font-size: 12px; color: #4a6a90; margin-bottom: 16px; }
+.quizJudgeRow { display: flex; gap: 12px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+.quizJudgeRow button { padding: 10px 20px; font-size: 13px; border-radius: 999px; display:flex; align-items:center; gap:6px; }
+.quizJudgeIcon { font-size: 15px; font-weight: 800; width:20px; height:20px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; }
+.quizGoodBtn { background: linear-gradient(135deg, #22c55e, #0ea5e9); color: #fff; border: none; }
+.quizGoodBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color:#fff; }
+.quizUnsureBtn { background: linear-gradient(135deg, #ffd93d, #ff9f1c); color: #78350f; border: none; }
+.quizUnsureBtn .quizJudgeIcon { background: rgba(255,255,255,0.45); color:#78350f; }
+.quizBadBtn { background: linear-gradient(135deg, #ff6b6b, #d32f2f); color: #fff; border: none; }
+.quizBadBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color:#fff; }
+.quizEmpty { color: #4a6a90; font-size: 14px; padding: 30px; }
+.quizFinished { font-size: 16px; font-weight: 700; color: #0c2340; padding: 20px; }
+/* ▼▼▼ 過去問ログ タブ用（新規追加・既存クラスとは無関係） ▼▼▼ */
+.past-log-header {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  margin-bottom: 10px; font-size: 13px; color: #2c4a70;
+}
+.past-log-header input, .past-log-header select {
+  padding: 4px 8px; border-radius: 6px; border: 1px solid #9dc4f2; font-size: 12px;
+}
+.past-log-progress { margin-top: 10px; font-size: 12px; color: #4a6a90; }
+.past-log-progress-bar-outer {
+  width: 100%; height: 12px; background: #d6ebff; border-radius: 999px; overflow: hidden; margin-top: 4px;
+}
+.past-log-progress-bar-inner {
+  height: 100%; width: 0; background: linear-gradient(90deg, #0057e7, #00c2ff);
+  border-radius: 999px; transition: width 0.4s ease;
+}
+.past-log-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; table-layout: auto; }
+.past-log-table th, .past-log-table td { border: 1px solid #cfe3ff; padding: 6px 8px; text-align: left; writing-mode: horizontal-tb; height: auto; }
+.past-log-table th { background: #cfe3ff; position: static; }
+.past-log-small-note { font-size: 11px; color: #4a6a90; margin-top: 6px; }
+/* ▲▲▲ 過去問ログ タブ用 ここまで ▲▲▲ */
+</style>
+</head>
+<body>
+<h1>📚 論証集アプリ v18.7</h1>
+<div id="drop">
+ここにWordファイル（.docx）をドラッグ＆ドロップ、またはクリックして選択（民法・刑法・憲法など複数対応）
+<input type="file" id="fileInput" accept=".docx" multiple>
+</div>
+<span class="clearEntriesLink" id="clearEntriesBtn">🗑 読み込みデータを削除して最初からやり直す</span>
+<div id="status"></div>
+<div id="progressSummary"></div>
+<div class="tabs">
+<button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
+<button class="tabBtn" data-page="memorizedPage">✅ 暗記済み一覧</button>
+<button class="tabBtn" data-page="quizPage">🎲 ランダム出題</button>
+<button class="tabBtn" data-page="calendarPage">📅 学習カレンダー・復習予定</button>
+<button class="tabBtn" data-page="csvPage">📤 CSV出力</button>
+<button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
+</div>
+<div id="studyPage" class="page active">
+<div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。⭐＝苦手フラグ。○バッチリ＝暗記済みへ移動／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
+<div class="searchBox">
+<input type="text" id="searchInputStudy" placeholder="🔍 タイトル・本文をキーワード検索">
+<span class="searchClearBtn" id="searchClearStudy">クリア</span>
+<span class="searchResultCount" id="searchCountStudy"></span>
+</div>
+<div id="subjectTabsStudy" class="subjectTabs"></div>
+<div id="categoryTabsStudy" class="categoryTabs"></div>
+<div id="starTabsStudy" class="starFilterTabs"></div>
+<div id="tableWrap"></div>
+</div>
+<div id="memorizedPage" class="page">
+<div class="searchBox">
+<input type="text" id="searchInputMemorized" placeholder="🔍 タイトル・本文をキーワード検索">
+<span class="searchClearBtn" id="searchClearMemorized">クリア</span>
+<span class="searchResultCount" id="searchCountMemorized"></span>
+</div>
+<div id="subjectTabsMemorized" class="subjectTabs"></div>
+<div id="categoryTabsMemorized" class="categoryTabs"></div>
+<div id="starTabsMemorized" class="starFilterTabs"></div>
+<div id="memorizedTableWrap"></div>
+</div>
+<div id="quizPage" class="page">
+<div id="subjectTabsQuiz" class="subjectTabs"></div>
+<div id="categoryTabsQuiz" class="categoryTabs"></div>
+<div id="starTabsQuiz" class="starFilterTabs"></div>
+<div class="quizControls">
+<label><input type="checkbox" id="quizIncludeMemorizedChk"> 暗記済みも出題に含める</label>
+<button id="quizStartBtn">🎲 スタート／シャッフルし直す</button>
+</div>
+<div class="quizPriorityNote" id="quizPriorityNote"></div>
+<div id="quizArea"></div>
+</div>
+<div id="calendarPage" class="page">
+<div id="trendWrap"></div>
+<div id="calendarWrap"></div>
+</div>
+<div id="csvPage" class="page">
+<div style="margin-bottom:20px;">
+<button id="exportLogBtn" class="stackBtn">学習記録を書き出す（別PC用ファイル）</button>
+<button id="importLogBtn" class="stackBtn">学習記録を読み込む</button>
+<input type="file" id="importLogInput" accept=".json" style="display:none;">
+</div>
+<div id="csvTableWrap"></div>
+<button id="downloadBtn" style="display:none;">CSVをダウンロード（WordHolic形式・暗記済み除外）</button>
+<button id="downloadLogBtn" style="display:none;">学習ログCSVをダウンロード</button>
+</div>
+<!-- ▼▼▼ 新規追加：過去問ログ タブ（既存タブ・既存機能には一切影響しません） ▼▼▼ -->
+<div id="pastExamPage" class="page">
+  <div class="past-log-header">
+    <span>科目：</span>
+    <input type="text" id="pastSubjectInput" placeholder="例：民法" style="width:110px;" list="subjectSuggestions">
+    <span>年度：</span>
+    <input type="text" id="pastYearInput" placeholder="例：令和7年（2025）" style="width:150px;">
+    <span>回数：</span>
+    <select id="pastRoundSelect">
+      <option value="1">1回目</option>
+      <option value="2">2回目</option>
+      <option value="3">3回目</option>
+    </select>
+    <span>解答日：</span>
+    <input type="date" id="pastDateInput">
+    <button id="pastSaveBtn">記録する</button>
+  </div>
+  <div class="past-log-small-note">
+    ・このタブは既存の学習機能（暗記度・カレンダー・クイズなど）とは完全に独立しています。<br>
+    ・入力したログはブラウザのローカルストレージに保存されます。科目＋年度＋回数が同じ場合は上書きされます。
+  </div>
+  <div class="past-log-progress" id="pastProgressText"></div>
+  <div class="past-log-progress-bar-outer"><div class="past-log-progress-bar-inner" id="pastProgressBar"></div></div>
+  <table class="past-log-table" id="pastLogTable">
+    <thead><tr><th>科目</th><th>年度</th><th>回数</th><th>解答日</th><th>メモ</th><th>削除</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+<!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
+<datalist id="subjectSuggestions">
+<option value="民法"></option>
+<option value="刑法"></option>
+<option value="憲法"></option>
+<option value="商法"></option>
+<option value="民事訴訟法"></option>
+<option value="刑事訴訟法"></option>
+<option value="行政法"></option>
+<option value="労働法"></option>
+<option value="実務基礎民事"></option>
+<option value="実務基礎刑事"></option>
+</datalist>
+<script>
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+const status = document.getElementById('status');
+const tableWrap = document.getElementById('tableWrap');
+const memorizedTableWrap = document.getElementById('memorizedTableWrap');
+const csvTableWrap = document.getElementById('csvTableWrap');
+const calendarWrap = document.getElementById('calendarWrap');
+const trendWrap = document.getElementById('trendWrap');
+const downloadBtn = document.getElementById('downloadBtn');
+const downloadLogBtn = document.getElementById('downloadLogBtn');
+const subjectTabsStudy = document.getElementById('subjectTabsStudy');
+const subjectTabsMemorized = document.getElementById('subjectTabsMemorized');
+const subjectTabsQuiz = document.getElementById('subjectTabsQuiz');
+const categoryTabsStudy = document.getElementById('categoryTabsStudy');
+const categoryTabsMemorized = document.getElementById('categoryTabsMemorized');
+const categoryTabsQuiz = document.getElementById('categoryTabsQuiz');
+const starTabsStudy = document.getElementById('starTabsStudy');
+const starTabsMemorized = document.getElementById('starTabsMemorized');
+const starTabsQuiz = document.getElementById('starTabsQuiz');
+const searchInputStudy = document.getElementById('searchInputStudy');
+const searchInputMemorized = document.getElementById('searchInputMemorized');
+const searchCountStudy = document.getElementById('searchCountStudy');
+const searchCountMemorized = document.getElementById('searchCountMemorized');
+const quizArea = document.getElementById('quizArea');
+const quizPriorityNote = document.getElementById('quizPriorityNote');
+const quizIncludeMemorizedChk = document.getElementById('quizIncludeMemorizedChk');
+const ENTRIES_STORAGE_KEY = 'ronshoEntries';
+const ENTRY_TABLE_COLGROUP = '<colgroup>'
+  + '<col style="width:6%;">'
+  + '<col style="width:5%;">'
+  + '<col style="width:5%;">'
+  + '<col style="width:19%;">'
+  + '<col style="width:37%;">'
+  + '<col style="width:10%;">'
+  + '<col style="width:6%;">'
+  + '<col style="width:6%;">'
+  + '<col style="width:6%;">'
+  + '</colgroup>';
+let entries = [];
+let studyLog = {};
+let manualLog = {};
+let selectedDay = null;
+let selectedSubject = 'all';
+let selectedCategory = 'all';
+let starOnlyFilter = false;
+let expandedBodySet = new Set();
+let searchQueryStudy = '';
+let searchQueryMemorized = '';
+let quizPool = [];
+let quizIndex = 0;
+let quizRevealed = false;
+let quizStarted = false;
+let quizMinCount = 0;
+let trendMode = 'week';
+function formatLocalDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+function todayStr() {
+  return formatLocalDate(new Date());
+}
+const SUBJECT_EMOJI = { '民法': '⚖️', '刑法': '🚨', '憲法': '📜', '商法': '💼', '民事訴訟法': '🧑\u200d⚖️', '刑事訴訟法': '🚓', '行政法': '🏛️' };
+function getSubjectEmoji(subject) {
+  return SUBJECT_EMOJI[subject] || '📘';
+}
+function renderProgressSummary() {
+  const el = document.getElementById('progressSummary');
+  if (!el) return;
+  if (entries.length === 0) { el.innerHTML = ''; return; }
+  const filtered = filterEntries(entries, '');
+  const total = filtered.length;
+  const memorizedCount = filtered.filter(e => studyLog[e.title] && studyLog[e.title].memorized).length;
+  const pct = total > 0 ? Math.round((memorizedCount / total) * 100) : 0;
+
+  const subjectStats = {};
+  const subjectOrderList = [];
+  entries.forEach(e => {
+    const s = e.subject || 'その他';
+    if (!subjectStats[s]) {
+      subjectStats[s] = { total: 0, memorized: 0 };
+      subjectOrderList.push(s);
+    }
+    subjectStats[s].total++;
+    if (studyLog[e.title] && studyLog[e.title].memorized) subjectStats[s].memorized++;
+  });
+  const subjectHtml = subjectOrderList.map(s => {
+    const st = subjectStats[s];
+    const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
+    return '<div class="subjectProgressItem">'
+      + '<div class="subjectProgressName">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</div>'
+      + '<div class="subjectProgressBarOuter"><div class="subjectProgressBarInner" style="width:' + p + '%;"></div></div>'
+      + '<div class="subjectProgressPct">' + p + '%</div>'
+      + '</div>';
+  }).join('');
+  el.innerHTML = '<div class="progressCard">'
+    + '<div class="progressBigPct">' + pct + '%</div>'
+    + '<div class="progressBarSection">'
+    + '<div class="progressBarOuter"><div class="progressBarInner" style="width:' + pct + '%;"></div></div>'
+    + '<div class="progressLabel">暗記済み ' + memorizedCount + ' / ' + total + '件</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="subjectProgressCard">'
+    + '<div class="subjectProgressTitle">📚 科目別 暗記完了率</div>'
+    + subjectHtml
+    + '</div>';
+}
+// --- 花火×LEVEL UP演出 ---
+function triggerFireworkLevelUp(el) {
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const colors = ['#0057e7', '#00c2ff', '#54a0ff', '#7c3aed', '#22c55e', '#ff9ff3'];
+  for (let i = 0; i < 24; i++) {
+    const p = document.createElement('div');
+    p.className = 'fwParticle';
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    p.style.background = colors[i % colors.length];
+    const angle = (Math.PI * 2 * i) / 24 + Math.random() * 0.3;
+    const dist = 45 + Math.random() * 30;
+    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1050);
+  }
+  setTimeout(() => {
+    const badge = document.createElement('div');
+    badge.className = 'levelUpBadge';
+    badge.textContent = '🎉 LEVEL UP!';
+    badge.style.left = cx + 'px';
+    badge.style.top = (cy - 20) + 'px';
+    document.body.appendChild(badge);
+    setTimeout(() => badge.remove(), 1150);
+  }, 200);
+}
+function loadStudyLog() {
+  try {
+    const raw = localStorage.getItem('ronshoStudyLog');
+    studyLog = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    studyLog = {};
+  }
+}
+function saveStudyLog() {
+  localStorage.setItem('ronshoStudyLog', JSON.stringify(studyLog));
+}
+function loadManualLog() {
+  try {
+    const raw = localStorage.getItem('ronshoManualLog');
+    manualLog = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    manualLog = {};
+  }
+}
+function saveManualLog() {
+  localStorage.setItem('ronshoManualLog', JSON.stringify(manualLog));
+}
+function loadEntries() {
+  try {
+    const raw = localStorage.getItem(ENTRIES_STORAGE_KEY);
+    entries = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    entries = [];
+  }
+}
+function saveEntries() {
+  try {
+    localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries));
+  } catch (e) {
+    console.error('読み込みデータの保存に失敗しました:', e);
+  }
+}
+document.getElementById('clearEntriesBtn').addEventListener('click', () => {
+  if (!confirm('読み込んだWordデータを削除しますか？（学習記録・暗記度・苦手フラグなどは削除されません）')) return;
+  entries = [];
+  localStorage.removeItem(ENTRIES_STORAGE_KEY);
+  selectedSubject = 'all';
+  selectedCategory = 'all';
+  starOnlyFilter = false;
+  expandedBodySet = new Set();
+  tableWrap.innerHTML = '';
+  memorizedTableWrap.innerHTML = '';
+  csvTableWrap.innerHTML = '';
+  calendarWrap.innerHTML = '';
+  trendWrap.innerHTML = '';
+  document.getElementById('progressSummary').innerHTML = '';
+  downloadBtn.style.display = 'none';
+  downloadLogBtn.style.display = 'none';
+  status.textContent = '読み込みデータを削除しました。新しくWordファイルを読み込んでください。';
+});
+document.getElementById('exportLogBtn').addEventListener('click', () => {
+  const payload = { studyLog: studyLog, manualLog: manualLog };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '学習記録_' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importLogBtn').addEventListener('click', () => {
+  document.getElementById('importLogInput').click();
+});
+document.getElementById('importLogInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    let importedStudyLog, importedManualLog;
+    if (imported && (imported.studyLog || imported.manualLog)) {
+      importedStudyLog = imported.studyLog || {};
+      importedManualLog = imported.manualLog || {};
+    } else {
+      importedStudyLog = imported || {};
+      importedManualLog = {};
+    }
+    const merged = Object.assign({}, studyLog);
+    Object.keys(importedStudyLog).forEach(title => {
+      const incoming = importedStudyLog[title];
+      if (!merged[title]) {
+        merged[title] = incoming;
+      } else {
+        const existingHistory = merged[title].history || [];
+        const incomingHistory = incoming.history || [];
+        const mergedHistorySet = new Set([...existingHistory, ...incomingHistory]);
+        merged[title].history = Array.from(mergedHistorySet).sort();
+        merged[title].memorized = incoming.memorized || merged[title].memorized || false;
+        merged[title].confidence = incoming.confidence || merged[title].confidence || null;
+        merged[title].memo = merged[title].memo || incoming.memo || '';
+        merged[title].starred = merged[title].starred || incoming.starred || false;
+        merged[title].category = merged[title].category || incoming.category || '';
+        merged[title].subject = merged[title].subject || incoming.subject || '';
+      }
+    });
+    studyLog = merged;
+    saveStudyLog();
+    Object.keys(importedManualLog).forEach(dateStr => {
+      if (!manualLog[dateStr]) manualLog[dateStr] = [];
+      manualLog[dateStr] = manualLog[dateStr].concat(importedManualLog[dateStr]);
+    });
+    saveManualLog();
+    renderAll();
+    status.textContent = '学習記録を読み込み、既存の記録と統合しました。';
+  } catch (err) {
+    status.textContent = '学習記録の読み込みに失敗しました: ' + err.message;
+  }
+  e.target.value = '';
+});
+document.querySelectorAll('.tabBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabBtn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.page).classList.add('active');
+    if (btn.dataset.page === 'calendarPage') { renderCalendar(); renderTrendChart(); }
+    if (btn.dataset.page === 'quizPage') renderQuizPage();
+  });
+});
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  drop.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) handleFiles(Array.from(e.target.files));
+});
+searchInputStudy.addEventListener('input', () => {
+  searchQueryStudy = searchInputStudy.value.trim();
+  renderStudyTable(entries);
+});
+searchInputMemorized.addEventListener('input', () => {
+  searchQueryMemorized = searchInputMemorized.value.trim();
+  renderMemorizedTable(entries);
+});
+document.getElementById('searchClearStudy').addEventListener('click', () => {
+  searchInputStudy.value = '';
+  searchQueryStudy = '';
+  renderStudyTable(entries);
+});
+document.getElementById('searchClearMemorized').addEventListener('click', () => {
+  searchInputMemorized.value = '';
+  searchQueryMemorized = '';
+  renderMemorizedTable(entries);
+});
+document.getElementById('quizStartBtn').addEventListener('click', () => {
+  startQuiz();
+});
+function runListToText(runList) {
+  return runList.map(r => r.text).join('');
+}
+function isTitleLine(runList) {
+  return /^[★☆]+/.test(runListToText(runList).trim());
+}
+const SECTION_STOP_WORDS = ['サブ', '今後追加', '暗記'];
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function buildBodyHtml(bodyRunLines) {
+  return bodyRunLines.map(runList => {
+    let lineHtml = '';
+    let isFirstRun = true;
+    for (const r of runList) {
+      const text = isFirstRun ? r.text.replace(/^[\s\u3000]+/, '') : r.text;
+      const escaped = escapeHtml(text);
+      if (r.color) {
+        lineHtml += '<span style="color:' + r.color + '; font-weight:bold;">' + escaped + '</span>';
+      } else {
+        lineHtml += escaped;
+      }
+      isFirstRun = false;
+    }
+    return lineHtml;
+  }).join('<br>');
+}
+function buildYearHtml(yearStr) {
+  if (!yearStr) return '';
+  const tokens = yearStr.split(';').filter(Boolean);
+  return tokens.map(tokStr => {
+    const [text, color] = tokStr.split('|');
+    const escaped = escapeHtml(text);
+    return color ? '<span style="color:' + color + '; font-weight:bold;">' + escaped + '</span>' : escaped;
+  }).join(', ');
+}
+function yearStrToPlainText(yearStr) {
+  if (!yearStr) return '';
+  return yearStr.split(';').filter(Boolean).map(tokStr => tokStr.split('|')[0]).join(',');
+}
+function getYearTokensPlain(yearStr) {
+  if (!yearStr) return [];
+  return yearStr.split(';').filter(Boolean).map(tokStr => tokStr.split('|')[0]).filter(Boolean);
+}
+function extractEntries(paraRuns) {
+  const out = [];
+  let i = 0;
+  const n = paraRuns.length;
+  let currentSubject = '';
+  let currentCategory = '';
+  while (i < n) {
+    const lineText = runListToText(paraRuns[i]).trim();
+    if (SECTION_STOP_WORDS.includes(lineText)) break;
+    const combinedMatch = lineText.match(/^(.+?)[\s\u3000]*[<＜]([^>＞]+)[>＞]$/);
+    if (combinedMatch) {
+      const maybeSubject = combinedMatch[1].replace(/[\s\u3000]/g, '').trim();
+      const maybeCategory = combinedMatch[2].replace(/[\s\u3000]/g, '').trim();
+      if (isSubjectLine(maybeSubject)) currentSubject = maybeSubject;
+      if (maybeCategory) currentCategory = maybeCategory;
+      i++;
+      continue;
+    }
+    if (/^[<＜](.+)[>＞]$/.test(lineText)) {
+      const m = lineText.match(/^[<＜](.+)[>＞]$/);
+      currentCategory = m[1].replace(/[\s\u3000]/g, '').trim();
+      i++;
+      continue;
+    }
+    if (isPlainCategoryLine(lineText)) {
+      currentCategory = lineText.replace(/[\s\u3000]/g, '').trim();
+      i++;
+      continue;
+    }
+    if (isSubjectLine(lineText.replace(/[\s\u3000]/g, '').trim())) {
+      currentSubject = lineText.replace(/[\s\u3000]/g, '').trim();
+      i++;
+      continue;
+    }
+    if (isTitleLine(paraRuns[i])) {
+      const { title, yearTokensColored } = parseTitleLineRuns(paraRuns[i]);
+      const yearStr = buildFilteredYearStr(yearTokensColored);
+      i++;
+      let bodyLines = [];
+      let bodyRunLines = [];
+      while (i < n) {
+        const nxtText = runListToText(paraRuns[i]).trim();
+        if (nxtText === '') { i++; continue; }
+        if (isTitleLine(paraRuns[i])) break;
+        if (SECTION_STOP_WORDS.includes(nxtText)) break;
+        if (/^[<＜].+[>＞]$/.test(nxtText)) break;
+        if (isPlainCategoryLine(nxtText) || isSubjectLine(nxtText)) break;
+        const cleaned = nxtText.replace(/^[\s\u3000]+/, '').trim();
+        bodyLines.push(cleaned);
+        bodyRunLines.push(paraRuns[i]);
+        i++;
+      }
+      const body = bodyLines.join('\n');
+      const bodyHtml = buildBodyHtml(bodyRunLines);
+      out.push({ title: title, body: body, bodyHtml: bodyHtml, year: yearStr, category: currentCategory, subject: currentSubject });
+      continue;
+    }
+    i++;
+  }
+  return out;
+}
+function isSubjectLine(text) {
+  if (!text || /[。、]/.test(text) || text.length > 10) return false;
+  return ['民法','刑法','憲法','商法','民事訴訟法','刑事訴訟法','行政法'].includes(text);
+}
+function isPlainCategoryLine(text) {
+  if (!text) return false;
+  const t = text.replace(/[\s　]/g, '').trim();
+  if (!t || /[。、]/.test(t) || t.length > 20) return false;
+  const known = ['総則','物権','担保物権','債権総論','債権各論','親族','相続','人権','統治','総論','各論','財産犯','生命身体に対する罪','文書罪'];
+  return known.includes(t);
+}
+function parseTitleLineRuns(runList) {
+  const chars = [];
+  for (const r of runList) {
+    for (const ch of r.text) {
+      chars.push({ ch: ch, color: r.color });
+    }
+  }
+  let idx = 0;
+  while (idx < chars.length && (chars[idx].ch === '★' || chars[idx].ch === '☆')) idx++;
+  const segments = [];
+  let current = [];
+  for (; idx < chars.length; idx++) {
+    if (chars[idx].ch === '\u3000') {
+      segments.push(current);
+      current = [];
+    } else {
+      current.push(chars[idx]);
+    }
+  }
+  if (current.length) segments.push(current);
+  const title = segments.length > 0 ? segments[0].map(c => c.ch).join('').trim() : '';
+  const yearTokensColored = [];
+  for (let s = 1; s < segments.length; s++) {
+    const seg = segments[s];
+    const segText = seg.map(c => c.ch).join('').trim();
+    const groupIsSu = segText.startsWith('ス');
+    let tokChars = [];
+    const flushToken = () => {
+      if (tokChars.length === 0) return;
+      const text = tokChars.map(c => c.ch).join('').trim();
+      if (text === '') { tokChars = []; return; }
+      const coloredChar = tokChars.find(c => c.color) || tokChars[0];
+      yearTokensColored.push({ text: text, color: coloredChar.color || null, groupIsSu: groupIsSu });
+      tokChars = [];
+    };
+    for (const c of seg) {
+      if (c.ch === ',' || c.ch === '\uFF0C') {
+        flushToken();
+      } else {
+        tokChars.push(c);
+      }
+    }
+    flushToken();
+  }
+  return { title, yearTokensColored };
+}
+function buildFilteredYearStr(yearTokensColored) {
+  const kept = yearTokensColored.filter(t => {
+    if (t.groupIsSu) return false;
+    if (isOldBarExamColor(t.color)) return false;
+    return true;
+  });
+  return kept.map(t => t.text + '|' + (t.color || '')).join(';');
+}
+function isOldBarExamColor(color) {
+  if (!color) return false;
+  const c = color.toLowerCase();
+  return c === '#ff9900' || c === '#ff950e';
+}
+function isNewBarExamColor(color) {
+  if (!color) return false;
+  return color.toLowerCase() === '#2fff2e';
+}
+function isYobiShikenColor(color) {
+  if (!color) return false;
+  const c = color.toLowerCase();
+  return c === '#00ccff' || c === '#00dcff';
+}
+function inferSubjectFromFilename(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('min-fa') || n.includes('民法')) return '民法';
+  if (n.includes('kei-ho') || n.includes('刑法')) return '刑法';
+  if (n.includes('ken-po') || n.includes('xian-fa') || n.includes('憲法')) return '憲法';
+  return '';
+}
+async function parseSingleFile(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(arrayBuffer);
+  const docXml = await zip.file('word/document.xml').async('string');
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(docXml, 'application/xml');
+  const paragraphs = xmlDoc.getElementsByTagName('w:p');
+  const paraRuns = [];
+  for (let p of paragraphs) {
+    const runs = p.getElementsByTagName('w:r');
+    const runList = [];
+    for (let r of runs) {
+      const texts = r.getElementsByTagName('w:t');
+      let text = '';
+      for (let t of texts) text += t.textContent;
+      if (text === '') continue;
+      let color = null;
+      const colorEls = r.getElementsByTagName('w:color');
+      if (colorEls.length > 0) {
+        const v = colorEls[0].getAttribute('w:val');
+        if (v && v.toLowerCase() !== '000000' && v.toLowerCase() !== 'auto') {
+          color = '#' + v;
+        }
+      }
+      runList.push({ text: text, color: color });
+    }
+    paraRuns.push(runList);
+  }
+  const subjectFromName = inferSubjectFromFilename(file.name);
+  const parsed = extractEntries(paraRuns).map(e => ({ ...e, subject: subjectFromName || e.subject || '' }));
+  return parsed;
+}
+async function handleFiles(files) {
+  status.textContent = '読み込み中...';
+  tableWrap.innerHTML = '';
+  memorizedTableWrap.innerHTML = '';
+  csvTableWrap.innerHTML = '';
+  calendarWrap.innerHTML = '';
+  downloadBtn.style.display = 'none';
+  downloadLogBtn.style.display = 'none';
+  try {
+    let allEntries = [];
+    for (const file of files) {
+      const parsed = await parseSingleFile(file);
+      allEntries = allEntries.concat(parsed);
+    }
+    entries = allEntries;
+    saveEntries();
+    selectedSubject = 'all';
+    selectedCategory = 'all';
+    starOnlyFilter = false;
+    expandedBodySet = new Set();
+    searchQueryStudy = '';
+    searchQueryMemorized = '';
+    searchInputStudy.value = '';
+    searchInputMemorized.value = '';
+    quizPool = [];
+    quizStarted = false;
+    renderAll();
+    status.textContent = '✨ ' + entries.length + '件の論証を抽出しました。読み込みファイル数: ' + files.length + '件（次回起動時も自動で復元されます）';
+    downloadBtn.style.display = 'inline-block';
+    downloadLogBtn.style.display = 'inline-block';
+  } catch (err) {
+    status.textContent = 'エラーが発生しました: ' + err.message;
+    console.error(err);
+  }
+}
+function getUniqueSubjects() {
+  const seen = [];
+  entries.forEach(e => {
+    const s = e.subject || 'その他';
+    if (!seen.includes(s)) seen.push(s);
+  });
+  return seen;
+}
+function getUniqueCategories() {
+  const scoped = selectedSubject === 'all' ? entries : entries.filter(e => (e.subject || 'その他') === selectedSubject);
+  const seen = [];
+  scoped.forEach(e => {
+    const c = e.category || '未分類';
+    if (!seen.includes(c)) seen.push(c);
+  });
+  return seen;
+}
+function renderSubjectTabsHtml() {
+  const subjects = getUniqueSubjects();
+  if (subjects.length <= 1) return '';
+  let html = '<button type="button" class="subjectTabBtn' + (selectedSubject === 'all' ? ' active' : '') + '" data-subject="all">📚 すべて</button>';
+  subjects.forEach(s => {
+    html += '<button type="button" class="subjectTabBtn' + (selectedSubject === s ? ' active' : '') + '" data-subject="' + escapeHtml(s) + '">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</button>';
+  });
+  return html;
+}
+function renderCategoryTabsHtml() {
+  const categories = getUniqueCategories();
+  if (categories.length <= 1) return '';
+  let html = '<button type="button" class="categoryTabBtn' + (selectedCategory === 'all' ? ' active' : '') + '" data-category="all">すべての分野</button>';
+  categories.forEach(c => {
+    html += '<button type="button" class="categoryTabBtn' + (selectedCategory === c ? ' active' : '') + '" data-category="' + escapeHtml(c) + '">' + escapeHtml(c) + '</button>';
+  });
+  return html;
+}
+function renderStarTabsHtml() {
+  let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
+  html += '<button type="button" class="starFilterBtn' + (starOnlyFilter ? ' active' : '') + '" data-star="only">⭐ 苦手のみ</button>';
+  return html;
+}
+function renderSubjectTabs() {
+  const html = renderSubjectTabsHtml();
+  subjectTabsStudy.innerHTML = html;
+  subjectTabsMemorized.innerHTML = html;
+  subjectTabsQuiz.innerHTML = html;
+  const catHtml = renderCategoryTabsHtml();
+  categoryTabsStudy.innerHTML = catHtml;
+  categoryTabsMemorized.innerHTML = catHtml;
+  categoryTabsQuiz.innerHTML = catHtml;
+  const starHtml = renderStarTabsHtml();
+  starTabsStudy.innerHTML = starHtml;
+  starTabsMemorized.innerHTML = starHtml;
+  starTabsQuiz.innerHTML = starHtml;
+}
+function filterEntries(data, searchQuery) {
+  let result = data;
+  if (selectedSubject !== 'all') {
+    result = result.filter(e => (e.subject || 'その他') === selectedSubject);
+  }
+  if (selectedCategory !== 'all') {
+    result = result.filter(e => (e.category || '未分類') === selectedCategory);
+  }
+  if (starOnlyFilter) {
+    result = result.filter(e => studyLog[e.title] && studyLog[e.title].starred);
+  }
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    result = result.filter(e => (e.title || '').toLowerCase().includes(q) || (e.body || '').toLowerCase().includes(q));
+  }
+  return result;
+}
+function highlightSearch(html, query) {
+  if (!query) return html;
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('(' + escapedQuery + ')', 'ig');
+  return html.replace(re, '<mark class="searchHit">$1</mark>');
+}
+function renderAll() {
+  renderSubjectTabs();
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+  renderCsvTable(entries);
+  renderCalendar();
+  renderTrendChart();
+  renderProgressSummary();
+  quizStarted = false;
+  renderQuizPage();
+  renderPastLogs();
+}
+function getNextReviewInfo(title) {
+  const log = studyLog[title] || {};
+  const history = log.history || [];
+  if (history.length === 0) return null;
+  const lastDateStr = history[history.length - 1];
+  const count = history.length;
+  let intervalDays = 1;
+  if (count === 1) intervalDays = 1;
+  else if (count === 2) intervalDays = 3;
+  else if (count === 3) intervalDays = 7;
+  else if (count === 4) intervalDays = 14;
+  else if (count === 5) intervalDays = 30;
+  else intervalDays = 60;
+  if (log.confidence === 'unsure') intervalDays = Math.max(1, Math.round(intervalDays / 2));
+  if (log.confidence === 'bad') intervalDays = 1;
+  const d = new Date(lastDateStr + 'T00:00:00');
+  d.setDate(d.getDate() + intervalDays);
+  const nextDateStr = formatLocalDate(d);
+  return { lastDateStr, count, intervalDays, nextDateStr };
+}
+function buildConfidenceGroupHtml(idx, confidence) {
+  return '<div class="confidenceGroup" data-idx="' + idx + '">'
+    + '<span class="confBtn confGood' + (confidence === 'good' ? ' active' : '') + '" data-level="good" data-idx="' + idx + '" title="バッチリ">○</span>'
+    + '<span class="confBtn confUnsure' + (confidence === 'unsure' ? ' active' : '') + '" data-level="unsure" data-idx="' + idx + '" title="あやしい">△</span>'
+    + '<span class="confBtn confBad' + (confidence === 'bad' ? ' active' : '') + '" data-level="bad" data-idx="' + idx + '" title="ダメ">✕</span>'
+    + '</div>';
+}
+function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
+  const log = studyLog[e.title] || {};
+  const history = log.history || [];
+  const savedDate = history.length ? history[history.length - 1] : '';
+  const memorizedSaved = log.memorized || false;
+  const starred = log.starred || false;
+  const reviewInfo = getNextReviewInfo(e.title);
+  const today = todayStr();
+  let reviewCell = '-';
+  let overdue = false;
+  if (!memorizedSaved && reviewInfo) {
+    overdue = reviewInfo.nextDateStr <= today;
+    reviewCell = '<span style="' + (overdue ? 'color:#d32f2f;font-weight:bold;' : '') + '">' + reviewInfo.nextDateStr + '</span>';
+  }
+  const undoBtn = (showUndo && history.length > 0)
+    ? '<span class="undoLastBtn2" data-idx="' + idx + '">直前を取消</span>'
+    : '';
+  const titleHtml = highlightSearch(escapeHtml(e.title), searchQuery);
+  const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">' + (starred ? '⭐' : '☆') + '</span>';
+  let bodyCellContent;
+  if (collapseBody && !expandedBodySet.has(e.title)) {
+    bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>';
+  } else if (collapseBody) {
+    bodyCellContent = '<div class="bodyCellArea" data-idx="' + idx + '">' + highlightSearch(e.bodyHtml, searchQuery) + '</div>';
+  } else {
+    bodyCellContent = highlightSearch(e.bodyHtml, searchQuery);
+  }
+  return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + '" data-idx="' + idx + '">'
+    + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'
+    + '<td class="verticalCol">' + escapeHtml(e.subject || '') + '</td>'
+    + '<td class="verticalCol">' + escapeHtml(e.category || (studyLog[e.title] && studyLog[e.title].category) || '') + '</td>'
+    + '<td><div class="titleCellWrap">' + starHtml + '<div class="titleText">' + titleHtml + '</div></div></td>'
+    + '<td>' + bodyCellContent + '</td>'
+    + '<td>' + buildYearHtml(e.year) + '</td>'
+    + '<td class="countCell">' + history.length + undoBtn + '</td>'
+    + '<td>' + (savedDate || '-') + '</td>'
+    + '<td>' + reviewCell + '</td>'
+    + '</tr>';
+}
+function renderStudyTable(data) {
+  const filtered = filterEntries(data, searchQueryStudy);
+  let html = '<table>' + ENTRY_TABLE_COLGROUP + '<thead><tr><th>暗記度</th><th>科目</th><th>分野</th><th>タイトル</th><th>本文</th><th>出題年</th><th>学習回数</th><th>最終学習日</th><th>復習推奨日</th></tr></thead><tbody>';
+  let count = 0;
+  filtered.forEach((e) => {
+    const idx = entries.indexOf(e);
+    const log = studyLog[e.title] || {};
+    if (log.memorized) return;
+    html += buildRowHtml(e, idx, false, true, searchQueryStudy);
+    count++;
+  });
+  html += '</tbody></table>';
+  if (count === 0 && filtered.length > 0) {
+    html = '<div class="reviewList"><div class="reviewItem">🎉 未暗記の論証はありません。すべて暗記済み一覧に移動済みです。</div></div>';
+  } else if (filtered.length === 0) {
+    html = '<div class="reviewList"><div class="reviewItem">該当する論証がありません。</div></div>';
+  }
+  tableWrap.innerHTML = html;
+  searchCountStudy.textContent = searchQueryStudy ? count + '件見つかりました' : '';
+  renderProgressSummary();
+}
+function renderMemorizedTable(data) {
+  const filtered = filterEntries(data, searchQueryMemorized);
+  let html = '<table>' + ENTRY_TABLE_COLGROUP + '<thead><tr><th>暗記度</th><th>科目</th><th>分野</th><th>タイトル</th><th>本文</th><th>出題年</th><th>学習回数</th><th>最終学習日</th><th>復習推奨日</th></tr></thead><tbody>';
+  let count = 0;
+  filtered.forEach((e) => {
+    const idx = entries.indexOf(e);
+    const log = studyLog[e.title] || {};
+    if (!log.memorized) return;
+    html += buildRowHtml(e, idx, true, false, searchQueryMemorized);
+    count++;
+  });
+  html += '</tbody></table>';
+  if (count === 0) {
+    html = '<div class="reviewList"><div class="reviewItem">暗記済みの論証はまだありません。○バッチリを押すとここに移動します。</div></div>';
+  }
+  memorizedTableWrap.innerHTML = html;
+  searchCountMemorized.textContent = searchQueryMemorized ? count + '件見つかりました' : '';
+  renderProgressSummary();
+}
+function renderCsvTable(data) {
+  let html = '<table><colgroup><col style="width:14%;"><col style="width:26%;"><col style="width:46%;"><col style="width:14%;"></colgroup><thead><tr><th>Subject（科目）</th><th>FrontText（タイトル）</th><th>BackText（本文）</th><th>Comment（出題年）</th></tr></thead><tbody>';
+  data.forEach(e => {
+    html += '<tr><td>' + escapeHtml(e.subject || '') + '</td><td>' + escapeHtml(e.title) + '</td><td>' + escapeHtml(e.body) + '</td><td>' + buildYearHtml(e.year) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  csvTableWrap.innerHTML = html;
+}
+let calViewYear = new Date().getFullYear();
+let calViewMonth = new Date().getMonth();
+function getAllStudyDates() {
+  const map = {};
+  Object.keys(studyLog).forEach(title => {
+    const log = studyLog[title];
+    if (!log.history) return;
+    log.history.forEach(dateStr => {
+      if (!map[dateStr]) map[dateStr] = [];
+      map[dateStr].push({ title: title, category: log.category || '', subject: log.subject || '' });
+    });
+  });
+  return map;
+}
+function getCombinedDaySummary(dateStr, dateMap) {
+  const autoItems = (dateMap || getAllStudyDates())[dateStr] || [];
+  const manualItems = manualLog[dateStr] || [];
+  const catCounts = {};
+  autoItems.forEach(it => {
+    const c = (it.subject || '未分類') + ' / ' + (it.category || '未分類');
+    catCounts[c] = (catCounts[c] || 0) + 1;
+  });
+  manualItems.forEach(it => {
+    const c = (it.subject || '未分類') + ' / ' + (it.category || '未分類');
+    catCounts[c] = (catCounts[c] || 0) + (Number(it.count) || 1);
+  });
+  const totalCount = autoItems.length + manualItems.reduce((s, it) => s + (Number(it.count) || 1), 0);
+  return { autoItems, manualItems, catCounts, totalCount };
+}
+function getDailyStudyCounts() {
+  const dateMap = getAllStudyDates();
+  const counts = {};
+  Object.keys(dateMap).forEach(d => { counts[d] = (counts[d] || 0) + dateMap[d].length; });
+  Object.keys(manualLog).forEach(d => {
+    const c = manualLog[d].reduce((s, it) => s + (Number(it.count) || 1), 0);
+    counts[d] = (counts[d] || 0) + c;
+  });
+  return counts;
+}
+// --- 学習推移グラフ ---
+function renderTrendChart() {
+  if (!trendWrap) return;
+  const dailyCounts = getDailyStudyCounts();
+  const today = new Date();
+  let labels = [];
+  let values = [];
+  if (trendMode === 'week') {
+    for (let w = 7; w >= 0; w--) {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay() - (w * 7));
+      let sum = 0;
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(weekStart);
+        day.setDate(weekStart.getDate() + d);
+        const key = formatLocalDate(day);
+        sum += dailyCounts[key] || 0;
+      }
+      const label = (weekStart.getMonth() + 1) + '/' + weekStart.getDate();
+      labels.push(label);
+      values.push(sum);
+    }
+  } else {
+    for (let m = 11; m >= 0; m--) {
+      const target = new Date(today.getFullYear(), today.getMonth() - m, 1);
+      const y = target.getFullYear();
+      const mo = target.getMonth();
+      let sum = 0;
+      Object.keys(dailyCounts).forEach(dateStr => {
+        const dd = new Date(dateStr + 'T00:00:00');
+        if (dd.getFullYear() === y && dd.getMonth() === mo) sum += dailyCounts[dateStr];
+      });
+      labels.push(y + '/' + (mo + 1));
+      values.push(sum);
+    }
+  }
+  const total = values.reduce((a, b) => a + b, 0);
+  const avg = values.length ? Math.round((total / values.length) * 10) / 10 : 0;
+
+  const w = 680, h = 180, padL = 36, padR = 16, padT = 16, padB = 28;
+  const innerW = w - padL - padR, innerH = h - padT - padB;
+  const maxVal = Math.max(1, ...values);
+  const stepX = values.length > 1 ? innerW / (values.length - 1) : innerW;
+  const points = values.map((v, i) => {
+    const x = padL + i * stepX;
+    const y = padT + innerH - (v / maxVal) * innerH;
+    return { x, y, v, label: labels[i] };
+  });
+  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+  const areaD = pathD + ' L' + points[points.length - 1].x.toFixed(1) + ',' + (padT + innerH) + ' L' + points[0].x.toFixed(1) + ',' + (padT + innerH) + ' Z';
+  let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" style="max-width:720px;">';
+  svg += '<defs><linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0057e7" stop-opacity="0.25"/><stop offset="100%" stop-color="#0057e7" stop-opacity="0"/></linearGradient></defs>';
+  svg += '<path d="' + areaD + '" fill="url(#trendGrad)" stroke="none"/>';
+  svg += '<path d="' + pathD + '" fill="none" stroke="#0057e7" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  points.forEach((p, i) => {
+    svg += '<circle class="trendPoint" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3.5" fill="#0057e7"><title>' + escapeHtml(p.label) + '：' + p.v + '件</title></circle>';
+    if (i % Math.ceil(points.length / 8) === 0 || i === points.length - 1) {
+      svg += '<text x="' + p.x.toFixed(1) + '" y="' + (h - 8) + '" font-size="9" fill="#4a6a90" text-anchor="middle">' + escapeHtml(p.label) + '</text>';
+    }
+  });
+  svg += '<text x="' + padL + '" y="' + (padT + 4) + '" font-size="9" fill="#4a6a90">' + maxVal + '</text>';
+  svg += '</svg>';
+  const modeLabel = trendMode === 'week' ? '週次（直近8週間）' : '月次（直近12ヶ月）';
+  trendWrap.innerHTML = '<div class="trendCard">'
+    + '<div class="trendHeader">'
+    + '<div class="trendTitle">📈 学習推移（' + modeLabel + '）</div>'
+    + '<div class="trendToggle">'
+    + '<button type="button" class="trendToggleBtn' + (trendMode === 'week' ? ' active' : '') + '" data-trend="week">週次</button>'
+    + '<button type="button" class="trendToggleBtn' + (trendMode === 'month' ? ' active' : '') + '" data-trend="month">月次</button>'
+    + '</div>'
+    + '</div>'
+    + '<div class="trendSummary">期間合計 ' + total + '件 ／ 平均 ' + avg + '件</div>'
+    + '<div class="trendSvgWrap">' + svg + '</div>'
+    + '</div>';
+}
+function buildDayDetailHtml(dateStr) {
+  const summary = getCombinedDaySummary(dateStr);
+  let html = '<div class="reviewList"><h4>' + dateStr + ' の学習項目（合計 ' + summary.totalCount + '件）</h4>';
+  if (summary.autoItems.length === 0 && summary.manualItems.length === 0) {
+    html += '<div class="reviewItem">この日の学習記録はまだありません。</div>';
+  } else {
+    summary.autoItems.forEach((it) => {
+      html += '<div class="reviewItem">'
+        + escapeHtml(it.subject || '') + ' ｜ ' + escapeHtml(it.category || '') + ' ｜ ' + escapeHtml(it.title)
+        + ' <button type="button" class="deleteDayItemBtn" data-date="' + dateStr + '" data-title="' + escapeHtml(it.title) + '" style="margin-left:10px;color:#d32f2f;">削除</button>'
+        + '</div>';
+    });
+    summary.manualItems.forEach((it, mi) => {
+      html += '<div class="reviewItem">'
+        + '[手動] ' + escapeHtml(it.subject || '') + ' ｜ ' + escapeHtml(it.category || '') + ' ｜ ' + (Number(it.count) || 1) + '件'
+        + ' <button type="button" class="deleteManualItemBtn" data-date="' + dateStr + '" data-index="' + mi + '" style="margin-left:10px;color:#d32f2f;">削除</button>'
+        + '</div>';
+    });
+  }
+  html += '<div class="manualForm" style="margin-top:12px;padding-top:12px;border-top:1px solid #eee;">'
+    + '<strong>手動で記録を追加</strong><br>'
+    + '<input type="text" id="manualSubjectInput" placeholder="科目（例：民法）" list="subjectSuggestions">'
+    + '<input type="text" id="manualCategoryInput" placeholder="分野（例：総則）">'
+    + '<input type="number" id="manualCountInput" placeholder="学習数" value="1" min="1" style="width:70px;">'
+    + '<button type="button" id="manualAddBtn" data-date="' + dateStr + '">追加</button>'
+    + '</div>';
+  html += '</div>';
+  return html;
+}
+function renderCalendar() {
+  const dateMap = getAllStudyDates();
+  const firstDay = new Date(calViewYear, calViewMonth, 1);
+  const lastDay = new Date(calViewYear, calViewMonth + 1, 0);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+  let html = '<div class="monthNav">'
+    + '<button id="prevMonthBtn">← 前月</button>'
+    + '<strong>' + calViewYear + '年' + (calViewMonth + 1) + '月</strong>'
+    + '<button id="nextMonthBtn">次月 →</button>'
+    + '</div>';
+  html += '<div class="calWeekRow">';
+  ['日','月','火','水','木','金','土'].forEach(d => {
+    html += '<div class="calWeekday">' + d + '</div>';
+  });
+  html += '</div>';
+  html += '<div class="calGrid">';
+  for (let i = 0; i < startWeekday; i++) html += '<div class="calCell empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = calViewYear + '-' + String(calViewMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const summary = getCombinedDaySummary(dateStr, dateMap);
+    const count = summary.totalCount;
+    const catSummary = Object.keys(summary.catCounts).map(c => c + ':' + summary.catCounts[c]).join(' / ');
+    const isSelected = (dateStr === selectedDay);
+    html += '<div class="calCell calDayClickable' + (isSelected ? ' selectedDay' : '') + '" data-date="' + dateStr + '" style="cursor:pointer;">'
+      + '<div class="calDate">' + d + '</div>'
+      + (count > 0 ? '<div class="calCount">' + count + '件</div><div style="font-size:11px;color:#555;">' + escapeHtml(catSummary) + '</div>' : '')
+      + '</div>';
+  }
+  html += '</div>';
+  html += '<div id="dayDetailPanel">' + (selectedDay ? buildDayDetailHtml(selectedDay) : '') + '</div>';
+  const categoryTotal = {};
+  Object.values(dateMap).forEach(items => {
+    items.forEach(it => {
+      const c = (it.subject || '未分類') + ' / ' + (it.category || '未分類');
+      categoryTotal[c] = (categoryTotal[c] || 0) + 1;
+    });
+  });
+  Object.values(manualLog).forEach(items => {
+    items.forEach(it => {
+      const c = (it.subject || '未分類') + ' / ' + (it.category || '未分類');
+      categoryTotal[c] = (categoryTotal[c] || 0) + (Number(it.count) || 1);
+    });
+  });
+  html += '<h3>分野別 学習回数（全期間合計）</h3><div class="reviewList">';
+  if (Object.keys(categoryTotal).length === 0) {
+    html += '<div class="reviewItem">まだ学習記録がありません。</div>';
+  } else {
+    Object.keys(categoryTotal).sort((a,b) => categoryTotal[b] - categoryTotal[a]).forEach(c => {
+      html += '<div class="reviewItem">' + escapeHtml(c) + '：' + categoryTotal[c] + '回</div>';
+    });
+  }
+  html += '</div>';
+  const today = todayStr();
+  const reviewItems = [];
+  entries.forEach(e => {
+    if (studyLog[e.title] && studyLog[e.title].memorized) return;
+    const info = getNextReviewInfo(e.title);
+    if (info) {
+      reviewItems.push({ title: e.title, subject: e.subject, category: e.category, nextDate: info.nextDateStr, overdue: info.nextDateStr <= today });
+    }
+  });
+  reviewItems.sort((a, b) => a.nextDate.localeCompare(b.nextDate));
+  html += '<h3>復習が推奨される論点（忘却曲線ベース）</h3><div class="reviewList">';
+  const upcoming = reviewItems.filter(r => r.overdue || r.nextDate <= addDays(today, 7));
+  if (upcoming.length === 0) {
+    html += '<div class="reviewItem">現在、復習が近い論点はありません。</div>';
+  } else {
+    upcoming.slice(0, 30).forEach(r => {
+      html += '<div class="reviewItem">' + escapeHtml(r.subject || '') + ' ｜ ' + escapeHtml(r.category || '') + ' ｜ ' + escapeHtml(r.title)
+        + ' ｜ 推奨日: ' + r.nextDate
+        + (r.overdue ? '<span class="overdueTag">復習推奨（期限超過）</span>' : '')
+        + '</div>';
+    });
+  }
+  html += '</div>';
+  calendarWrap.innerHTML = html;
+}
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return formatLocalDate(d);
+}
+function recordStudy(idx, sourceEl) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const title = ent.title;
+  const today = todayStr();
+  if (!studyLog[title]) studyLog[title] = { history: [] };
+  if (!studyLog[title].history) studyLog[title].history = [];
+  studyLog[title].history.push(today);
+  studyLog[title].category = ent.category || '';
+  studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  saveStudyLog();
+  const newCount = studyLog[title].history.length;
+  if (sourceEl) {
+    sourceEl.classList.add('justClicked');
+    setTimeout(() => { sourceEl.classList && sourceEl.classList.remove('justClicked'); }, 500);
+  }
+  status.textContent = '✅ 「' + title + '」を本日の学習として記録しました（学習回数：' + newCount + '回）';
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+  renderCalendar();
+  renderTrendChart();
+}
+function undoLastStudy(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const title = ent.title;
+  if (studyLog[title] && studyLog[title].history && studyLog[title].history.length > 0) {
+    studyLog[title].history.pop();
+    saveStudyLog();
+    const newCount = studyLog[title].history.length;
+    status.textContent = '「' + title + '」の直前の学習記録を取り消しました（学習回数：' + newCount + '回）';
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    renderCalendar();
+    renderTrendChart();
+  }
+}
+function setConfidence(idx, level, sourceEl) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const title = ent.title;
+  const today = todayStr();
+  if (!studyLog[title]) studyLog[title] = { history: [] };
+  if (!studyLog[title].history) studyLog[title].history = [];
+  if (level === 'bad') {
+    studyLog[title].history = [today];
+  } else {
+    const hist = studyLog[title].history;
+    if (hist[hist.length - 1] !== today) hist.push(today);
+  }
+  studyLog[title].confidence = level;
+  studyLog[title].memorized = (level === 'good');
+  studyLog[title].category = ent.category || studyLog[title].category || '';
+  studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  saveStudyLog();
+  if (level === 'good') {
+    if (sourceEl) triggerFireworkLevelUp(sourceEl);
+    status.textContent = '🎉 「' + title + '」を暗記済み一覧に移動しました！';
+  } else if (level === 'unsure') {
+    status.textContent = '「' + title + '」を「あやしい」に設定しました。復習間隔を短縮します。';
+  } else {
+    status.textContent = '「' + title + '」を「ダメ」に設定しました。明日また復習しましょう。';
+  }
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+  renderCalendar();
+  renderTrendChart();
+}
+function toggleStar(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const title = ent.title;
+  if (!studyLog[title]) studyLog[title] = { history: [] };
+  studyLog[title].starred = !studyLog[title].starred;
+  studyLog[title].category = ent.category || studyLog[title].category || '';
+  studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  saveStudyLog();
+  status.textContent = studyLog[title].starred ? '⭐ 「' + title + '」を苦手フラグに追加しました。' : '「' + title + '」の苦手フラグを外しました。';
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+}
+function toggleBodyExpand(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  if (expandedBodySet.has(ent.title)) {
+    expandedBodySet.delete(ent.title);
+  } else {
+    expandedBodySet.add(ent.title);
+  }
+  renderStudyTable(entries);
+}
+function attachTableClickHandler(wrapEl) {
+  wrapEl.addEventListener('click', (e) => {
+    const confBtn = e.target.closest('.confBtn');
+    if (confBtn) {
+      e.stopPropagation();
+      setConfidence(Number(confBtn.dataset.idx), confBtn.dataset.level, confBtn);
+      return;
+    }
+    const starToggle = e.target.closest('.starToggle');
+    if (starToggle) {
+      e.stopPropagation();
+      toggleStar(Number(starToggle.dataset.idx));
+      return;
+    }
+    const bodyArea = e.target.closest('.bodyCellArea');
+    if (bodyArea) {
+      e.stopPropagation();
+      const idx = Number(bodyArea.dataset.idx);
+      const ent = entries[idx];
+      const wasCollapsed = !!(ent && !expandedBodySet.has(ent.title));
+      toggleBodyExpand(idx);
+      if (wasCollapsed) {
+        recordStudy(idx, bodyArea);
+      }
+      return;
+    }
+    const undoBtn = e.target.closest('.undoLastBtn2');
+    if (undoBtn) {
+      e.stopPropagation();
+      undoLastStudy(Number(undoBtn.dataset.idx));
+      return;
+    }
+    // 本文の「タップして表示」以外の余白をクリックしても学習回数には反映しない
+  });
+}
+attachTableClickHandler(tableWrap);
+attachTableClickHandler(memorizedTableWrap);
+document.addEventListener('click', (e) => {
+  const trendToggleBtn = e.target.closest('.trendToggleBtn');
+  if (trendToggleBtn) {
+    trendMode = trendToggleBtn.dataset.trend;
+    renderTrendChart();
+    return;
+  }
+  const subjectTabBtn = e.target.closest('.subjectTabBtn');
+  if (subjectTabBtn) {
+    selectedSubject = subjectTabBtn.dataset.subject;
+    selectedCategory = 'all';
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const categoryTabBtn = e.target.closest('.categoryTabBtn');
+  if (categoryTabBtn) {
+    selectedCategory = categoryTabBtn.dataset.category;
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const starTabBtn = e.target.closest('.starFilterBtn');
+  if (starTabBtn) {
+    starOnlyFilter = (starTabBtn.dataset.star === 'only');
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const delBtn = e.target.closest('.deleteDayItemBtn');
+  if (delBtn) {
+    const d = delBtn.dataset.date;
+    const t = delBtn.dataset.title;
+    if (studyLog[t] && studyLog[t].history) {
+      const idx = studyLog[t].history.indexOf(d);
+      if (idx !== -1) {
+        studyLog[t].history.splice(idx, 1);
+        saveStudyLog();
+        renderStudyTable(entries);
+        renderMemorizedTable(entries);
+        renderCalendar();
+        renderTrendChart();
+      }
+    }
+    return;
+  }
+  const deleteManualBtn = e.target.closest('.deleteManualItemBtn');
+  if (deleteManualBtn) {
+    const d = deleteManualBtn.dataset.date;
+    const idx = Number(deleteManualBtn.dataset.index);
+    if (manualLog[d]) {
+      manualLog[d].splice(idx, 1);
+      if (manualLog[d].length === 0) delete manualLog[d];
+      saveManualLog();
+      renderCalendar();
+      renderTrendChart();
+    }
+    return;
+  }
+  const manualAddBtn = e.target.closest('#manualAddBtn');
+  if (manualAddBtn) {
+    const d = manualAddBtn.dataset.date;
+    const subjectInput = document.getElementById('manualSubjectInput');
+    const categoryInput = document.getElementById('manualCategoryInput');
+    const countInput = document.getElementById('manualCountInput');
+    const subject = subjectInput ? subjectInput.value.trim() : '';
+    const category = categoryInput ? categoryInput.value.trim() : '';
+    const count = Math.max(1, parseInt(countInput ? countInput.value : '1', 10) || 1);
+    if (!subject) {
+      alert('科目を入力してください。');
+      return;
+    }
+    if (!manualLog[d]) manualLog[d] = [];
+    manualLog[d].push({ subject: subject, category: category, count: count });
+    saveManualLog();
+    renderCalendar();
+    renderTrendChart();
+    return;
+  }
+  const prevBtn = e.target.closest('#prevMonthBtn');
+  if (prevBtn) {
+    calViewMonth--;
+    if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+    selectedDay = null;
+    renderCalendar();
+    return;
+  }
+  const nextBtn = e.target.closest('#nextMonthBtn');
+  if (nextBtn) {
+    calViewMonth++;
+    if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+    selectedDay = null;
+    renderCalendar();
+    return;
+  }
+  const dayCell = e.target.closest('.calDayClickable');
+  if (dayCell) {
+    const d = dayCell.dataset.date;
+    selectedDay = (selectedDay === d) ? null : d;
+    renderCalendar();
+    return;
+  }
+});
+function toCsv(data) {
+  const header = ['Subject','FrontText','BackText','Comment','FrontTextLanguage','BackTextLanguage'];
+  const rows = data.map(e => [e.subject || '', e.title, e.body, yearStrToPlainText(e.year), 'ja-JP', 'ja-JP']);
+  const escapeCsv = v => {
+    if (v == null) v = '';
+    v = String(v);
+    if (v.includes(',') || v.includes('"') || v.includes('\n')) {
+      v = '"' + v.replace(/"/g, '""') + '"';
+    }
+    return v;
+  };
+  const lines = [header.map(escapeCsv).join(',')];
+  for (const row of rows) lines.push(row.map(escapeCsv).join(','));
+  return lines.join('\r\n');
+}
+downloadBtn.addEventListener('click', () => {
+  const filtered = entries.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
+  const csv = toCsv(filtered);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '論証集_WordHolic.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  status.textContent = '暗記済みを除外し、' + filtered.length + '件をCSV出力しました。';
+});
+downloadLogBtn.addEventListener('click', () => {
+  const header = ['科目', '分野', 'タイトル', '学習回数', '最終学習日', '次回推奨復習日', '暗記度', '苦手フラグ'];
+  const rows = entries.map(e => {
+    const log = studyLog[e.title] || {};
+    const history = log.history || [];
+    const lastDate = history.length ? history[history.length - 1] : '';
+    const info = getNextReviewInfo(e.title);
+    const confLabel = log.confidence === 'good' ? 'バッチリ' : (log.confidence === 'unsure' ? 'あやしい' : (log.confidence === 'bad' ? 'ダメ' : ''));
+    return [e.subject || '', e.category || '', e.title, history.length, lastDate, info ? info.nextDateStr : '', confLabel, log.starred ? '⭐' : ''];
+  });
+  const escapeCsv = v => {
+    if (v == null) v = '';
+    v = String(v);
+    if (v.includes(',') || v.includes('"') || v.includes('\n')) {
+      v = '"' + v.replace(/"/g, '""') + '"';
+    }
+    return v;
+  };
+  const lines = [header.map(escapeCsv).join(',')];
+  for (const row of rows) lines.push(row.map(escapeCsv).join(','));
+  const csv = lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '学習ログ.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+// --- ランダム出題モード ---
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function getStudyCountFor(e) {
+  const log = studyLog[e.title];
+  return (log && log.history) ? log.history.length : 0;
+}
+function buildQuizPool() {
+  let pool = filterEntries(entries, '');
+  if (!quizIncludeMemorizedChk.checked) {
+    pool = pool.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
+  }
+  if (pool.length === 0) {
+    quizMinCount = 0;
+    return [];
+  }
+  const minCount = Math.min(...pool.map(getStudyCountFor));
+  quizMinCount = minCount;
+  pool = pool.filter(e => getStudyCountFor(e) === minCount);
+  return shuffleArray(pool);
+}
+function startQuiz() {
+  quizPool = buildQuizPool();
+  quizIndex = 0;
+  quizRevealed = false;
+  quizStarted = true;
+  renderQuizPage();
+}
+function renderQuizPage() {
+  if (entries.length === 0) {
+    quizPriorityNote.textContent = '';
+    quizArea.innerHTML = '<div class="quizEmpty">まずはWordファイルを読み込んでください。</div>';
+    return;
+  }
+  if (!quizStarted) {
+    quizPriorityNote.textContent = '';
+    quizArea.innerHTML = '<div class="quizEmpty">「スタート／シャッフルし直す」を押すと出題が始まります。</div>';
+    return;
+  }
+  if (quizPool.length === 0) {
+    quizPriorityNote.textContent = '';
+    quizArea.innerHTML = '<div class="quizEmpty">出題対象の論証がありません。範囲や「暗記済みも含める」設定を見直してください。</div>';
+    return;
+  }
+  quizPriorityNote.innerHTML = '📌 学習回数が最も少ない（<strong>' + quizMinCount + '回</strong>）論点 <strong>' + quizPool.length + '件</strong> のみを出題しています。この回数のものを一通り学習すると、次回はより多く学習した論点が対象から外れ、新しい最少回数のグループが出題されます。';
+  if (quizIndex >= quizPool.length) {
+    quizArea.innerHTML = '<div class="quizCard"><div class="quizFinished">🎉 全' + quizPool.length + '問終了しました！お疲れさまでした。もう一度「スタート／シャッフルし直す」を押すと、更新された学習回数に基づいて次の優先グループが出題されます。</div></div>';
+    return;
+  }
+  const e = quizPool[quizIndex];
+  let html = '<div class="quizCard">';
+  html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
+  html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
+  html += '<div class="quizTitle">' + escapeHtml(e.title) + '</div>';
+  if (!quizRevealed) {
+    html += '<div class="quizShowBtn" id="quizShowBtn">📖 本文を表示</div>';
+  } else {
+    html += '<div class="quizBody">' + e.bodyHtml + '</div>';
+    html += '<div class="quizYear">出題年：' + (buildYearHtml(e.year) || 'なし') + '</div>';
+    html += '<div class="quizJudgeRow">'
+      + '<button type="button" class="quizGoodBtn" id="quizGoodBtn"><span class="quizJudgeIcon">○</span>バッチリ</button>'
+      + '<button type="button" class="quizUnsureBtn" id="quizUnsureBtn"><span class="quizJudgeIcon">△</span>あやしい</button>'
+      + '<button type="button" class="quizBadBtn" id="quizBadBtn"><span class="quizJudgeIcon">✕</span>ダメ</button>'
+      + '</div>';
+  }
+  html += '</div>';
+  quizArea.innerHTML = html;
+  const showBtn = document.getElementById('quizShowBtn');
+  if (showBtn) {
+    showBtn.addEventListener('click', () => {
+      quizRevealed = true;
+      renderQuizPage();
+    });
+  }
+  function advanceQuiz(level, sourceEl) {
+    const idx = entries.indexOf(e);
+    if (idx !== -1) setConfidence(idx, level, sourceEl);
+    quizIndex++;
+    quizRevealed = false;
+    renderQuizPage();
+  }
+  const goodBtn = document.getElementById('quizGoodBtn');
+  if (goodBtn) goodBtn.addEventListener('click', () => advanceQuiz('good', goodBtn));
+  const unsureBtn = document.getElementById('quizUnsureBtn');
+  if (unsureBtn) unsureBtn.addEventListener('click', () => advanceQuiz('unsure', unsureBtn));
+  const badBtn = document.getElementById('quizBadBtn');
+  if (badBtn) badBtn.addEventListener('click', () => advanceQuiz('bad', badBtn));
+}
+
+/* ▼▼▼ 新規追加：過去問ログ機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼
+   既存の entries / studyLog / manualLog / renderStudyTable などには一切触れていません。
+   保存先も専用のキー 'ronshoPastExamLogs_v1' のみを使用します。 */
+const PAST_EXAM_LOG_KEY = 'ronshoPastExamLogs_v1';
+
+function loadPastExamLogs() {
+  try {
+    const raw = localStorage.getItem(PAST_EXAM_LOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error('過去問ログの読み込みに失敗しました:', e);
+    return [];
+  }
+}
+
+function savePastExamLogs(logs) {
+  try {
+    localStorage.setItem(PAST_EXAM_LOG_KEY, JSON.stringify(logs));
+  } catch (e) {
+    console.error('過去問ログの保存に失敗しました:', e);
+  }
+}
+
+function renderPastLogs() {
+  const table = document.getElementById('pastLogTable');
+  const progressText = document.getElementById('pastProgressText');
+  const progressBar = document.getElementById('pastProgressBar');
+  if (!table || !progressText || !progressBar) return;
+
+  const logs = loadPastExamLogs();
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+
+  logs.sort((a, b) => {
+    const subjA = a.subject || '';
+    const subjB = b.subject || '';
+    if (subjA !== subjB) return subjA.localeCompare(subjB, 'ja');
+    const yearA = a.year || '';
+    const yearB = b.year || '';
+    if (yearA !== yearB) return yearA.localeCompare(yearB, 'ja');
+    return (a.round || 0) - (b.round || 0);
+  });
+
+  logs.forEach((log, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + escapeHtml(log.subject || '') + '</td>'
+      + '<td>' + escapeHtml(log.year || '') + '</td>'
+      + '<td>' + log.round + '回目</td>'
+      + '<td>' + escapeHtml(log.date || '') + '</td>'
+      + '<td contenteditable="true" data-idx="' + idx + '" class="pastMemoCell">' + escapeHtml(log.memo || '') + '</td>'
+      + '<td><button type="button" data-idx="' + idx + '" class="pastDelBtn">削除</button></td>';
+    tbody.appendChild(tr);
+  });
+
+  const total = logs.length;
+  progressText.textContent = '登録済み ' + total + ' 件';
+  progressBar.style.width = total > 0 ? '100%' : '0%';
+}
+
+function initPastExamLogFeature() {
+  const saveBtn = document.getElementById('pastSaveBtn');
+  const table = document.getElementById('pastLogTable');
+  if (!saveBtn || !table) return;
+
+  saveBtn.addEventListener('click', () => {
+    const subject = document.getElementById('pastSubjectInput').value.trim();
+    const year = document.getElementById('pastYearInput').value.trim();
+    const round = Number(document.getElementById('pastRoundSelect').value || '1');
+    const date = document.getElementById('pastDateInput').value;
+
+    if (!subject || !year || !date) {
+      alert('科目・年度・解答日を入力してください。');
+      return;
+    }
+
+    const logs = loadPastExamLogs();
+    const key = subject + '|' + year + '|' + round;
+    const existingIdx = logs.findIndex(l => l.key === key);
+    const newItem = {
+      key: key,
+      subject: subject,
+      year: year,
+      round: round,
+      date: date,
+      memo: existingIdx >= 0 ? (logs[existingIdx].memo || '') : ''
+    };
+
+    if (existingIdx >= 0) {
+      logs[existingIdx] = newItem;
+    } else {
+      logs.push(newItem);
+    }
+
+    savePastExamLogs(logs);
+    renderPastLogs();
+  });
+
+  table.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.pastDelBtn');
+    if (!delBtn) return;
+    const logs = loadPastExamLogs();
+    logs.splice(Number(delBtn.dataset.idx), 1);
+    savePastExamLogs(logs);
+    renderPastLogs();
+  });
+
+  table.addEventListener('blur', (e) => {
+    const cell = e.target.closest('.pastMemoCell');
+    if (!cell) return;
+    const logs = loadPastExamLogs();
+    const idx = Number(cell.dataset.idx);
+    if (!logs[idx]) return;
+    logs[idx].memo = cell.textContent.trim();
+    savePastExamLogs(logs);
+  }, true);
+
+  renderPastLogs();
+}
+initPastExamLogFeature();
+/* ▲▲▲ 新規追加：過去問ログ機能 ここまで ▲▲▲ */
+
+// --- 初期化：保存データの復元（すべての関数・定数が定義された後に実行） ---
+loadStudyLog();
+loadManualLog();
+loadEntries();
+if (entries.length > 0) {
+  status.textContent = '📂 前回読み込んだ ' + entries.length + '件のデータを復元しました。';
+  downloadBtn.style.display = 'inline-block';
+  downloadLogBtn.style.display = 'inline-block';
+  renderAll();
+}
+renderPastLogs();
+</script>
+</body>
+</html>

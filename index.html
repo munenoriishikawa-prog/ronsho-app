@@ -169,5 +169,63 @@
 </script>
 <!-- ▲▲▲ GAS 同期モジュール ここまで ▲▲▲ -->
 
+<!-- gas-drive-sync-module -->
+<script>
+(() => {
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzvOpqlTTlYswP6obzpKS1-N67UkuDzbg9lAGMOtQOkj3T9uFEeTtSTRK-snFTFrpCLOw/exec';
+  const state = t => {
+    const e = document.getElementById('driveSyncState');
+    if (e) e.textContent = t;
+  };
+
+  async function gasGet() {
+    const r = await fetch(GAS_URL + '?action=get');
+    if (!r.ok) throw Error('同期データの取得に失敗しました');
+    return r.json();
+  }
+
+  async function gasPush(data) {
+    const r = await fetch(GAS_URL + '?action=push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw Error('同期データの保存に失敗しました');
+    return r.json();
+  }
+
+  async function syncNow() {
+    try {
+      state('同期中…');
+      // いまは単純に GAS 上のデータをそのままプッシュするだけ
+      const remote = await gasGet();
+      const data = remote.data || remote;
+      await gasPush(data);
+      state('同期済み');
+    } catch (e) {
+      state(e.message);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    const old = document.getElementById('driveSyncPanel');
+    if (old) old.remove();
+
+    const p = document.createElement('div');
+    p.id = 'driveSyncPanel';
+    p.style.cssText =
+      'margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70';
+    p.innerHTML =
+      '<b>☁️ Google Drive(GAS)同期</b> ' +
+      '<button id="driveNowBtn" type="button">今すぐ同期</button> ' +
+      '<span id="driveSyncState">待機中</span>';
+
+    // 既存の status 要素の直後にパネルを差し込む
+    status.after(p);
+    document.getElementById('driveNowBtn').onclick = syncNow;
+  });
+})();
+</script>
+   
 </body>
 </html>

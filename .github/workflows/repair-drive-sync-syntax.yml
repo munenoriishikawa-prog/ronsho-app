@@ -11,13 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('index.html')
-          h=p.read_text(encoding='utf-8')
-          h=h.replace('\\"', '"')
-          p.write_text(h, encoding='utf-8')
-          PY
+          perl -pi -e 's/\\+"/"/g' index.html
       - run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

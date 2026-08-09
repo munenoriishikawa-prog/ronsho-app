@@ -1,0 +1,182 @@
+name: Add Google Drive sync
+on:
+  push:
+    branches: [feature/google-drive-sync]
+    paths:
+      - '.github/workflows/add-google-drive-sync.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add sync module
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          html = p.read_text(encoding='utf-8')
+          marker = '<!-- google-drive-sync-module -->'
+          if marker in html:
+              raise SystemExit(0)
+          addon = r'''
+<!-- google-drive-sync-module -->
+<script>
+(() => {
+  const CLIENT_ID = '1008108195377-3i95ujevlk1keuf02tcitnuikniie9al.apps.googleusercontent.com';
+  const SCOPE = 'https://www.googleapis.com/auth/drive.file';
+  const BUCKET_KEY = 'ronshoFileBucketsV1';
+  const DRIVE_FILE_NAME = 'ronsho-app-sync-v1.json';
+  const DRIVE_ID_KEY = 'ronshoDriveSyncFileIdV1';
+  let accessToken = null, tokenClient = null, syncTimer = null, lastSnapshot = '';
+  const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch (_) { return fallback; } };
+  const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+  const getBuckets = () => read(BUCKET_KEY, {});
+  const setBuckets = buckets => write(BUCKET_KEY, buckets);
+  function ensureBuckets() {
+    const buckets = getBuckets();
+    if (!Object.keys(buckets).length && Array.isArray(window.entries) && window.entries.length) {
+      buckets['既存の読み込みデータ'] = window.entries;
+      setBuckets(buckets);
+    }
+    return buckets;
+  }
+  function rebuildEntries() {
+    const buckets = ensureBuckets();
+    window.entries = Object.values(buckets).flat();
+    if (typeof window.saveEntries === 'function') window.saveEntries();
+    if (typeof window.renderAll === 'function') window.renderAll();
+  }
+  const originalHandle = window.handleFiles;
+  window.handleFiles = async files => {
+    if (!files || !files.length) return;
+    const buckets = ensureBuckets();
+    const names = [];
+    try {
+      for (const file of files) {
+        const parsed = await window.parseSingleFile(file);
+        buckets[file.name] = parsed.map(item => ({...item, sourceFile: file.name}));
+        names.push(file.name);
+      }
+      setBuckets(buckets);
+      rebuildEntries();
+      const s = document.getElementById('status');
+      if (s) s.textContent = `${names.join('、')} を保存しました（同名ファイルは更新）`;
+      scheduleSync();
+    } catch (err) {
+      console.error(err);
+      if (typeof originalHandle === 'function') return originalHandle(files);
+    }
+  };
+  function payload() {
+    ensureBuckets();
+    return {
+      schemaVersion: 1,
+      updatedAt: new Date().toISOString(),
+      fileBuckets: getBuckets(),
+      studyLog: read('ronshoStudyLog', {}),
+      manualLog: read('ronshoManualLog', {}),
+      pastExamLogs: read('ronshoPastExamLogsv1', [])
+    };
+  }
+  function mergeStudy(a, b) {
+    const out = {...a};
+    Object.entries(b || {}).forEach(([title, incoming]) => {
+      const old = out[title] || {};
+      out[title] = {...old, ...incoming, history: [...new Set([...(old.history || []), ...(incoming.history || [])])].sort()};
+    });
+    return out;
+  }
+  function mergeRemote(remote) {
+    const local = payload();
+    const buckets = {...(remote.fileBuckets || {}), ...local.fileBuckets};
+    setBuckets(buckets);
+    write('ronshoStudyLog', mergeStudy(remote.studyLog || {}, local.studyLog || {}));
+    const manual = {...(remote.manualLog || {})};
+    Object.entries(local.manualLog || {}).forEach(([d, rows]) => manual[d] = [...(manual[d] || []), ...rows]);
+    write('ronshoManualLog', manual);
+    const logs = new Map((remote.pastExamLogs || []).map(x => [x.key, x]));
+    (local.pastExamLogs || []).forEach(x => logs.set(x.key, x));
+    write('ronshoPastExamLogsv1', [...logs.values()]);
+    rebuildEntries();
+  }
+  function setState(text, kind='') {
+    const el = document.getElementById('driveSyncState');
+    if (el) { el.textContent = text; el.className = kind; }
+  }
+  async function findDriveFile() {
+    let id = localStorage.getItem(DRIVE_ID_KEY);
+    if (id) return id;
+    const q = encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`);
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name,modifiedTime)`, {headers:{Authorization:`Bearer ${accessToken}`}});
+    const data = await res.json();
+    id = data.files && data.files[0] && data.files[0].id;
+    if (id) localStorage.setItem(DRIVE_ID_KEY, id);
+    return id;
+  }
+  async function pull() {
+    const id = await findDriveFile();
+    if (!id) return false;
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`, {headers:{Authorization:`Bearer ${accessToken}`}});
+    if (!res.ok) throw new Error('Driveデータを読み込めませんでした');
+    mergeRemote(await res.json());
+    return true;
+  }
+  async function push() {
+    if (!accessToken) return;
+    const body = payload();
+    const id = await findDriveFile();
+    const boundary = 'ronsho_sync_boundary';
+    const metadata = JSON.stringify(id ? {name: DRIVE_FILE_NAME} : {name: DRIVE_FILE_NAME, mimeType:'application/json'});
+    const multipart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(body)}\r\n--${boundary}--`;
+    const url = id ? `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart` : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    const res = await fetch(url, {method: id ? 'PATCH' : 'POST', headers:{Authorization:`Bearer ${accessToken}`, 'Content-Type':`multipart/related; boundary=${boundary}`}, body:multipart});
+    if (!res.ok) throw new Error('Driveへ保存できませんでした');
+    const saved = await res.json();
+    localStorage.setItem(DRIVE_ID_KEY, saved.id || id);
+    lastSnapshot = JSON.stringify(payload());
+    setState(`自動同期済み：${new Date().toLocaleTimeString()}`, 'ok');
+  }
+  function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(() => push().catch(e => setState(e.message, 'error')), 1200); }
+  function loadGIS() { return new Promise((resolve, reject) => {
+    if (window.google?.accounts?.oauth2) return resolve();
+    const s = document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.async=true; s.onload=resolve; s.onerror=reject; document.head.appendChild(s);
+  }); }
+  async function connect() {
+    try {
+      setState('Googleログインを開いています…');
+      await loadGIS();
+      tokenClient = google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID, scope:SCOPE, callback: async r => {
+        if (r.error) return setState('Google認証に失敗しました', 'error');
+        accessToken = r.access_token;
+        try { const found = await pull(); await push(); setState(found ? 'Driveデータを統合して同期しました' : 'Drive同期を開始しました', 'ok'); }
+        catch(e) { setState(e.message, 'error'); }
+      }});
+      tokenClient.requestAccessToken({prompt:'consent'});
+    } catch(e) { setState('同期の初期化に失敗しました', 'error'); console.error(e); }
+  }
+  function addPanel() {
+    const anchor = document.getElementById('status');
+    if (!anchor || document.getElementById('driveSyncPanel')) return;
+    const panel = document.createElement('div'); panel.id='driveSyncPanel';
+    panel.style.cssText='margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70';
+    panel.innerHTML='<b>☁️ Google Drive同期</b> <button type="button" id="driveConnectBtn">Google Driveに接続</button> <button type="button" id="driveNowBtn" disabled>今すぐ同期</button> <span id="driveSyncState">未接続（この端末内に保存中）</span>';
+    anchor.after(panel);
+    document.getElementById('driveConnectBtn').onclick=connect;
+    document.getElementById('driveNowBtn').onclick=() => push().catch(e => setState(e.message, 'error'));
+    const watcher=setInterval(() => { if (!accessToken) return; document.getElementById('driveNowBtn').disabled=false; const now=JSON.stringify(payload()); if (now !== lastSnapshot) scheduleSync(); }, 3000);
+  }
+  window.addEventListener('load', () => { ensureBuckets(); rebuildEntries(); addPanel(); });
+})();
+</script>
+'''
+          p.write_text(html.replace('</body>', addon + '\n</body>'), encoding='utf-8')
+          PY
+      - name: Commit generated app
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'feat: add Drive sync and file buckets'
+          git push

@@ -2238,10 +2238,126 @@ renderPastLogs();
     p.style.cssText =
       'margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70';
     p.innerHTML =
-      '<b>☁️ Google Drive(GAS)同期</b> ' +
-      '<button id="driveNowBtn" type="button">今すぐ同期</button> ' +
-      '<span id="driveSyncState">待機中</span>';
-    // eslint-disable-next-line no-undef
+      '<!-- gas-drive-sync-module -->
+<script>
+(() => {
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzvOpqlTTlYswP6obzpKS1-N67UkuDzbg9lAGMOtQOkj3T9uFEeTtSTRK-snFTFrpCLOw/exec';
+
+  const ENTRY_KEY = 'ronshoEntries';
+  const read = (k, d) => {
+    try {
+      return JSON.parse(localStorage.getItem(k) || JSON.stringify(d));
+    } catch (_) {
+      return d;
+    }
+  };
+  const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  const getEntries = () => read(ENTRY_KEY, []);
+  const entryKey = x => x?.id || [x?.title, x?.body].filter(Boolean).join('|') || JSON.stringify(x);
+  const unique = a => {
+    const m = new Map();
+    for (const x of a || []) m.set(entryKey(x), x);
+    return [...m.values()];
+  };
+  const state = t => {
+    const e = document.getElementById('driveSyncState');
+    if (e) e.textContent = t;
+  };
+
+  const snapshot = () => ({
+    schemaVersion: 3,
+    updatedAt: new Date().toISOString(),
+    entries: getEntries(),
+    studyLog: read('ronshoStudyLog', {}),
+    manualLog: read('ronshoManualLog', {}),
+    pastExamLogs: read('ronshoPastExamLogsv1', [])
+  });
+
+  const mergeLog = (a, b) => {
+    const out = { ...a };
+    for (const [k, v] of Object.entries(b || {})) {
+      const o = out[k] || {};
+      const ah = o.history || [];
+      const bh = v.history || [];
+      out[k] = {
+        ...o,
+        ...v,
+        history: [...new Set([...ah, ...bh])].sort(),
+        memorized: !!(o.memorized || v.memorized),
+        starred: !!(o.starred || v.starred),
+        weak: !!(o.weak || v.weak),
+        confidence: v.confidence || o.confidence || null,
+        memo: v.memo || o.memo || ''
+      };
+    }
+    return out;
+  };
+
+  const merge = remote => {
+    const local = snapshot();
+    const remoteEntries = remote.entries || [];
+    const mergedEntries = unique([...(remoteEntries || []), ...local.entries]);
+    write(ENTRY_KEY, mergedEntries);
+    try { entries = mergedEntries; } catch (_) {}
+
+    const study = mergeLog(remote.studyLog || {}, local.studyLog || {});
+    write('ronshoStudyLog', study);
+
+    const manual = { ...(remote.manualLog || {}) };
+    for (const [d, v] of Object.entries(local.manualLog || {})) {
+      manual[d] = unique([...(manual[d] || []), ...v]);
+    }
+    write('ronshoManualLog', manual);
+
+    const exams = new Map(
+      [...(remote.pastExamLogs || []), ...(local.pastExamLogs || [])].map(x => [x.key || JSON.stringify(x), x])
+    );
+    write('ronshoPastExamLogsv1', [...exams.values()]);
+
+    if (typeof saveEntries === 'function') saveEntries();
+    if (typeof renderAll === 'function') renderAll();
+
+    state('統合済み：GAS ' + (remoteEntries || []).length + '件／このPC ' + local.entries.length + '件／統合後 ' + mergedEntries.length + '件');
+    return snapshot();
+  };
+
+  async function gasGet() {
+    const r = await fetch(GAS_URL + '?action=get');
+    if (!r.ok) throw Error('同期データの取得に失敗しました');
+    return r.json();
+  }
+
+  async function gasPush(data) {
+    const r = await fetch(GAS_URL + '?action=push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) throw Error('同期データの保存に失敗しました');
+    return r.json();
+  }
+
+  async function syncNow() {
+    try {
+      state('同期中…');
+      const remote = await gasGet();
+      const data = merge(remote.data || remote);
+      await gasPush(data);
+      state('同期済み：' + data.entries.length + '件 ' + new Date().toLocaleTimeString());
+    } catch (e) {
+      state(e.message);
+    }
+  }
+
+  window.addEventListener('load', () => {
+    const old = document.getElementById('driveSyncPanel');
+    if (old) old.remove();
+
+    const p = document.createElement('div');
+    p.id = 'driveSyncPanel';
+    p.style.cssText = 'margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70';
+    p.innerHTML = '<b>☁️ Google Drive(GAS)同期</b> <button id="driveNowBtn" type="button">今すぐ同期</button> <span id="driveSyncState">待機中</span>';
+
     status.after(p);
     document.getElementById('driveNowBtn').onclick = syncNow;
   });

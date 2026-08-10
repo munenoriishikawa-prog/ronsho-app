@@ -642,7 +642,7 @@ function formatLocalDate(d) {
 function todayStr() {
   return formatLocalDate(new Date());
 }
-const SUBJECT_EMOJI = { '民法': '⚖️', '刑法': '🚨', '憲法': '📜', '商法': '💼', '民事訴訟法': '🧑\u200d⚖️', '刑事訴訟法': '🚓', '行政法': '🏛️' };
+const SUBJECT_EMOJI = { '民法': '⚖️', '刑法': '🚨', '憲法': '📜', '商法': '💼', '民事訴訟法': '🧑\u200d⚖️', '刑事訴訟法': '🚓', '行政法': '🏛️' ,'労働法': '👥','実務基礎民事': '📘','実務基礎刑事': '📕'};
 function getSubjectEmoji(subject) {
   return SUBJECT_EMOJI[subject] || '📘';
 }
@@ -982,7 +982,7 @@ function extractEntries(paraRuns) {
 }
 function isSubjectLine(text) {
   if (!text || /[。、]/.test(text) || text.length > 10) return false;
-  return ['民法','刑法','憲法','商法','民事訴訟法','刑事訴訟法','行政法'].includes(text);
+  return ['民法','刑法','憲法','商法','民事訴訟法','刑事訴訟法','行政法','労働法','実務基礎民事','実務基礎刑事'].includes(text);
 }
 function isPlainCategoryLine(text) {
   if (!text) return false;

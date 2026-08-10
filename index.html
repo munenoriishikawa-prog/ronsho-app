@@ -948,8 +948,10 @@ function extractEntries(paraRuns) {
       i++;
       continue;
     }
-    if (isSubjectLine(lineText.replace(/[\s\u3000]/g, '').trim())) {
-      currentSubject = lineText.replace(/[\s\u3000]/g, '').trim();
+    const detectedSubject = detectSubjectFromHeader(lineText);
+
+    if (detectedSubject) {
+      currentSubject = detectedSubject;
       i++;
       continue;
     }
@@ -980,21 +982,27 @@ function extractEntries(paraRuns) {
   }
   return out;
 }
-function isSubjectLine(text) {
+function detectSubjectFromHeader(text) {
   const normalized = (text || '').replace(/[\s　]/g, '').trim();
 
-  return [
+  const subjects = [
+    '民事訴訟法',
+    '刑事訴訟法',
+    '実務基礎民事',
+    '実務基礎刑事',
+    '労働法',
+    '行政法',
     '民法',
     '刑法',
     '憲法',
-    '商法',
-    '民事訴訟法',
-    '刑事訴訟法',
-    '行政法',
-    '労働法',
-    '実務基礎民事',
-    '実務基礎刑事'
-  ].includes(normalized);
+    '商法'
+  ];
+
+  return subjects.find(subject =>
+    normalized === subject ||
+    normalized.startsWith(subject + '重要論点') ||
+    normalized.startsWith(subject + '暗記用')
+  ) || '';
 }
 function isPlainCategoryLine(text) {
   if (!text) return false;

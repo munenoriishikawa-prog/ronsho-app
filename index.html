@@ -981,8 +981,20 @@ function extractEntries(paraRuns) {
   return out;
 }
 function isSubjectLine(text) {
-  if (!text || /[。、]/.test(text) || text.length > 10) return false;
-  return ['民法','刑法','憲法','商法','民事訴訟法','刑事訴訟法','行政法','労働法','実務基礎民事','実務基礎刑事'].includes(text);
+  const normalized = (text || '').replace(/[\\s　]/g, '').trim();
+
+  return [
+    '民法',
+    '刑法',
+    '憲法',
+    '商法',
+    '民事訴訟法',
+    '刑事訴訟法',
+    '行政法',
+    '労働法',
+    '実務基礎民事',
+    '実務基礎刑事'
+  ].includes(normalized);
 }
 function isPlainCategoryLine(text) {
   if (!text) return false;
@@ -1061,9 +1073,15 @@ function isYobiShikenColor(color) {
 }
 function inferSubjectFromFilename(name) {
   const n = (name || '').toLowerCase();
+
   if (n.includes('min-fa') || n.includes('民法')) return '民法';
   if (n.includes('kei-ho') || n.includes('刑法')) return '刑法';
   if (n.includes('ken-po') || n.includes('xian-fa') || n.includes('憲法')) return '憲法';
+
+  if (n.includes('労働法') || n.includes('労働')) return '労働法';
+  if (n.includes('実務基礎民事')) return '実務基礎民事';
+  if (n.includes('実務基礎刑事')) return '実務基礎刑事';
+
   return '';
 }
 async function parseSingleFile(file) {

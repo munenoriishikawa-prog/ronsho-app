@@ -1114,12 +1114,14 @@ async function handleFiles(files) {
   downloadBtn.style.display = 'none';
   downloadLogBtn.style.display = 'none';
   try {
-    let allEntries = [];
+    let newEntries = [];
     for (const file of files) {
       const parsed = await parseSingleFile(file);
-      allEntries = allEntries.concat(parsed);
+      newEntries = newEntries.concat(parsed);
     }
-    entries = allEntries;
+    const touchedSubjects = new Set(newEntries.map(e => e.subject || 'その他'));
+    const keptEntries = entries.filter(e => !touchedSubjects.has(e.subject || 'その他'));
+    entries = keptEntries.concat(newEntries);
     saveEntries();
     selectedSubject = 'all';
     selectedCategory = 'all';
@@ -1132,7 +1134,8 @@ async function handleFiles(files) {
     quizPool = [];
     quizStarted = false;
     renderAll();
-    status.textContent = '✨ ' + entries.length + '件の論証を抽出しました。読み込みファイル数: ' + files.length + '件（次回起動時も自動で復元されます）';
+    const touchedLabel = Array.from(touchedSubjects).map(s => s === 'その他' ? s : s).join('・');
+    status.textContent = '✨ ' + newEntries.length + '件の論証を抽出しました（' + touchedLabel + 'を更新）。読み込みファイル数: ' + files.length + '件／全体 ' + entries.length + '件（次回起動時も自動で復元されます）';
     downloadBtn.style.display = 'inline-block';
     downloadLogBtn.style.display = 'inline-block';
   } catch (err) {

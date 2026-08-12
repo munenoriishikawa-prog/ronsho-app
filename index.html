@@ -442,7 +442,8 @@ input[type=file] { display:none; }
 .quizJudgeRow button { padding: 10px 20px; font-size: 13px; border-radius: 999px; display:flex; align-items:center; gap:6px; }
 .quizJudgeIcon { font-size: 15px; font-weight: 800; width:20px; height:20px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; }
 .quizGoodBtn { background: linear-gradient(135deg, #22c55e, #0ea5e9); color: #fff; border: none; }
-.quizGoodBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color:#fff; font-size: 20px; }
+.quizGoodBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color: transparent; font-size: 0; position: relative; }
+.quizGoodBtn .quizJudgeIcon::after { content: ''; width: 13px; height: 13px; border: 3px solid #fff; border-radius: 50%; display: block; box-sizing: border-box; }
 .quizUnsureBtn { background: linear-gradient(135deg, #ffd93d, #ff9f1c); color: #78350f; border: none; }
 .quizUnsureBtn .quizJudgeIcon { background: rgba(255,255,255,0.45); color:#78350f; }
 .quizBadBtn { background: linear-gradient(135deg, #ff6b6b, #d32f2f); color: #fff; border: none; }

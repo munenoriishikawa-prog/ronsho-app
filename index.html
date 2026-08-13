@@ -1043,6 +1043,7 @@ function parseTitleLineRuns(runList) {
       chars.push({ ch: ch, color: r.color });
     }
   }
+  while (chars.length && /[\s　]/.test(chars[0].ch)) chars.shift();
   let idx = 0;
   let importance = 0;
   while (idx < chars.length && (chars[idx].ch === '★' || chars[idx].ch === '☆')) { importance++; idx++; }

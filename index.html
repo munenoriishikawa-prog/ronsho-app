@@ -577,7 +577,8 @@ input[type=file] { display:none; }
 <!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
 <datalist id="subjectSuggestions">
 <option value="民法"></option>
-<option value="刑法"></option>
+<option value="刑法総論"></option>
+<option value="刑法各論"></option>
 <option value="憲法"></option>
 <option value="商法"></option>
 <option value="民事訴訟法"></option>
@@ -655,7 +656,7 @@ function formatLocalDate(d) {
 function todayStr() {
   return formatLocalDate(new Date());
 }
-const SUBJECT_EMOJI = { '民法': '⚖️', '刑法': '🚨', '憲法': '📜', '商法': '💼', '民事訴訟法': '🧑\u200d⚖️', '刑事訴訟法': '🚓', '行政法': '🏛️', '労働法': '👷', '実務基礎民事': '📄', '実務基礎刑事': '🚔' };
+const SUBJECT_EMOJI = { '民法': '⚖️', '刑法': '🚨', '刑法総論': '🚨', '刑法各論': '⚔️', '憲法': '📜', '商法': '💼', '民事訴訟法': '🧑\u200d⚖️', '刑事訴訟法': '🚓', '行政法': '🏛️', '労働法': '👷', '実務基礎民事': '📄', '実務基礎刑事': '🚔' };
 function getSubjectEmoji(subject) {
   return SUBJECT_EMOJI[subject] || '📘';
 }
@@ -758,6 +759,13 @@ function loadEntries() {
   } catch (e) {
     entries = [];
   }
+  let migrated = false;
+  entries = entries.map(e => {
+    const resolved = resolveKeihoSubject(e.subject, e.category);
+    if (resolved !== e.subject) { migrated = true; return { ...e, subject: resolved }; }
+    return e;
+  });
+  if (migrated) saveEntries();
 }
 function saveEntries() {
   try {
@@ -1016,7 +1024,7 @@ function extractEntries(paraRuns) {
 }
 function isSubjectLine(text) {
   if (!text || /[。、]/.test(text) || text.length > 10) return false;
-  return ['民法','刑法','憲法','商法','民事訴訟法','刑事訴訟法','行政法','労働法','実務基礎民事','実務基礎刑事'].includes(text);
+  return ['民法','刑法','刑法総論','刑法各論','憲法','商法','民事訴訟法','刑事訴訟法','行政法','労働法','実務基礎民事','実務基礎刑事'].includes(text);
 }
 function isPlainCategoryLine(text) {
   if (!text) return false;
@@ -1097,7 +1105,11 @@ function isYobiShikenColor(color) {
 function inferSubjectFromFilename(name) {
   const n = (name || '').toLowerCase();
   if (n.includes('min-fa') || n.includes('民法')) return '民法';
-  if (n.includes('kei-ho') || n.includes('刑法')) return '刑法';
+  if (n.includes('kei-ho') || n.includes('刑法')) {
+    if (n.includes('各論') || n.includes('kakuron')) return '刑法各論';
+    if (n.includes('総論') || n.includes('soron')) return '刑法総論';
+    return '刑法';
+  }
   if (n.includes('ken-po') || n.includes('xian-fa') || n.includes('憲法')) return '憲法';
   if (n.includes('商法')) return '商法';
   if (n.includes('民事訴訟法') || n.includes('民訴')) return '民事訴訟法';
@@ -1107,6 +1119,12 @@ function inferSubjectFromFilename(name) {
   if (n.includes('実務基礎民事')) return '実務基礎民事';
   if (n.includes('実務基礎刑事')) return '実務基礎刑事';
   return '';
+}
+function resolveKeihoSubject(subject, category) {
+  if (subject !== '刑法') return subject;
+  if (category === '総論') return '刑法総論';
+  if (category === '各論' || category === '財産犯' || category === '生命身体に対する罪' || category === '文書罪') return '刑法各論';
+  return subject;
 }
 async function parseSingleFile(file) {
   const arrayBuffer = await file.arrayBuffer();
@@ -1137,7 +1155,10 @@ async function parseSingleFile(file) {
     paraRuns.push(runList);
   }
   const subjectFromName = inferSubjectFromFilename(file.name);
-  const parsed = extractEntries(paraRuns).map(e => ({ ...e, subject: subjectFromName || e.subject || '' }));
+  const parsed = extractEntries(paraRuns).map(e => {
+    const rawSubject = subjectFromName || e.subject || '';
+    return { ...e, subject: resolveKeihoSubject(rawSubject, e.category) };
+  });
   return parsed;
 }
 async function handleFiles(files) {

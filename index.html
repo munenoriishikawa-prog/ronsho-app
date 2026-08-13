@@ -365,6 +365,7 @@ input[type=file] { display:none; }
   box-shadow: 0 3px 8px rgba(0, 87, 231, 0.3);
 }
 .starFilterTabs { margin-bottom: 14px; }
+.importanceStars { margin-right: 4px; letter-spacing: -1px; }
 .starFilterBtn {
   padding: 3px 12px;
   margin-right: 6px;
@@ -504,6 +505,7 @@ input[type=file] { display:none; }
 <div id="subjectTabsStudy" class="subjectTabs"></div>
 <div id="categoryTabsStudy" class="categoryTabs"></div>
 <div id="starTabsStudy" class="starFilterTabs"></div>
+<div id="importanceTabsStudy" class="starFilterTabs"></div>
 <div id="tableWrap"></div>
 </div>
 <div id="memorizedPage" class="page">
@@ -515,12 +517,14 @@ input[type=file] { display:none; }
 <div id="subjectTabsMemorized" class="subjectTabs"></div>
 <div id="categoryTabsMemorized" class="categoryTabs"></div>
 <div id="starTabsMemorized" class="starFilterTabs"></div>
+<div id="importanceTabsMemorized" class="starFilterTabs"></div>
 <div id="memorizedTableWrap"></div>
 </div>
 <div id="quizPage" class="page">
 <div id="subjectTabsQuiz" class="subjectTabs"></div>
 <div id="categoryTabsQuiz" class="categoryTabs"></div>
 <div id="starTabsQuiz" class="starFilterTabs"></div>
+<div id="importanceTabsQuiz" class="starFilterTabs"></div>
 <div class="quizControls">
 <label><input type="checkbox" id="quizIncludeMemorizedChk"> 暗記済みも出題に含める</label>
 <button id="quizStartBtn">🎲 スタート／シャッフルし直す</button>
@@ -603,6 +607,9 @@ const categoryTabsQuiz = document.getElementById('categoryTabsQuiz');
 const starTabsStudy = document.getElementById('starTabsStudy');
 const starTabsMemorized = document.getElementById('starTabsMemorized');
 const starTabsQuiz = document.getElementById('starTabsQuiz');
+const importanceTabsStudy = document.getElementById('importanceTabsStudy');
+const importanceTabsMemorized = document.getElementById('importanceTabsMemorized');
+const importanceTabsQuiz = document.getElementById('importanceTabsQuiz');
 const searchInputStudy = document.getElementById('searchInputStudy');
 const searchInputMemorized = document.getElementById('searchInputMemorized');
 const searchCountStudy = document.getElementById('searchCountStudy');
@@ -629,6 +636,7 @@ let selectedDay = null;
 let selectedSubject = 'all';
 let selectedCategory = 'all';
 let starOnlyFilter = false;
+let selectedImportance = 'all';
 let expandedBodySet = new Set();
 let searchQueryStudy = '';
 let searchQueryMemorized = '';
@@ -765,6 +773,7 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   selectedSubject = 'all';
   selectedCategory = 'all';
   starOnlyFilter = false;
+  selectedImportance = 'all';
   expandedBodySet = new Set();
   tableWrap.innerHTML = '';
   memorizedTableWrap.innerHTML = '';
@@ -979,7 +988,7 @@ function extractEntries(paraRuns) {
       continue;
     }
     if (isTitleLine(paraRuns[i])) {
-      const { title, yearTokensColored } = parseTitleLineRuns(paraRuns[i]);
+      const { title, yearTokensColored, importance } = parseTitleLineRuns(paraRuns[i]);
       const yearStr = buildFilteredYearStr(yearTokensColored);
       i++;
       let bodyLines = [];
@@ -998,7 +1007,7 @@ function extractEntries(paraRuns) {
       }
       const body = bodyLines.join('\n');
       const bodyHtml = buildBodyHtml(bodyRunLines);
-      out.push({ title: title, body: body, bodyHtml: bodyHtml, year: yearStr, category: currentCategory, subject: currentSubject });
+      out.push({ title: title, body: body, bodyHtml: bodyHtml, year: yearStr, category: currentCategory, subject: currentSubject, importance: importance });
       continue;
     }
     i++;
@@ -1024,7 +1033,8 @@ function parseTitleLineRuns(runList) {
     }
   }
   let idx = 0;
-  while (idx < chars.length && (chars[idx].ch === '★' || chars[idx].ch === '☆')) idx++;
+  let importance = 0;
+  while (idx < chars.length && (chars[idx].ch === '★' || chars[idx].ch === '☆')) { importance++; idx++; }
   const segments = [];
   let current = [];
   for (; idx < chars.length; idx++) {
@@ -1060,7 +1070,7 @@ function parseTitleLineRuns(runList) {
     }
     flushToken();
   }
-  return { title, yearTokensColored };
+  return { title, yearTokensColored, importance };
 }
 function buildFilteredYearStr(yearTokensColored) {
   const kept = yearTokensColored.filter(t => {
@@ -1151,6 +1161,7 @@ async function handleFiles(files) {
     selectedSubject = 'all';
     selectedCategory = 'all';
     starOnlyFilter = false;
+    selectedImportance = 'all';
     expandedBodySet = new Set();
     searchQueryStudy = '';
     searchQueryMemorized = '';
@@ -1208,6 +1219,13 @@ function renderStarTabsHtml() {
   html += '<button type="button" class="starFilterBtn' + (starOnlyFilter ? ' active' : '') + '" data-star="only">⭐ 苦手のみ</button>';
   return html;
 }
+function renderImportanceTabsHtml() {
+  let html = '<button type="button" class="starFilterBtn' + (selectedImportance === 'all' ? ' active' : '') + '" data-importance="all">重要度すべて</button>';
+  html += '<button type="button" class="starFilterBtn' + (selectedImportance === 2 ? ' active' : '') + '" data-importance="2">⭐⭐</button>';
+  html += '<button type="button" class="starFilterBtn' + (selectedImportance === 1 ? ' active' : '') + '" data-importance="1">⭐</button>';
+  html += '<button type="button" class="starFilterBtn' + (selectedImportance === 0 ? ' active' : '') + '" data-importance="0">なし</button>';
+  return html;
+}
 function renderSubjectTabs() {
   const html = renderSubjectTabsHtml();
   subjectTabsStudy.innerHTML = html;
@@ -1221,6 +1239,10 @@ function renderSubjectTabs() {
   starTabsStudy.innerHTML = starHtml;
   starTabsMemorized.innerHTML = starHtml;
   starTabsQuiz.innerHTML = starHtml;
+  const importanceHtml = renderImportanceTabsHtml();
+  importanceTabsStudy.innerHTML = importanceHtml;
+  importanceTabsMemorized.innerHTML = importanceHtml;
+  importanceTabsQuiz.innerHTML = importanceHtml;
 }
 function filterEntries(data, searchQuery) {
   let result = data;
@@ -1232,6 +1254,9 @@ function filterEntries(data, searchQuery) {
   }
   if (starOnlyFilter) {
     result = result.filter(e => studyLog[e.title] && studyLog[e.title].starred);
+  }
+  if (selectedImportance !== 'all') {
+    result = result.filter(e => (e.importance || 0) === selectedImportance);
   }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -1277,6 +1302,11 @@ function getNextReviewInfo(title) {
   const nextDateStr = formatLocalDate(d);
   return { lastDateStr, count, intervalDays, nextDateStr };
 }
+function buildImportanceStarsHtml(importance) {
+  const n = importance || 0;
+  if (n <= 0) return '';
+  return '<span class="importanceStars">' + '⭐'.repeat(n) + '</span>';
+}
 function buildConfidenceGroupHtml(idx, confidence) {
   return '<div class="confidenceGroup" data-idx="' + idx + '">'
     + '<span class="confBtn confGood' + (confidence === 'good' ? ' active' : '') + '" data-level="good" data-idx="' + idx + '" title="バッチリ">○</span>'
@@ -1301,7 +1331,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const undoBtn = (showUndo && history.length > 0)
     ? '<span class="undoLastBtn2" data-idx="' + idx + '">直前を取消</span>'
     : '';
-  const titleHtml = highlightSearch(escapeHtml(e.title), searchQuery);
+  const titleHtml = buildImportanceStarsHtml(e.importance) + highlightSearch(escapeHtml(e.title), searchQuery);
   const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">' + (starred ? '⭐' : '☆') + '</span>';
   let bodyCellContent;
   if (collapseBody && !expandedBodySet.has(e.title)) {
@@ -1753,9 +1783,20 @@ document.addEventListener('click', (e) => {
     renderQuizPage();
     return;
   }
-  const starTabBtn = e.target.closest('.starFilterBtn');
+  const starTabBtn = e.target.closest('.starFilterBtn[data-star]');
   if (starTabBtn) {
     starOnlyFilter = (starTabBtn.dataset.star === 'only');
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const importanceTabBtn = e.target.closest('.starFilterBtn[data-importance]');
+  if (importanceTabBtn) {
+    const v = importanceTabBtn.dataset.importance;
+    selectedImportance = (v === 'all') ? 'all' : Number(v);
     renderSubjectTabs();
     renderStudyTable(entries);
     renderMemorizedTable(entries);
@@ -1956,7 +1997,7 @@ function renderQuizPage() {
   let html = '<div class="quizCard">';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
-  html += '<div class="quizTitle">' + escapeHtml(e.title) + '</div>';
+  html += '<div class="quizTitle">' + buildImportanceStarsHtml(e.importance) + escapeHtml(e.title) + '</div>';
   if (!quizRevealed) {
     html += '<div class="quizShowBtn" id="quizShowBtn">📖 本文を表示</div>';
   } else {

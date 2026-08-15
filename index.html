@@ -1212,11 +1212,20 @@ async function handleFiles(files) {
     console.error(err);
   }
 }
+const SUBJECT_ORDER = ['憲法', '民法', '刑法', '行政法', '商法', '民事訴訟法', '刑事訴訟法'];
 function getUniqueSubjects() {
   const seen = [];
   entries.forEach(e => {
     const s = e.subject || 'その他';
     if (!seen.includes(s)) seen.push(s);
+  });
+  seen.sort((a, b) => {
+    const ia = SUBJECT_ORDER.indexOf(a);
+    const ib = SUBJECT_ORDER.indexOf(b);
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
   });
   return seen;
 }

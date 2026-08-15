@@ -496,7 +496,7 @@ input[type=file] { display:none; }
 <button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
 </div>
 <div id="studyPage" class="page active">
-<div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。⭐＝苦手フラグ。○バッチリ＝暗記済みへ移動／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
+<div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。😰＝苦手フラグ。○バッチリ＝暗記済みへ移動／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
 <div class="searchBox">
 <input type="text" id="searchInputStudy" placeholder="🔍 タイトル・本文をキーワード検索">
 <span class="searchClearBtn" id="searchClearStudy">クリア</span>
@@ -1237,7 +1237,7 @@ function renderCategoryTabsHtml() {
 }
 function renderStarTabsHtml() {
   let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
-  html += '<button type="button" class="starFilterBtn' + (starOnlyFilter ? ' active' : '') + '" data-star="only">⭐ 苦手のみ</button>';
+  html += '<button type="button" class="starFilterBtn' + (starOnlyFilter ? ' active' : '') + '" data-star="only">😰 苦手のみ</button>';
   return html;
 }
 function renderImportanceTabsHtml() {
@@ -1353,7 +1353,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     ? '<span class="undoLastBtn2" data-idx="' + idx + '">直前を取消</span>'
     : '';
   const titleHtml = buildImportanceStarsHtml(e.importance) + highlightSearch(escapeHtml(e.title), searchQuery);
-  const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">' + (starred ? '⭐' : '☆') + '</span>';
+  const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">😰</span>';
   let bodyCellContent;
   if (collapseBody && !expandedBodySet.has(e.title)) {
     bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>';
@@ -1725,7 +1725,7 @@ function toggleStar(idx) {
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
   saveStudyLog();
-  status.textContent = studyLog[title].starred ? '⭐ 「' + title + '」を苦手フラグに追加しました。' : '「' + title + '」の苦手フラグを外しました。';
+  status.textContent = studyLog[title].starred ? '😰 「' + title + '」を苦手フラグに追加しました。' : '「' + title + '」の苦手フラグを外しました。';
   renderStudyTable(entries);
   renderMemorizedTable(entries);
 }
@@ -1936,7 +1936,7 @@ downloadLogBtn.addEventListener('click', () => {
     const lastDate = history.length ? history[history.length - 1] : '';
     const info = getNextReviewInfo(e.title);
     const confLabel = log.confidence === 'good' ? 'バッチリ' : (log.confidence === 'unsure' ? 'あやしい' : (log.confidence === 'bad' ? 'ダメ' : ''));
-    return [e.subject || '', e.category || '', e.title, history.length, lastDate, info ? info.nextDateStr : '', confLabel, log.starred ? '⭐' : ''];
+    return [e.subject || '', e.category || '', e.title, history.length, lastDate, info ? info.nextDateStr : '', confLabel, log.starred ? '😰' : ''];
   });
   const escapeCsv = v => {
     if (v == null) v = '';

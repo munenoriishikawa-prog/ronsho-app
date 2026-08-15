@@ -344,6 +344,18 @@ input[type=file] { display:none; }
   font-weight: 700;
   box-shadow: 0 3px 10px rgba(0, 87, 231, 0.3);
 }
+.subjectTabSelect {
+  padding: 6px 12px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 87, 231, 0.25);
+  background: #fff;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0057e7;
+  max-width: 100%;
+}
+.subjectTabSelect:hover { background: #eef6ff; }
 .categoryTabs { margin-bottom: 8px; }
 .categoryTabBtn {
   padding: 3px 11px;
@@ -1220,10 +1232,12 @@ function getUniqueCategories() {
 function renderSubjectTabsHtml() {
   const subjects = getUniqueSubjects();
   if (subjects.length <= 1) return '';
-  let html = '<button type="button" class="subjectTabBtn' + (selectedSubject === 'all' ? ' active' : '') + '" data-subject="all">📚 すべて</button>';
+  let html = '<select class="subjectTabSelect">';
+  html += '<option value="all"' + (selectedSubject === 'all' ? ' selected' : '') + '>📚 すべて</option>';
   subjects.forEach(s => {
-    html += '<button type="button" class="subjectTabBtn' + (selectedSubject === s ? ' active' : '') + '" data-subject="' + escapeHtml(s) + '">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</button>';
+    html += '<option value="' + escapeHtml(s) + '"' + (selectedSubject === s ? ' selected' : '') + '>' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</option>';
   });
+  html += '</select>';
   return html;
 }
 function renderCategoryTabsHtml() {
@@ -1776,22 +1790,24 @@ function attachTableClickHandler(wrapEl) {
 }
 attachTableClickHandler(tableWrap);
 attachTableClickHandler(memorizedTableWrap);
-document.addEventListener('click', (e) => {
-  const trendToggleBtn = e.target.closest('.trendToggleBtn');
-  if (trendToggleBtn) {
-    trendMode = trendToggleBtn.dataset.trend;
-    renderTrendChart();
-    return;
-  }
-  const subjectTabBtn = e.target.closest('.subjectTabBtn');
-  if (subjectTabBtn) {
-    selectedSubject = subjectTabBtn.dataset.subject;
+document.addEventListener('change', (e) => {
+  const subjectTabSelect = e.target.closest('.subjectTabSelect');
+  if (subjectTabSelect) {
+    selectedSubject = subjectTabSelect.value;
     selectedCategory = 'all';
     renderSubjectTabs();
     renderStudyTable(entries);
     renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
+    return;
+  }
+});
+document.addEventListener('click', (e) => {
+  const trendToggleBtn = e.target.closest('.trendToggleBtn');
+  if (trendToggleBtn) {
+    trendMode = trendToggleBtn.dataset.trend;
+    renderTrendChart();
     return;
   }
   const categoryTabBtn = e.target.closest('.categoryTabBtn');

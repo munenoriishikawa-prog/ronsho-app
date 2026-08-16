@@ -21,6 +21,8 @@ const starTabsQuiz = document.getElementById('starTabsQuiz');
 const importanceTabsStudy = document.getElementById('importanceTabsStudy');
 const importanceTabsMemorized = document.getElementById('importanceTabsMemorized');
 const importanceTabsQuiz = document.getElementById('importanceTabsQuiz');
+const freqTabsStudy = document.getElementById('freqTabsStudy');
+const freqTabsMemorized = document.getElementById('freqTabsMemorized');
 const searchInputStudy = document.getElementById('searchInputStudy');
 const searchInputMemorized = document.getElementById('searchInputMemorized');
 const searchCountStudy = document.getElementById('searchCountStudy');
@@ -52,6 +54,8 @@ let selectedCsvSubject = 'all';
 let selectedCategory = 'all';
 let starOnlyFilter = false;
 let bookmarkOnlyFilter = false;
+let minYearFrequency = 0;
+let sortByFrequency = false;
 let selectedImportance = 'all';
 let expandedBodySet = new Set();
 let searchQueryStudy = '';
@@ -243,6 +247,8 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   selectedCategory = 'all';
   starOnlyFilter = false;
   bookmarkOnlyFilter = false;
+  minYearFrequency = 0;
+  sortByFrequency = false;
   selectedImportance = 'all';
   expandedBodySet = new Set();
   tableWrap.innerHTML = '';
@@ -427,6 +433,9 @@ function yearStrToPlainText(yearStr) {
 function getYearTokensPlain(yearStr) {
   if (!yearStr) return [];
   return yearStr.split(';').filter(Boolean).map(tokStr => tokStr.split('|')[0]).filter(Boolean);
+}
+function getYearFrequency(e) {
+  return getYearTokensPlain(e.year).length;
 }
 function extractEntries(paraRuns) {
   const out = [];
@@ -648,6 +657,8 @@ async function handleFiles(files) {
     selectedCategory = 'all';
     starOnlyFilter = false;
     bookmarkOnlyFilter = false;
+    minYearFrequency = 0;
+    sortByFrequency = false;
     selectedImportance = 'all';
     expandedBodySet = new Set();
     searchQueryStudy = '';
@@ -725,6 +736,13 @@ function renderImportanceTabsHtml() {
   html += '<button type="button" class="starFilterBtn' + (selectedImportance === 0 ? ' active' : '') + '" data-importance="0">なし</button>';
   return html;
 }
+function renderFreqTabsHtml() {
+  let html = '<button type="button" class="starFilterBtn' + (minYearFrequency === 0 ? ' active' : '') + '" data-freq="0">出題頻度すべて</button>';
+  html += '<button type="button" class="starFilterBtn' + (minYearFrequency === 2 ? ' active' : '') + '" data-freq="2">2回以上出題</button>';
+  html += '<button type="button" class="starFilterBtn' + (minYearFrequency === 3 ? ' active' : '') + '" data-freq="3">3回以上出題</button>';
+  html += '<button type="button" class="starFilterBtn' + (sortByFrequency ? ' active' : '') + '" id="freqSortBtn">🔥頻出順に並び替え</button>';
+  return html;
+}
 function renderSubjectTabs() {
   const html = renderSubjectTabsHtml();
   subjectTabsStudy.innerHTML = html;
@@ -742,6 +760,9 @@ function renderSubjectTabs() {
   importanceTabsStudy.innerHTML = importanceHtml;
   importanceTabsMemorized.innerHTML = importanceHtml;
   importanceTabsQuiz.innerHTML = importanceHtml;
+  const freqHtml = renderFreqTabsHtml();
+  freqTabsStudy.innerHTML = freqHtml;
+  freqTabsMemorized.innerHTML = freqHtml;
 }
 function filterEntries(data, searchQuery) {
   let result = data;
@@ -760,9 +781,15 @@ function filterEntries(data, searchQuery) {
   if (selectedImportance !== 'all') {
     result = result.filter(e => (e.importance || 0) === selectedImportance);
   }
+  if (minYearFrequency > 0) {
+    result = result.filter(e => getYearFrequency(e) >= minYearFrequency);
+  }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     result = result.filter(e => (e.title || '').toLowerCase().includes(q) || (e.body || '').toLowerCase().includes(q));
+  }
+  if (sortByFrequency) {
+    result = result.slice().sort((a, b) => getYearFrequency(b) - getYearFrequency(a));
   }
   return result;
 }
@@ -826,6 +853,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const memorizedSaved = log.memorized || false;
   const starred = log.starred || false;
   const bookmarked = log.bookmarked || false;
+  const memo = log.memo || '';
   const reviewInfo = getNextReviewInfo(e.title);
   const today = todayStr();
   let reviewCell = '-';
@@ -840,6 +868,8 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const titleHtml = buildImportanceStarsHtml(e.importance) + highlightSearch(escapeHtml(e.title), searchQuery);
   const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">😰</span>';
   const bookmarkHtml = '<span class="bookmarkToggle' + (bookmarked ? ' active' : '') + '" data-idx="' + idx + '" title="要修正ブックマーク">🔖</span>';
+  const memoTitle = memo ? ('メモ：' + memo) : 'メモを追加';
+  const memoHtml = '<span class="memoToggle' + (memo ? ' active' : '') + '" data-idx="' + idx + '" title="' + escapeHtml(memoTitle) + '">🗒️</span>';
   let bodyCellContent;
   if (collapseBody && !expandedBodySet.has(e.title)) {
     bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>';
@@ -852,7 +882,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'
     + '<td class="verticalCol subjectCell" data-idx="' + idx + '" title="タップして科目を編集">' + escapeHtml(e.subject || '未設定') + '</td>'
     + '<td class="verticalCol">' + escapeHtml(e.category || (studyLog[e.title] && studyLog[e.title].category) || '') + '</td>'
-    + '<td><div class="titleCellWrap">' + starHtml + bookmarkHtml + '<div class="titleText">' + titleHtml + '</div></div></td>'
+    + '<td><div class="titleCellWrap">' + starHtml + bookmarkHtml + memoHtml + '<div class="titleText">' + titleHtml + '</div></div></td>'
     + '<td>' + bodyCellContent + '</td>'
     + '<td>' + buildYearHtml(e.year) + '</td>'
     + '<td class="countCell">' + history.length + undoBtn + '</td>'
@@ -1256,6 +1286,22 @@ function editSubject(idx) {
   renderStudyTable(entries);
   renderMemorizedTable(entries);
 }
+function editMemo(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const current = (studyLog[ent.title] && studyLog[ent.title].memo) || '';
+  const input = prompt('「' + ent.title + '」のメモ（間違えたポイントなど）を入力してください', current);
+  if (input === null) return;
+  const trimmed = input.trim();
+  if (!studyLog[ent.title]) studyLog[ent.title] = { history: [] };
+  studyLog[ent.title].memo = trimmed;
+  studyLog[ent.title].category = ent.category || studyLog[ent.title].category || '';
+  studyLog[ent.title].subject = ent.subject || studyLog[ent.title].subject || '';
+  saveStudyLog();
+  status.textContent = trimmed ? '📝 「' + ent.title + '」にメモを保存しました。' : '「' + ent.title + '」のメモを削除しました。';
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+}
 function toggleBodyExpand(idx) {
   const ent = entries[idx];
   if (!ent) return;
@@ -1284,6 +1330,12 @@ function attachTableClickHandler(wrapEl) {
     if (bookmarkToggle) {
       e.stopPropagation();
       toggleBookmark(Number(bookmarkToggle.dataset.idx));
+      return;
+    }
+    const memoToggle = e.target.closest('.memoToggle');
+    if (memoToggle) {
+      e.stopPropagation();
+      editMemo(Number(memoToggle.dataset.idx));
       return;
     }
     const subjectCell = e.target.closest('.subjectCell');
@@ -1360,6 +1412,26 @@ document.addEventListener('click', (e) => {
   if (importanceTabBtn) {
     const v = importanceTabBtn.dataset.importance;
     selectedImportance = (v === 'all') ? 'all' : Number(v);
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const freqTabBtn = e.target.closest('.starFilterBtn[data-freq]');
+  if (freqTabBtn) {
+    minYearFrequency = Number(freqTabBtn.dataset.freq);
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const freqSortBtn = e.target.closest('#freqSortBtn');
+  if (freqSortBtn) {
+    sortByFrequency = !sortByFrequency;
     renderSubjectTabs();
     renderStudyTable(entries);
     renderMemorizedTable(entries);
@@ -1594,8 +1666,12 @@ function renderQuizPage() {
   }
   const e = quizPool[quizIndex];
   const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
+  const quizMemo = (studyLog[e.title] && studyLog[e.title].memo) || '';
   let html = '<div class="quizCard">';
-  html += '<span class="quizBookmarkBtn' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="内容修正が必要な論証としてブックマーク">🔖</span>';
+  html += '<div class="quizCardTools">'
+    + '<span class="quizMemoBtn' + (quizMemo ? ' active' : '') + '" id="quizMemoBtn" title="' + escapeHtml(quizMemo ? ('メモ：' + quizMemo) : 'メモを追加') + '">🗒️</span>'
+    + '<span class="quizBookmarkBtn' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="内容修正が必要な論証としてブックマーク">🔖</span>'
+    + '</div>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
   html += '<div class="quizTitle">' + buildImportanceStarsHtml(e.importance) + escapeHtml(e.title) + '</div>';
@@ -1645,6 +1721,13 @@ function renderQuizPage() {
     evt.stopPropagation();
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) toggleBookmark(idx);
+    renderQuizPage();
+  });
+  const memoBtn = document.getElementById('quizMemoBtn');
+  if (memoBtn) memoBtn.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    const idx = entries.findIndex(x => x.title === e.title);
+    if (idx !== -1) editMemo(idx);
     renderQuizPage();
   });
 }

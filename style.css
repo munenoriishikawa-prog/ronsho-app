@@ -253,6 +253,9 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .bookmarkToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .bookmarkToggle:hover { opacity: 0.7; transform: scale(1.2); }
 .bookmarkToggle.active { opacity: 1; }
+.memoToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
+.memoToggle:hover { opacity: 0.7; transform: scale(1.2); }
+.memoToggle.active { opacity: 1; }
 .subjectCell { cursor: pointer; }
 .subjectCell:hover { background: #eef6ff; }
 .titleText { flex: 1; }
@@ -438,17 +441,22 @@ input[type=file] { display:none; }
   max-width: 720px;
   margin: 0 auto;
 }
-.quizBookmarkBtn {
+.quizCardTools {
   position: absolute;
   top: 14px;
   right: 18px;
+  display: flex;
+  gap: 10px;
+}
+.quizBookmarkBtn, .quizMemoBtn {
   cursor: pointer;
   font-size: 22px;
   opacity: 0.3;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.quizBookmarkBtn:hover { opacity: 0.7; transform: scale(1.15); }
+.quizBookmarkBtn:hover, .quizMemoBtn:hover { opacity: 0.7; transform: scale(1.15); }
 .quizBookmarkBtn.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.6)); }
+.quizMemoBtn.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(0, 87, 231, 0.5)); }
 .quizProgress { font-size: 12px; color: #4a6a90; margin-bottom: 10px; }
 .quizMeta { font-size: 12px; color: #4a6a90; margin-bottom: 6px; }
 .quizTitle { font-size: 20px; font-weight: 800; color: #0c2340; margin: 12px 0 20px; line-height: 1.5; }

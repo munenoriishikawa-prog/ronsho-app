@@ -127,19 +127,7 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   white-space: nowrap;
 }
 .progressBarSection { flex: 1; min-width: 220px; }
-.progressBarOuter {
-  background: #d6ebff;
-  border-radius: 999px;
-  height: 14px;
-  overflow: hidden;
-}
-.progressBarInner {
-  height: 100%;
-  background: linear-gradient(90deg, #0057e7, #00c2ff);
-  border-radius: 999px;
-  transition: width 0.6s ease;
-}
-.progressLabel { font-size: 12px; color: #4a6a90; margin-top: 4px; }
+.progressLabel { font-size: 12px; color: #4a6a90; margin-bottom: 4px; }
 .subjectProgressCard {
   background: #fff;
   border-radius: 16px;
@@ -158,29 +146,16 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .subjectProgressHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .subjectProgressName { flex: 0 0 auto; min-width: 110px; }
 .subjectProgressCounts { flex: 1; font-size: 12px; color: #4a6a90; }
-.subjectProgressBarOuter {
-  background: #d6ebff;
-  border-radius: 999px;
-  height: 10px;
-  overflow: hidden;
-}
-.subjectProgressBarInner {
-  height: 100%;
-  background: linear-gradient(90deg, #0057e7, #00c2ff);
-  border-radius: 999px;
-}
 .subjectProgressPct { flex: 0 0 auto; font-weight: 700; color: #0057e7; min-width: 40px; text-align: right; }
-.studyCountTitle { font-size: 12px; color: #4a6a90; margin-top: 8px; margin-bottom: 3px; }
 .studyCountBarOuter {
   display: flex;
   background: #f1f5f9;
   border-radius: 999px;
-  height: 8px;
+  height: 14px;
   overflow: hidden;
-  margin-top: 4px;
 }
 .studyCountSeg { height: 100%; }
-.studyCountLegend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; font-size: 11px; color: #4a6a90; }
+.studyCountLegend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-size: 11px; color: #4a6a90; }
 .studyCountLegendItem { display: inline-flex; align-items: center; gap: 4px; }
 .studyCountDot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .searchBox { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
@@ -690,7 +665,7 @@ function inferSubjectFromCategory(category) {
 }
 const STUDY_COUNT_BUCKETS = ['0', '1', '2', '3', '4+'];
 const STUDY_COUNT_LABELS = { '0': '未学習', '1': '1回', '2': '2回', '3': '3回', '4+': '4回以上' };
-const STUDY_COUNT_COLORS = { '0': '#e2e8f0', '1': '#a8d8ff', '2': '#5fb6ff', '3': '#0057e7', '4+': '#00285c' };
+const STUDY_COUNT_COLORS = { '0': '#94a3b8', '1': '#38bdf8', '2': '#34d399', '3': '#fbbf24', '4+': '#a855f7' };
 function getStudyCount(title) {
   const log = studyLog[title];
   return (log && log.history) ? log.history.length : 0;
@@ -747,16 +722,13 @@ function renderProgressSummary() {
       + '<div class="subjectProgressCounts">合計' + st.total + '件 ／ 暗記' + st.memorized + '件</div>'
       + '<div class="subjectProgressPct">' + p + '%</div>'
       + '</div>'
-      + '<div class="subjectProgressBarOuter"><div class="subjectProgressBarInner" style="width:' + p + '%;"></div></div>'
       + buildStudyCountBarHtml(st.entries)
       + '</div>';
   }).join('');
   el.innerHTML = '<div class="progressCard">'
     + '<div class="progressBigPct">' + pct + '%</div>'
     + '<div class="progressBarSection">'
-    + '<div class="progressBarOuter"><div class="progressBarInner" style="width:' + pct + '%;"></div></div>'
     + '<div class="progressLabel">合計' + total + '件 ／ 暗記済み' + memorizedCount + '件</div>'
-    + '<div class="studyCountTitle">🔁 学習回数の内訳</div>'
     + buildStudyCountBarHtml(filtered)
     + '</div>'
     + '</div>'

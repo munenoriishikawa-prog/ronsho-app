@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v19.2（ランダム出題に苦手フラグを追加）＋過去問ログ</title>
+<title>論証集アプリ v19.3（科目別カードの並び順をホームの科目順に統一）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 body {
@@ -491,7 +491,7 @@ input[type=file] { display:none; }
 </style>
 </head>
 <body>
-<h1>📚 論証集アプリ v19.2</h1>
+<h1>📚 論証集アプリ v19.3</h1>
 <div id="status"></div>
 <div id="progressSummary"></div>
 <div class="tabs">
@@ -735,17 +735,16 @@ function renderProgressSummary() {
   const pct = total > 0 ? Math.round((memorizedCount / total) * 100) : 0;
 
   const subjectStats = {};
-  const subjectOrderList = [];
   entries.forEach(e => {
     const s = e.subject || 'その他';
     if (!subjectStats[s]) {
       subjectStats[s] = { total: 0, memorized: 0, entries: [] };
-      subjectOrderList.push(s);
     }
     subjectStats[s].total++;
     subjectStats[s].entries.push(e);
     if (studyLog[e.title] && studyLog[e.title].memorized) subjectStats[s].memorized++;
   });
+  const subjectOrderList = getUniqueSubjects();
   const subjectHtml = subjectOrderList.map(s => {
     const st = subjectStats[s];
     const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;

@@ -149,18 +149,16 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 }
 .subjectProgressTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 8px; }
 .subjectProgressItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   font-size: 13px;
   color: #2c4a70;
-  padding: 6px 0;
+  padding: 8px 0;
   border-bottom: 1px solid #e6f0fc;
 }
 .subjectProgressItem:last-child { border-bottom: none; }
+.subjectProgressHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .subjectProgressName { flex: 0 0 auto; min-width: 110px; }
+.subjectProgressCounts { flex: 1; font-size: 12px; color: #4a6a90; }
 .subjectProgressBarOuter {
-  flex: 1;
   background: #d6ebff;
   border-radius: 999px;
   height: 10px;
@@ -172,6 +170,19 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   border-radius: 999px;
 }
 .subjectProgressPct { flex: 0 0 auto; font-weight: 700; color: #0057e7; min-width: 40px; text-align: right; }
+.studyCountTitle { font-size: 12px; color: #4a6a90; margin-top: 8px; margin-bottom: 3px; }
+.studyCountBarOuter {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.studyCountSeg { height: 100%; }
+.studyCountLegend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; font-size: 11px; color: #4a6a90; }
+.studyCountLegendItem { display: inline-flex; align-items: center; gap: 4px; }
+.studyCountDot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .searchBox { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 .searchBox input {
   flex: 1;
@@ -677,6 +688,35 @@ const CATEGORY_TO_SUBJECT = { '団体的労使関係法': '労働法', '個別�
 function inferSubjectFromCategory(category) {
   return CATEGORY_TO_SUBJECT[category] || '';
 }
+const STUDY_COUNT_BUCKETS = ['0', '1', '2', '3', '4+'];
+const STUDY_COUNT_LABELS = { '0': '未学習', '1': '1回', '2': '2回', '3': '3回', '4+': '4回以上' };
+const STUDY_COUNT_COLORS = { '0': '#e2e8f0', '1': '#a8d8ff', '2': '#5fb6ff', '3': '#0057e7', '4+': '#00285c' };
+function getStudyCount(title) {
+  const log = studyLog[title];
+  return (log && log.history) ? log.history.length : 0;
+}
+function getStudyCountBuckets(list) {
+  const buckets = { '0': 0, '1': 0, '2': 0, '3': 0, '4+': 0 };
+  list.forEach(e => {
+    const cnt = getStudyCount(e.title);
+    buckets[cnt >= 4 ? '4+' : String(cnt)]++;
+  });
+  return buckets;
+}
+function buildStudyCountBarHtml(list) {
+  const buckets = getStudyCountBuckets(list);
+  const total = list.length;
+  const segHtml = STUDY_COUNT_BUCKETS.map(b => {
+    const w = total > 0 ? (buckets[b] / total * 100) : 0;
+    if (w <= 0) return '';
+    return '<div class="studyCountSeg" style="width:' + w + '%;background:' + STUDY_COUNT_COLORS[b] + ';" title="' + STUDY_COUNT_LABELS[b] + '：' + buckets[b] + '件"></div>';
+  }).join('');
+  const legendHtml = STUDY_COUNT_BUCKETS.map(b => {
+    return '<span class="studyCountLegendItem"><span class="studyCountDot" style="background:' + STUDY_COUNT_COLORS[b] + ';"></span>' + STUDY_COUNT_LABELS[b] + ' ' + buckets[b] + '件</span>';
+  }).join('');
+  return '<div class="studyCountBarOuter">' + segHtml + '</div>'
+    + '<div class="studyCountLegend">' + legendHtml + '</div>';
+}
 function renderProgressSummary() {
   const el = document.getElementById('progressSummary');
   if (!el) return;
@@ -691,30 +731,37 @@ function renderProgressSummary() {
   entries.forEach(e => {
     const s = e.subject || 'その他';
     if (!subjectStats[s]) {
-      subjectStats[s] = { total: 0, memorized: 0 };
+      subjectStats[s] = { total: 0, memorized: 0, entries: [] };
       subjectOrderList.push(s);
     }
     subjectStats[s].total++;
+    subjectStats[s].entries.push(e);
     if (studyLog[e.title] && studyLog[e.title].memorized) subjectStats[s].memorized++;
   });
   const subjectHtml = subjectOrderList.map(s => {
     const st = subjectStats[s];
     const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
     return '<div class="subjectProgressItem">'
+      + '<div class="subjectProgressHeader">'
       + '<div class="subjectProgressName">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</div>'
-      + '<div class="subjectProgressBarOuter"><div class="subjectProgressBarInner" style="width:' + p + '%;"></div></div>'
+      + '<div class="subjectProgressCounts">合計' + st.total + '件 ／ 暗記' + st.memorized + '件</div>'
       + '<div class="subjectProgressPct">' + p + '%</div>'
+      + '</div>'
+      + '<div class="subjectProgressBarOuter"><div class="subjectProgressBarInner" style="width:' + p + '%;"></div></div>'
+      + buildStudyCountBarHtml(st.entries)
       + '</div>';
   }).join('');
   el.innerHTML = '<div class="progressCard">'
     + '<div class="progressBigPct">' + pct + '%</div>'
     + '<div class="progressBarSection">'
     + '<div class="progressBarOuter"><div class="progressBarInner" style="width:' + pct + '%;"></div></div>'
-    + '<div class="progressLabel">暗記済み ' + memorizedCount + ' / ' + total + '件</div>'
+    + '<div class="progressLabel">合計' + total + '件 ／ 暗記済み' + memorizedCount + '件</div>'
+    + '<div class="studyCountTitle">🔁 学習回数の内訳</div>'
+    + buildStudyCountBarHtml(filtered)
     + '</div>'
     + '</div>'
     + '<div class="subjectProgressCard">'
-    + '<div class="subjectProgressTitle">📚 科目別 暗記完了率</div>'
+    + '<div class="subjectProgressTitle">📚 科目別 暗記完了率・学習回数</div>'
     + subjectHtml
     + '</div>';
 }

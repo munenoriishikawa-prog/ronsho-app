@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v19.9（出題頻度フィルタ・メモ機能を追加）＋過去問ログ</title>
+<title>論証集アプリ v20.0（試験までのカウントダウン機能を追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v19.9</h1>
+<h1>📚 論証集アプリ v20.0</h1>
 <div id="status"></div>
 <div id="progressSummary"></div>
 <div class="tabs">
@@ -19,6 +19,7 @@
 <button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
 </div>
 <div id="studyPage" class="page active">
+<div id="countdownCard"></div>
 <div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。😰＝苦手フラグ。○バッチリ＝暗記済みへ移動／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
 <div class="searchBox">
 <input type="text" id="searchInputStudy" placeholder="🔍 タイトル・本文をキーワード検索">

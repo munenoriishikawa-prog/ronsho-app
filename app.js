@@ -30,6 +30,7 @@ const quizPriorityNote = document.getElementById('quizPriorityNote');
 const quizIncludeMemorizedChk = document.getElementById('quizIncludeMemorizedChk');
 const quizOverdueOnlyChk = document.getElementById('quizOverdueOnlyChk');
 const quizExcludeTodayChk = document.getElementById('quizExcludeTodayChk');
+const quizWeakOnlyChk = document.getElementById('quizWeakOnlyChk');
 const ENTRIES_STORAGE_KEY = 'ronshoEntries';
 const ENTRY_TABLE_COLGROUP = '<colgroup>'
   + '<col style="width:6%;">'
@@ -1497,10 +1498,16 @@ function isStudiedToday(e) {
   if (!history || history.length === 0) return false;
   return history[history.length - 1] === todayStr();
 }
+function isWeakEntry(e) {
+  return !!(studyLog[e.title] && studyLog[e.title].starred);
+}
 function buildQuizPool() {
   let pool = filterEntries(entries, '');
   if (quizExcludeTodayChk.checked) {
     pool = pool.filter(e => !isStudiedToday(e));
+  }
+  if (quizWeakOnlyChk.checked) {
+    pool = pool.filter(isWeakEntry);
   }
   quizOverdueMode = quizOverdueOnlyChk.checked;
   if (quizOverdueMode) {
@@ -1538,17 +1545,20 @@ function renderQuizPage() {
     quizArea.innerHTML = '<div class="quizEmpty">「スタート／シャッフルし直す」を押すと出題が始まります。</div>';
     return;
   }
-  const excludeTodayNote = quizExcludeTodayChk.checked ? '（本日学習済みは除外）' : '';
+  const extraNotes = [];
+  if (quizExcludeTodayChk.checked) extraNotes.push('本日学習済みは除外');
+  if (quizWeakOnlyChk.checked) extraNotes.push('😰苦手のみ');
+  const extraNote = extraNotes.length ? '（' + extraNotes.join('・') + '）' : '';
   if (quizPool.length === 0) {
     quizPriorityNote.textContent = '';
     quizArea.innerHTML = quizOverdueMode
-      ? '<div class="quizEmpty">🎉 復習期限が来ている論証はありません' + excludeTodayNote + '。</div>'
-      : '<div class="quizEmpty">出題対象の論証がありません' + excludeTodayNote + '。範囲や「暗記済みも含める」設定を見直してください。</div>';
+      ? '<div class="quizEmpty">🎉 復習期限が来ている論証はありません' + extraNote + '。</div>'
+      : '<div class="quizEmpty">出題対象の論証がありません' + extraNote + '。範囲や「暗記済みも含める」設定を見直してください。</div>';
     return;
   }
   quizPriorityNote.innerHTML = quizOverdueMode
-    ? '⏰ 復習推奨日を過ぎている論点 <strong>' + quizPool.length + '件</strong>' + excludeTodayNote + ' のみを出題しています。'
-    : '📌 学習回数が最も少ない（<strong>' + quizMinCount + '回</strong>）論点 <strong>' + quizPool.length + '件</strong>' + excludeTodayNote + ' のみを出題しています。この回数のものを一通り学習すると、次回はより多く学習した論点が対象から外れ、新しい最少回数のグループが出題されます。';
+    ? '⏰ 復習推奨日を過ぎている論点 <strong>' + quizPool.length + '件</strong>' + extraNote + ' のみを出題しています。'
+    : '📌 学習回数が最も少ない（<strong>' + quizMinCount + '回</strong>）論点 <strong>' + quizPool.length + '件</strong>' + extraNote + ' のみを出題しています。この回数のものを一通り学習すると、次回はより多く学習した論点が対象から外れ、新しい最少回数のグループが出題されます。';
   if (quizIndex >= quizPool.length) {
     quizArea.innerHTML = '<div class="quizCard"><div class="quizFinished">🎉 全' + quizPool.length + '問終了しました！お疲れさまでした。もう一度「スタート／シャッフルし直す」を押すと、更新された学習回数に基づいて次の優先グループが出題されます。</div></div>';
     return;

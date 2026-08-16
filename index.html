@@ -256,6 +256,8 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .starToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .starToggle:hover { opacity: 0.7; transform: scale(1.2); }
 .starToggle.active { opacity: 1; }
+.subjectCell { cursor: pointer; }
+.subjectCell:hover { background: #eef6ff; }
 .titleText { flex: 1; }
 /* --- 学習推移グラフ --- */
 .trendCard { background: #fff; border-radius: 16px; padding: 18px 22px; box-shadow: 0 4px 16px rgba(0, 87, 231, 0.08); margin-bottom: 20px; }
@@ -671,6 +673,10 @@ const SUBJECT_EMOJI = { '民法': '⚖️', '刑法': '🚨', '憲法': '📜', 
 function getSubjectEmoji(subject) {
   return SUBJECT_EMOJI[subject] || '📘';
 }
+const CATEGORY_TO_SUBJECT = { '団体的労使関係法': '労働法', '個別的労働関係法': '労働法', '労働組合法': '労働法' };
+function inferSubjectFromCategory(category) {
+  return CATEGORY_TO_SUBJECT[category] || '';
+}
 function renderProgressSummary() {
   const el = document.getElementById('progressSummary');
   if (!el) return;
@@ -778,6 +784,10 @@ function loadEntries() {
     }
     const resolvedCategory = resolveKeihoCategory(e.subject, e.category);
     if (resolvedCategory !== e.category) { migrated = true; return { ...e, category: resolvedCategory }; }
+    if (!e.subject) {
+      const inferred = inferSubjectFromCategory(e.category);
+      if (inferred) { migrated = true; return { ...e, subject: inferred }; }
+    }
     return e;
   });
   if (migrated) saveEntries();
@@ -1030,7 +1040,8 @@ function extractEntries(paraRuns) {
       }
       const body = bodyLines.join('\n');
       const bodyHtml = buildBodyHtml(bodyRunLines);
-      out.push({ title: title, body: body, bodyHtml: bodyHtml, year: yearStr, category: currentCategory, subject: currentSubject, importance: importance });
+      const resolvedSubject = currentSubject || inferSubjectFromCategory(currentCategory);
+      out.push({ title: title, body: body, bodyHtml: bodyHtml, year: yearStr, category: currentCategory, subject: resolvedSubject, importance: importance });
       continue;
     }
     i++;
@@ -1387,7 +1398,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   }
   return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + '" data-idx="' + idx + '">'
     + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'
-    + '<td class="verticalCol">' + escapeHtml(e.subject || '') + '</td>'
+    + '<td class="verticalCol subjectCell" data-idx="' + idx + '" title="タップして科目を編集">' + escapeHtml(e.subject || '未設定') + '</td>'
     + '<td class="verticalCol">' + escapeHtml(e.category || (studyLog[e.title] && studyLog[e.title].category) || '') + '</td>'
     + '<td><div class="titleCellWrap">' + starHtml + '<div class="titleText">' + titleHtml + '</div></div></td>'
     + '<td>' + bodyCellContent + '</td>'
@@ -1752,6 +1763,21 @@ function toggleStar(idx) {
   renderStudyTable(entries);
   renderMemorizedTable(entries);
 }
+function editSubject(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const knownSubjects = ['民法','刑法','憲法','商法','民事訴訟法','刑事訴訟法','行政法','労働法','実務基礎民事','実務基礎刑事'];
+  const input = prompt('科目を入力してください（例：' + knownSubjects.join('、') + '）', ent.subject || '');
+  if (input === null) return;
+  const trimmed = input.trim();
+  ent.subject = trimmed;
+  if (studyLog[ent.title]) studyLog[ent.title].subject = trimmed;
+  saveEntries();
+  saveStudyLog();
+  status.textContent = '「' + ent.title + '」の科目を「' + (trimmed || '未設定') + '」に変更しました。';
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+}
 function toggleBodyExpand(idx) {
   const ent = entries[idx];
   if (!ent) return;
@@ -1774,6 +1800,12 @@ function attachTableClickHandler(wrapEl) {
     if (starToggle) {
       e.stopPropagation();
       toggleStar(Number(starToggle.dataset.idx));
+      return;
+    }
+    const subjectCell = e.target.closest('.subjectCell');
+    if (subjectCell) {
+      e.stopPropagation();
+      editSubject(Number(subjectCell.dataset.idx));
       return;
     }
     const bodyArea = e.target.closest('.bodyCellArea');

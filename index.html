@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v19.0（データ読込み・出力タブに統合、科目別CSV出力）＋過去問ログ</title>
+<title>論証集アプリ v19.1（ランダム出題を復習期限切れのみに絞込み可能）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 body {
@@ -488,7 +488,7 @@ input[type=file] { display:none; }
 </style>
 </head>
 <body>
-<h1>📚 論証集アプリ v19.0</h1>
+<h1>📚 論証集アプリ v19.1</h1>
 <div id="status"></div>
 <div id="progressSummary"></div>
 <div class="tabs">
@@ -531,6 +531,7 @@ input[type=file] { display:none; }
 <div id="importanceTabsQuiz" class="starFilterTabs"></div>
 <div class="quizControls">
 <label><input type="checkbox" id="quizIncludeMemorizedChk"> 暗記済みも出題に含める</label>
+<label><input type="checkbox" id="quizOverdueOnlyChk"> ⏰ 復習期限が来ているものだけ出題</label>
 <button id="quizStartBtn">🎲 スタート／シャッフルし直す</button>
 </div>
 <div class="quizPriorityNote" id="quizPriorityNote"></div>
@@ -643,6 +644,7 @@ const searchCountMemorized = document.getElementById('searchCountMemorized');
 const quizArea = document.getElementById('quizArea');
 const quizPriorityNote = document.getElementById('quizPriorityNote');
 const quizIncludeMemorizedChk = document.getElementById('quizIncludeMemorizedChk');
+const quizOverdueOnlyChk = document.getElementById('quizOverdueOnlyChk');
 const ENTRIES_STORAGE_KEY = 'ronshoEntries';
 const ENTRY_TABLE_COLGROUP = '<colgroup>'
   + '<col style="width:6%;">'
@@ -672,6 +674,7 @@ let quizIndex = 0;
 let quizRevealed = false;
 let quizStarted = false;
 let quizMinCount = 0;
+let quizOverdueMode = false;
 let trendMode = 'week';
 function formatLocalDate(d) {
   const y = d.getFullYear();
@@ -2096,8 +2099,20 @@ function getStudyCountFor(e) {
   const log = studyLog[e.title];
   return (log && log.history) ? log.history.length : 0;
 }
+function isOverdueEntry(e) {
+  if (studyLog[e.title] && studyLog[e.title].memorized) return false;
+  const info = getNextReviewInfo(e.title);
+  if (!info) return false;
+  return info.nextDateStr <= todayStr();
+}
 function buildQuizPool() {
   let pool = filterEntries(entries, '');
+  quizOverdueMode = quizOverdueOnlyChk.checked;
+  if (quizOverdueMode) {
+    pool = pool.filter(isOverdueEntry);
+    quizMinCount = 0;
+    return shuffleArray(pool);
+  }
   if (!quizIncludeMemorizedChk.checked) {
     pool = pool.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
   }
@@ -2130,10 +2145,14 @@ function renderQuizPage() {
   }
   if (quizPool.length === 0) {
     quizPriorityNote.textContent = '';
-    quizArea.innerHTML = '<div class="quizEmpty">出題対象の論証がありません。範囲や「暗記済みも含める」設定を見直してください。</div>';
+    quizArea.innerHTML = quizOverdueMode
+      ? '<div class="quizEmpty">🎉 復習期限が来ている論証はありません。</div>'
+      : '<div class="quizEmpty">出題対象の論証がありません。範囲や「暗記済みも含める」設定を見直してください。</div>';
     return;
   }
-  quizPriorityNote.innerHTML = '📌 学習回数が最も少ない（<strong>' + quizMinCount + '回</strong>）論点 <strong>' + quizPool.length + '件</strong> のみを出題しています。この回数のものを一通り学習すると、次回はより多く学習した論点が対象から外れ、新しい最少回数のグループが出題されます。';
+  quizPriorityNote.innerHTML = quizOverdueMode
+    ? '⏰ 復習推奨日を過ぎている論点 <strong>' + quizPool.length + '件</strong> のみを出題しています。'
+    : '📌 学習回数が最も少ない（<strong>' + quizMinCount + '回</strong>）論点 <strong>' + quizPool.length + '件</strong> のみを出題しています。この回数のものを一通り学習すると、次回はより多く学習した論点が対象から外れ、新しい最少回数のグループが出題されます。';
   if (quizIndex >= quizPool.length) {
     quizArea.innerHTML = '<div class="quizCard"><div class="quizFinished">🎉 全' + quizPool.length + '問終了しました！お疲れさまでした。もう一度「スタート／シャッフルし直す」を押すと、更新された学習回数に基づいて次の優先グループが出題されます。</div></div>';
     return;

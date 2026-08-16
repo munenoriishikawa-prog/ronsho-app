@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v19.6（Drive同期中にランダム出題が中断される不具合を修正）＋過去問ログ</title>
+<title>論証集アプリ v19.7（ランダム出題に苦手のみ出題フィルタを追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v19.6</h1>
+<h1>📚 論証集アプリ v19.7</h1>
 <div id="status"></div>
 <div id="progressSummary"></div>
 <div class="tabs">
@@ -52,6 +52,7 @@
 <label><input type="checkbox" id="quizIncludeMemorizedChk"> 暗記済みも出題に含める</label>
 <label><input type="checkbox" id="quizOverdueOnlyChk"> ⏰ 復習期限が来ているものだけ出題</label>
 <label><input type="checkbox" id="quizExcludeTodayChk"> 🚫 本日学習済みを除外</label>
+<label><input type="checkbox" id="quizWeakOnlyChk"> 😰 苦手のみ出題</label>
 <button id="quizStartBtn">🎲 スタート／シャッフルし直す</button>
 </div>
 <div class="quizPriorityNote" id="quizPriorityNote"></div>

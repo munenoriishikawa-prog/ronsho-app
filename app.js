@@ -51,6 +51,7 @@ let selectedSubject = 'all';
 let selectedCsvSubject = 'all';
 let selectedCategory = 'all';
 let starOnlyFilter = false;
+let bookmarkOnlyFilter = false;
 let selectedImportance = 'all';
 let expandedBodySet = new Set();
 let searchQueryStudy = '';
@@ -241,6 +242,7 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   selectedCsvSubject = 'all';
   selectedCategory = 'all';
   starOnlyFilter = false;
+  bookmarkOnlyFilter = false;
   selectedImportance = 'all';
   expandedBodySet = new Set();
   tableWrap.innerHTML = '';
@@ -645,6 +647,7 @@ async function handleFiles(files) {
     selectedSubject = 'all';
     selectedCategory = 'all';
     starOnlyFilter = false;
+    bookmarkOnlyFilter = false;
     selectedImportance = 'all';
     expandedBodySet = new Set();
     searchQueryStudy = '';
@@ -710,8 +713,9 @@ function renderCategoryTabsHtml() {
   return html;
 }
 function renderStarTabsHtml() {
-  let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
+  let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter && !bookmarkOnlyFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
   html += '<button type="button" class="starFilterBtn' + (starOnlyFilter ? ' active' : '') + '" data-star="only">😰 苦手のみ</button>';
+  html += '<button type="button" class="starFilterBtn' + (bookmarkOnlyFilter ? ' active' : '') + '" data-star="bookmark">🔖 要修正のみ</button>';
   return html;
 }
 function renderImportanceTabsHtml() {
@@ -749,6 +753,9 @@ function filterEntries(data, searchQuery) {
   }
   if (starOnlyFilter) {
     result = result.filter(e => studyLog[e.title] && studyLog[e.title].starred);
+  }
+  if (bookmarkOnlyFilter) {
+    result = result.filter(e => studyLog[e.title] && studyLog[e.title].bookmarked);
   }
   if (selectedImportance !== 'all') {
     result = result.filter(e => (e.importance || 0) === selectedImportance);
@@ -818,6 +825,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const savedDate = history.length ? history[history.length - 1] : '';
   const memorizedSaved = log.memorized || false;
   const starred = log.starred || false;
+  const bookmarked = log.bookmarked || false;
   const reviewInfo = getNextReviewInfo(e.title);
   const today = todayStr();
   let reviewCell = '-';
@@ -831,6 +839,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     : '';
   const titleHtml = buildImportanceStarsHtml(e.importance) + highlightSearch(escapeHtml(e.title), searchQuery);
   const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">😰</span>';
+  const bookmarkHtml = '<span class="bookmarkToggle' + (bookmarked ? ' active' : '') + '" data-idx="' + idx + '" title="要修正ブックマーク">🔖</span>';
   let bodyCellContent;
   if (collapseBody && !expandedBodySet.has(e.title)) {
     bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>';
@@ -839,11 +848,11 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   } else {
     bodyCellContent = highlightSearch(e.bodyHtml, searchQuery);
   }
-  return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + '" data-idx="' + idx + '">'
+  return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + (bookmarked ? ' bookmarkedRow' : '') + '" data-idx="' + idx + '">'
     + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'
     + '<td class="verticalCol subjectCell" data-idx="' + idx + '" title="タップして科目を編集">' + escapeHtml(e.subject || '未設定') + '</td>'
     + '<td class="verticalCol">' + escapeHtml(e.category || (studyLog[e.title] && studyLog[e.title].category) || '') + '</td>'
-    + '<td><div class="titleCellWrap">' + starHtml + '<div class="titleText">' + titleHtml + '</div></div></td>'
+    + '<td><div class="titleCellWrap">' + starHtml + bookmarkHtml + '<div class="titleText">' + titleHtml + '</div></div></td>'
     + '<td>' + bodyCellContent + '</td>'
     + '<td>' + buildYearHtml(e.year) + '</td>'
     + '<td class="countCell">' + history.length + undoBtn + '</td>'
@@ -1219,6 +1228,19 @@ function toggleStar(idx) {
   renderStudyTable(entries);
   renderMemorizedTable(entries);
 }
+function toggleBookmark(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const title = ent.title;
+  if (!studyLog[title]) studyLog[title] = { history: [] };
+  studyLog[title].bookmarked = !studyLog[title].bookmarked;
+  studyLog[title].category = ent.category || studyLog[title].category || '';
+  studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  saveStudyLog();
+  status.textContent = studyLog[title].bookmarked ? '🔖 「' + title + '」を要修正としてブックマークしました。' : '「' + title + '」のブックマークを外しました。';
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+}
 function editSubject(idx) {
   const ent = entries[idx];
   if (!ent) return;
@@ -1256,6 +1278,12 @@ function attachTableClickHandler(wrapEl) {
     if (starToggle) {
       e.stopPropagation();
       toggleStar(Number(starToggle.dataset.idx));
+      return;
+    }
+    const bookmarkToggle = e.target.closest('.bookmarkToggle');
+    if (bookmarkToggle) {
+      e.stopPropagation();
+      toggleBookmark(Number(bookmarkToggle.dataset.idx));
       return;
     }
     const subjectCell = e.target.closest('.subjectCell');
@@ -1320,6 +1348,7 @@ document.addEventListener('click', (e) => {
   const starTabBtn = e.target.closest('.starFilterBtn[data-star]');
   if (starTabBtn) {
     starOnlyFilter = (starTabBtn.dataset.star === 'only');
+    bookmarkOnlyFilter = (starTabBtn.dataset.star === 'bookmark');
     renderSubjectTabs();
     renderStudyTable(entries);
     renderMemorizedTable(entries);
@@ -1564,7 +1593,9 @@ function renderQuizPage() {
     return;
   }
   const e = quizPool[quizIndex];
+  const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
   let html = '<div class="quizCard">';
+  html += '<span class="quizBookmarkBtn' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="内容修正が必要な論証としてブックマーク">🔖</span>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
   html += '<div class="quizTitle">' + buildImportanceStarsHtml(e.importance) + escapeHtml(e.title) + '</div>';
@@ -1607,6 +1638,13 @@ function renderQuizPage() {
   if (weakBtn) weakBtn.addEventListener('click', () => {
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) toggleStar(idx);
+    renderQuizPage();
+  });
+  const bookmarkBtn = document.getElementById('quizBookmarkBtn');
+  if (bookmarkBtn) bookmarkBtn.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    const idx = entries.findIndex(x => x.title === e.title);
+    if (idx !== -1) toggleBookmark(idx);
     renderQuizPage();
   });
 }

@@ -764,7 +764,7 @@ function highlightSearch(html, query) {
   const re = new RegExp('(' + escapedQuery + ')', 'ig');
   return html.replace(re, '<mark class="searchHit">$1</mark>');
 }
-function renderAll() {
+function renderAll(preserveQuiz) {
   renderSubjectTabs();
   renderStudyTable(entries);
   renderMemorizedTable(entries);
@@ -773,7 +773,9 @@ function renderAll() {
   renderCalendar();
   renderTrendChart();
   renderProgressSummary();
-  quizStarted = false;
+  if (!preserveQuiz) {
+    quizStarted = false;
+  }
   renderQuizPage();
   renderPastLogs();
 }
@@ -1579,7 +1581,7 @@ function renderQuizPage() {
     });
   }
   function advanceQuiz(level, sourceEl) {
-    const idx = entries.indexOf(e);
+    const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) setConfidence(idx, level, sourceEl);
     quizIndex++;
     quizRevealed = false;
@@ -1593,7 +1595,7 @@ function renderQuizPage() {
   if (badBtn) badBtn.addEventListener('click', () => advanceQuiz('bad', badBtn));
   const weakBtn = document.getElementById('quizWeakBtn');
   if (weakBtn) weakBtn.addEventListener('click', () => {
-    const idx = entries.indexOf(e);
+    const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) toggleStar(idx);
     renderQuizPage();
   });

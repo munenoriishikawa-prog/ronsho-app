@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v18.9（進捗カードのバー一本化・配色改善）＋過去問ログ</title>
+<title>論証集アプリ v19.0（データ読込み・出力タブに統合、科目別CSV出力）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 body {
@@ -34,7 +34,20 @@ h1 {
 }
 #drop:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 87, 231, 0.15); }
 #drop.dragover { background: #d6ebff; border-color: #0057e7; }
+#drop.dropCompact { padding: 14px 20px; font-size: 13px; margin-bottom: 0; }
 .clearEntriesLink { font-size: 12px; color: #4a6a90; cursor: pointer; text-decoration: underline; margin-bottom: 16px; display: inline-block; }
+.dataIoSection {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 16px rgba(0, 87, 231, 0.08);
+  margin-bottom: 20px;
+}
+.dataIoSectionTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 10px; }
+.dataIoSubRow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 10px; font-size: 13px; }
+.dataIoSubRow .clearEntriesLink { margin-bottom: 0; }
+.csvSubjectFilterRow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #2c4a70; }
+.csvSubjectFilterRow select { padding: 5px 10px; border-radius: 8px; border: 1px solid #9dc4f2; font-size: 13px; }
 .clearEntriesLink:hover { color: #0057e7; }
 table { border-collapse: collapse; width: 100%; background:#fff; font-size: 13px; table-layout: fixed; }
 th, td { border: 1px solid #cfe3ff; padding: 6px 8px; vertical-align: top; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; }
@@ -475,16 +488,7 @@ input[type=file] { display:none; }
 </style>
 </head>
 <body>
-<h1>📚 論証集アプリ v18.9</h1>
-<div id="drop">
-ここにWordファイル（.docx）をドラッグ＆ドロップ、またはクリックして選択（民法・刑法・憲法など複数対応）
-<input type="file" id="fileInput" accept=".docx" multiple>
-</div>
-<span class="clearEntriesLink" id="clearEntriesBtn">🗑 読み込みデータを削除して最初からやり直す</span>
-<span class="deleteByTitleBox" style="margin-left:12px; font-size:13px; display:inline-block;">
-<input type="text" id="deleteTitleInput" placeholder="削除する論証のタイトルを入力" style="width:220px;">
-<button type="button" id="deleteTitleBtn">🗑 タイトルで論証を削除</button>
-</span>
+<h1>📚 論証集アプリ v19.0</h1>
 <div id="status"></div>
 <div id="progressSummary"></div>
 <div class="tabs">
@@ -492,7 +496,7 @@ input[type=file] { display:none; }
 <button class="tabBtn" data-page="memorizedPage">✅ 暗記済み一覧</button>
 <button class="tabBtn" data-page="quizPage">🎲 ランダム出題</button>
 <button class="tabBtn" data-page="calendarPage">📅 学習カレンダー・復習予定</button>
-<button class="tabBtn" data-page="csvPage">📤 CSV出力</button>
+<button class="tabBtn" data-page="csvPage">📥📤 データ読込み・出力</button>
 <button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
 </div>
 <div id="studyPage" class="page active">
@@ -537,14 +541,35 @@ input[type=file] { display:none; }
 <div id="calendarWrap"></div>
 </div>
 <div id="csvPage" class="page">
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">📥 Wordファイルの読み込み</div>
+<div id="drop" class="dropCompact">
+Wordファイル（.docx）をドラッグ＆ドロップ、またはクリックして選択（民法・刑法・憲法など複数対応）
+<input type="file" id="fileInput" accept=".docx" multiple>
+</div>
+<div class="dataIoSubRow">
+<span class="clearEntriesLink" id="clearEntriesBtn">🗑 読み込みデータを削除して最初からやり直す</span>
+<span class="deleteByTitleBox">
+<input type="text" id="deleteTitleInput" placeholder="削除する論証のタイトルを入力" style="width:220px;">
+<button type="button" id="deleteTitleBtn">🗑 タイトルで論証を削除</button>
+</span>
+</div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">📤 CSV出力</div>
 <div style="margin-bottom:20px;">
 <button id="exportLogBtn" class="stackBtn">学習記録を書き出す（別PC用ファイル）</button>
 <button id="importLogBtn" class="stackBtn">学習記録を読み込む</button>
 <input type="file" id="importLogInput" accept=".json" style="display:none;">
 </div>
+<div class="csvSubjectFilterRow">
+<label for="csvSubjectFilter">科目で絞り込み：</label>
+<select id="csvSubjectFilter"></select>
+</div>
 <div id="csvTableWrap"></div>
 <button id="downloadBtn" style="display:none;">CSVをダウンロード（WordHolic形式・暗記済み除外）</button>
 <button id="downloadLogBtn" style="display:none;">学習ログCSVをダウンロード</button>
+</div>
 </div>
 <!-- ▼▼▼ 新規追加：過去問ログ タブ（既存タブ・既存機能には一切影響しません） ▼▼▼ -->
 <div id="pastExamPage" class="page">
@@ -594,6 +619,7 @@ const status = document.getElementById('status');
 const tableWrap = document.getElementById('tableWrap');
 const memorizedTableWrap = document.getElementById('memorizedTableWrap');
 const csvTableWrap = document.getElementById('csvTableWrap');
+const csvSubjectFilter = document.getElementById('csvSubjectFilter');
 const calendarWrap = document.getElementById('calendarWrap');
 const trendWrap = document.getElementById('trendWrap');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -634,6 +660,7 @@ let studyLog = {};
 let manualLog = {};
 let selectedDay = null;
 let selectedSubject = 'all';
+let selectedCsvSubject = 'all';
 let selectedCategory = 'all';
 let starOnlyFilter = false;
 let selectedImportance = 'all';
@@ -823,6 +850,7 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   entries = [];
   localStorage.removeItem(ENTRIES_STORAGE_KEY);
   selectedSubject = 'all';
+  selectedCsvSubject = 'all';
   selectedCategory = 'all';
   starOnlyFilter = false;
   selectedImportance = 'all';
@@ -830,6 +858,7 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   tableWrap.innerHTML = '';
   memorizedTableWrap.innerHTML = '';
   csvTableWrap.innerHTML = '';
+  csvSubjectFilter.innerHTML = '';
   calendarWrap.innerHTML = '';
   trendWrap.innerHTML = '';
   document.getElementById('progressSummary').innerHTML = '';
@@ -960,6 +989,10 @@ document.getElementById('searchClearMemorized').addEventListener('click', () => 
 });
 document.getElementById('quizStartBtn').addEventListener('click', () => {
   startQuiz();
+});
+csvSubjectFilter.addEventListener('change', () => {
+  selectedCsvSubject = csvSubjectFilter.value;
+  renderCsvTable(getCsvFilteredEntries());
 });
 function runListToText(runList) {
   return runList.map(r => r.text).join('');
@@ -1348,7 +1381,8 @@ function renderAll() {
   renderSubjectTabs();
   renderStudyTable(entries);
   renderMemorizedTable(entries);
-  renderCsvTable(entries);
+  renderCsvSubjectFilter();
+  renderCsvTable(getCsvFilteredEntries());
   renderCalendar();
   renderTrendChart();
   renderProgressSummary();
@@ -1466,6 +1500,19 @@ function renderMemorizedTable(data) {
   memorizedTableWrap.innerHTML = html;
   searchCountMemorized.textContent = searchQueryMemorized ? count + '件見つかりました' : '';
   renderProgressSummary();
+}
+function getCsvFilteredEntries() {
+  if (selectedCsvSubject === 'all') return entries;
+  return entries.filter(e => (e.subject || 'その他') === selectedCsvSubject);
+}
+function renderCsvSubjectFilter() {
+  if (!csvSubjectFilter) return;
+  const subjects = getUniqueSubjects();
+  let html = '<option value="all"' + (selectedCsvSubject === 'all' ? ' selected' : '') + '>📚 すべて</option>';
+  subjects.forEach(s => {
+    html += '<option value="' + escapeHtml(s) + '"' + (selectedCsvSubject === s ? ' selected' : '') + '>' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</option>';
+  });
+  csvSubjectFilter.innerHTML = html;
 }
 function renderCsvTable(data) {
   let html = '<table><colgroup><col style="width:14%;"><col style="width:26%;"><col style="width:46%;"><col style="width:14%;"></colgroup><thead><tr><th>Subject（科目）</th><th>FrontText（タイトル）</th><th>BackText（本文）</th><th>Comment（出題年）</th></tr></thead><tbody>';
@@ -1991,7 +2038,7 @@ function toCsv(data) {
   return lines.join('\r\n');
 }
 downloadBtn.addEventListener('click', () => {
-  const filtered = entries.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
+  const filtered = getCsvFilteredEntries().filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
   const csv = toCsv(filtered);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -2002,7 +2049,8 @@ downloadBtn.addEventListener('click', () => {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  status.textContent = '暗記済みを除外し、' + filtered.length + '件をCSV出力しました。';
+  const subjectLabel = selectedCsvSubject === 'all' ? '全科目' : selectedCsvSubject;
+  status.textContent = subjectLabel + '（暗記済み除外）で' + filtered.length + '件をCSV出力しました。';
 });
 downloadLogBtn.addEventListener('click', () => {
   const header = ['科目', '分野', 'タイトル', '学習回数', '最終学習日', '次回推奨復習日', '暗記度', '苦手フラグ'];

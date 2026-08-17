@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v20.0（試験までのカウントダウン機能を追加）＋過去問ログ</title>
+<title>論証集アプリ v20.1（過去問ログに予備／新司の種別を追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v20.0</h1>
+<h1>📚 論証集アプリ v20.1</h1>
 <div id="status"></div>
 <div id="progressSummary"></div>
 <div class="tabs">
@@ -99,6 +99,11 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <!-- ▼▼▼ 新規追加：過去問ログ タブ（既存タブ・既存機能には一切影響しません） ▼▼▼ -->
 <div id="pastExamPage" class="page">
   <div class="past-log-header">
+    <span>種別：</span>
+    <select id="pastExamTypeSelect">
+      <option value="予備試験">予備試験</option>
+      <option value="新司法試験">新司法試験</option>
+    </select>
     <span>科目：</span>
     <input type="text" id="pastSubjectInput" placeholder="例：民法" style="width:110px;" list="subjectSuggestions">
     <span>年度：</span>
@@ -115,12 +120,12 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
   </div>
   <div class="past-log-small-note">
     ・このタブは既存の学習機能（暗記度・カレンダー・クイズなど）とは完全に独立しています。<br>
-    ・入力したログはブラウザのローカルストレージに保存されます。科目＋年度＋回数が同じ場合は上書きされます。
+    ・入力したログはブラウザのローカルストレージに保存されます。種別＋科目＋年度＋回数が同じ場合は上書きされます。
   </div>
   <div class="past-log-progress" id="pastProgressText"></div>
   <div class="past-log-progress-bar-outer"><div class="past-log-progress-bar-inner" id="pastProgressBar"></div></div>
   <table class="past-log-table" id="pastLogTable">
-    <thead><tr><th>科目</th><th>年度</th><th>回数</th><th>解答日</th><th>メモ</th><th>削除</th></tr></thead>
+    <thead><tr><th>種別</th><th>科目</th><th>年度</th><th>回数</th><th>解答日</th><th>メモ</th><th>削除</th></tr></thead>
     <tbody></tbody>
   </table>
 </div>

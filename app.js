@@ -1831,13 +1831,23 @@ renderCountdownCard();
 const PAST_EXAM_LOG_KEY = 'ronshoPastExamLogs_v1';
 
 function loadPastExamLogs() {
+  let logs;
   try {
     const raw = localStorage.getItem(PAST_EXAM_LOG_KEY);
-    return raw ? JSON.parse(raw) : [];
+    logs = raw ? JSON.parse(raw) : [];
   } catch (e) {
     console.error('過去問ログの読み込みに失敗しました:', e);
     return [];
   }
+  let migrated = false;
+  logs = logs.map(l => {
+    if (l.examType) return l;
+    migrated = true;
+    const examType = '予備試験';
+    return { ...l, examType: examType, key: examType + '|' + l.subject + '|' + l.year + '|' + l.round };
+  });
+  if (migrated) savePastExamLogs(logs);
+  return logs;
 }
 
 function savePastExamLogs(logs) {
@@ -1859,6 +1869,9 @@ function renderPastLogs() {
   tbody.innerHTML = '';
 
   logs.sort((a, b) => {
+    const typeA = a.examType || '予備試験';
+    const typeB = b.examType || '予備試験';
+    if (typeA !== typeB) return typeA.localeCompare(typeB, 'ja');
     const subjA = a.subject || '';
     const subjB = b.subject || '';
     if (subjA !== subjB) return subjA.localeCompare(subjB, 'ja');
@@ -1868,14 +1881,15 @@ function renderPastLogs() {
     return (a.round || 0) - (b.round || 0);
   });
 
-  logs.forEach((log, idx) => {
+  logs.forEach((log) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + escapeHtml(log.subject || '') + '</td>'
+    tr.innerHTML = '<td>' + escapeHtml(log.examType || '予備試験') + '</td>'
+      + '<td>' + escapeHtml(log.subject || '') + '</td>'
       + '<td>' + escapeHtml(log.year || '') + '</td>'
       + '<td>' + log.round + '回目</td>'
       + '<td>' + escapeHtml(log.date || '') + '</td>'
-      + '<td contenteditable="true" data-idx="' + idx + '" class="pastMemoCell">' + escapeHtml(log.memo || '') + '</td>'
-      + '<td><button type="button" data-idx="' + idx + '" class="pastDelBtn">削除</button></td>';
+      + '<td contenteditable="true" data-key="' + escapeHtml(log.key) + '" class="pastMemoCell">' + escapeHtml(log.memo || '') + '</td>'
+      + '<td><button type="button" data-key="' + escapeHtml(log.key) + '" class="pastDelBtn">削除</button></td>';
     tbody.appendChild(tr);
   });
 
@@ -1890,6 +1904,7 @@ function initPastExamLogFeature() {
   if (!saveBtn || !table) return;
 
   saveBtn.addEventListener('click', () => {
+    const examType = document.getElementById('pastExamTypeSelect').value;
     const subject = document.getElementById('pastSubjectInput').value.trim();
     const year = document.getElementById('pastYearInput').value.trim();
     const round = Number(document.getElementById('pastRoundSelect').value || '1');
@@ -1901,10 +1916,11 @@ function initPastExamLogFeature() {
     }
 
     const logs = loadPastExamLogs();
-    const key = subject + '|' + year + '|' + round;
+    const key = examType + '|' + subject + '|' + year + '|' + round;
     const existingIdx = logs.findIndex(l => l.key === key);
     const newItem = {
       key: key,
+      examType: examType,
       subject: subject,
       year: year,
       round: round,
@@ -1926,7 +1942,9 @@ function initPastExamLogFeature() {
     const delBtn = e.target.closest('.pastDelBtn');
     if (!delBtn) return;
     const logs = loadPastExamLogs();
-    logs.splice(Number(delBtn.dataset.idx), 1);
+    const idx = logs.findIndex(l => l.key === delBtn.dataset.key);
+    if (idx === -1) return;
+    logs.splice(idx, 1);
     savePastExamLogs(logs);
     renderPastLogs();
   });
@@ -1935,8 +1953,8 @@ function initPastExamLogFeature() {
     const cell = e.target.closest('.pastMemoCell');
     if (!cell) return;
     const logs = loadPastExamLogs();
-    const idx = Number(cell.dataset.idx);
-    if (!logs[idx]) return;
+    const idx = logs.findIndex(l => l.key === cell.dataset.key);
+    if (idx === -1) return;
     logs[idx].memo = cell.textContent.trim();
     savePastExamLogs(logs);
   }, true);

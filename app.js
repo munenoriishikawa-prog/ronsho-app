@@ -114,6 +114,17 @@ function buildStudyCountBarHtml(list) {
   return '<div class="studyCountBarOuter">' + segHtml + '</div>'
     + '<div class="studyCountLegend">' + legendHtml + '</div>';
 }
+function buildSubjectItemHtml(s, st, compact) {
+  const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
+  return '<div class="subjectProgressItem' + (compact ? ' compact' : '') + '">'
+    + '<div class="subjectProgressHeader">'
+    + '<div class="subjectProgressName">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</div>'
+    + '<div class="subjectProgressCounts">合計' + st.total + '件 ／ 暗記' + st.memorized + '件</div>'
+    + '<div class="subjectProgressPct">' + p + '%</div>'
+    + '</div>'
+    + buildStudyCountBarHtml(st.entries)
+    + '</div>';
+}
 function renderProgressSummary() {
   const el = document.getElementById('progressSummary');
   if (!el) return;
@@ -134,18 +145,16 @@ function renderProgressSummary() {
     if (studyLog[e.title] && studyLog[e.title].memorized) subjectStats[s].memorized++;
   });
   const subjectOrderList = getUniqueSubjects();
-  const subjectHtml = subjectOrderList.map(s => {
-    const st = subjectStats[s];
-    const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
-    return '<div class="subjectProgressItem">'
-      + '<div class="subjectProgressHeader">'
-      + '<div class="subjectProgressName">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</div>'
-      + '<div class="subjectProgressCounts">合計' + st.total + '件 ／ 暗記' + st.memorized + '件</div>'
-      + '<div class="subjectProgressPct">' + p + '%</div>'
-      + '</div>'
-      + buildStudyCountBarHtml(st.entries)
-      + '</div>';
-  }).join('');
+  const subjectRows = [];
+  for (let i = 0; i < subjectOrderList.length; i += 2) {
+    const pair = subjectOrderList.slice(i, i + 2);
+    if (pair.length === 2) {
+      subjectRows.push('<div class="subjectProgressGroupRow">' + pair.map(s => buildSubjectItemHtml(s, subjectStats[s], true)).join('') + '</div>');
+    } else {
+      subjectRows.push(buildSubjectItemHtml(pair[0], subjectStats[pair[0]], false));
+    }
+  }
+  const subjectHtml = subjectRows.join('');
   el.innerHTML = '<div class="progressCard">'
     + '<div class="progressBigPct">' + pct + '%</div>'
     + '<div class="progressBarSection">'

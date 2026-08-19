@@ -33,6 +33,7 @@ const quizIncludeMemorizedChk = document.getElementById('quizIncludeMemorizedChk
 const quizOverdueOnlyChk = document.getElementById('quizOverdueOnlyChk');
 const quizExcludeTodayChk = document.getElementById('quizExcludeTodayChk');
 const quizWeakOnlyChk = document.getElementById('quizWeakOnlyChk');
+const quizSkippedOnlyChk = document.getElementById('quizSkippedOnlyChk');
 const ENTRIES_STORAGE_KEY = 'ronshoEntries';
 const ENTRY_TABLE_COLGROUP = '<colgroup>'
   + '<col style="width:6%;">'
@@ -1271,6 +1272,19 @@ function toggleBookmark(idx) {
   renderStudyTable(entries);
   renderMemorizedTable(entries);
 }
+function toggleSkip(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const title = ent.title;
+  if (!studyLog[title]) studyLog[title] = { history: [] };
+  studyLog[title].skipped = !studyLog[title].skipped;
+  studyLog[title].category = ent.category || studyLog[title].category || '';
+  studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  saveStudyLog();
+  status.textContent = studyLog[title].skipped ? '⏭️ 「' + title + '」をスキップしました（ランダム出題から除外）。' : '「' + title + '」のスキップを解除しました。';
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+}
 function editSubject(idx) {
   const ent = entries[idx];
   if (!ent) return;
@@ -1602,6 +1616,9 @@ function isStudiedToday(e) {
 function isWeakEntry(e) {
   return !!(studyLog[e.title] && studyLog[e.title].starred);
 }
+function isSkippedEntry(e) {
+  return !!(studyLog[e.title] && studyLog[e.title].skipped);
+}
 function buildQuizPool() {
   let pool = filterEntries(entries, '');
   if (quizExcludeTodayChk.checked) {
@@ -1609,6 +1626,11 @@ function buildQuizPool() {
   }
   if (quizWeakOnlyChk.checked) {
     pool = pool.filter(isWeakEntry);
+  }
+  if (quizSkippedOnlyChk.checked) {
+    pool = pool.filter(isSkippedEntry);
+  } else {
+    pool = pool.filter(e => !isSkippedEntry(e));
   }
   quizOverdueMode = quizOverdueOnlyChk.checked;
   if (quizOverdueMode) {
@@ -1649,12 +1671,15 @@ function renderQuizPage() {
   const extraNotes = [];
   if (quizExcludeTodayChk.checked) extraNotes.push('本日学習済みは除外');
   if (quizWeakOnlyChk.checked) extraNotes.push('😰苦手のみ');
+  if (quizSkippedOnlyChk.checked) extraNotes.push('⏭️スキップのみ');
   const extraNote = extraNotes.length ? '（' + extraNotes.join('・') + '）' : '';
   if (quizPool.length === 0) {
     quizPriorityNote.textContent = '';
     quizArea.innerHTML = quizOverdueMode
       ? '<div class="quizEmpty">🎉 復習期限が来ている論証はありません' + extraNote + '。</div>'
-      : '<div class="quizEmpty">出題対象の論証がありません' + extraNote + '。範囲や「暗記済みも含める」設定を見直してください。</div>';
+      : (quizSkippedOnlyChk.checked
+        ? '<div class="quizEmpty">⏭️ スキップした論証はありません。</div>'
+        : '<div class="quizEmpty">出題対象の論証がありません' + extraNote + '。範囲や「暗記済みも含める」設定を見直してください。</div>');
     return;
   }
   quizPriorityNote.innerHTML = quizOverdueMode
@@ -1666,11 +1691,13 @@ function renderQuizPage() {
   }
   const e = quizPool[quizIndex];
   const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
+  const isSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
   const quizMemo = (studyLog[e.title] && studyLog[e.title].memo) || '';
   let html = '<div class="quizCard">';
   html += '<div class="quizCardTools">'
     + '<span class="quizMemoBtn' + (quizMemo ? ' active' : '') + '" id="quizMemoBtn" title="' + escapeHtml(quizMemo ? ('メモ：' + quizMemo) : 'メモを追加') + '">🗒️</span>'
     + '<span class="quizBookmarkBtn' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="内容修正が必要な論証としてブックマーク">🔖</span>'
+    + '<span class="quizSkipBtn' + (isSkipped ? ' active' : '') + '" id="quizSkipBtn" title="スキップ（ランダム出題から除外）">⏭️</span>'
     + '</div>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
@@ -1728,6 +1755,18 @@ function renderQuizPage() {
     evt.stopPropagation();
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) editMemo(idx);
+    renderQuizPage();
+  });
+  const skipBtn = document.getElementById('quizSkipBtn');
+  if (skipBtn) skipBtn.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    const wasSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
+    const idx = entries.findIndex(x => x.title === e.title);
+    if (idx !== -1) toggleSkip(idx);
+    if (!wasSkipped) {
+      quizIndex++;
+      quizRevealed = false;
+    }
     renderQuizPage();
   });
 }

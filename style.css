@@ -41,6 +41,32 @@ h1 {
 .dataIoSubRow .clearEntriesLink { margin-bottom: 0; }
 .csvSubjectFilterRow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #2c4a70; }
 .csvSubjectFilterRow select { padding: 5px 10px; border-radius: 8px; border: 1px solid #9dc4f2; font-size: 13px; }
+.dupCheckIntro { font-size: 12px; color: #4a6a90; margin-bottom: 10px; }
+.dupCheckEmpty { font-size: 13px; color: #4a6a90; margin-top: 10px; }
+.dupCheckSummary { font-size: 13px; font-weight: 700; color: #0c2340; margin: 12px 0 8px; }
+.dupPairRow {
+  background: #f7fafe;
+  border: 1px solid #dbe9fb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.dupPairReason { font-size: 12px; font-weight: 700; color: #0057e7; margin-bottom: 8px; }
+.dupPairEntries { display: flex; flex-wrap: wrap; gap: 12px; }
+.dupEntryCol {
+  flex: 1;
+  min-width: 220px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e6f0fc;
+}
+.dupEntryTitle { font-weight: 700; font-size: 13px; color: #0c2340; margin-bottom: 4px; }
+.dupEntryMeta { font-size: 11px; color: #4a6a90; margin-bottom: 8px; }
+.dupDeleteOneBtn { font-size: 12px; padding: 4px 10px; }
+.dupPairActions { display: flex; gap: 10px; margin-top: 10px; }
+.dupDeleteBothBtn { background: #ffe4e4; color: #d32f2f; border: 1px solid #f0c2c2; font-size: 12px; padding: 5px 12px; border-radius: 999px; }
+.dupKeepBothBtn { background: #e8f7ee; color: #1b7a3d; border: 1px solid #bfe6cc; font-size: 12px; padding: 5px 12px; border-radius: 999px; }
 .clearEntriesLink:hover { color: #0057e7; }
 table { border-collapse: collapse; width: 100%; background:#fff; font-size: 13px; table-layout: fixed; }
 th, td { border: 1px solid #cfe3ff; padding: 6px 8px; vertical-align: top; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; }

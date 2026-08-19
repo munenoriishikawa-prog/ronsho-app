@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v20.4（カウントダウン同期・同期内容の種類表示）＋過去問ログ</title>
+<title>論証集アプリ v20.5（ランダム出題にスキップ機能を追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v20.4</h1>
+<h1>📚 論証集アプリ v20.5</h1>
 <div id="status"></div>
 <div id="progressSummary"></div>
 <div class="tabs">
@@ -56,6 +56,7 @@
 <label><input type="checkbox" id="quizOverdueOnlyChk"> ⏰ 復習期限が来ているものだけ出題</label>
 <label><input type="checkbox" id="quizExcludeTodayChk"> 🚫 本日学習済みを除外</label>
 <label><input type="checkbox" id="quizWeakOnlyChk"> 😰 苦手のみ出題</label>
+<label><input type="checkbox" id="quizSkippedOnlyChk"> ⏭️ スキップしたものだけ出題</label>
 <button id="quizStartBtn">🎲 スタート／シャッフルし直す</button>
 </div>
 <div class="quizPriorityNote" id="quizPriorityNote"></div>

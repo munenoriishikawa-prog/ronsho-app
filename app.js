@@ -114,11 +114,6 @@ function buildStudyCountBarHtml(list) {
   return '<div class="studyCountBarOuter">' + segHtml + '</div>'
     + '<div class="studyCountLegend">' + legendHtml + '</div>';
 }
-const SUBJECT_PAIR_GROUPS = [
-  ['憲法', '行政法'],
-  ['民法', '商法', '民事訴訟法'],
-  ['刑法', '刑事訴訟法']
-];
 function buildSubjectItemHtml(s, st, compact) {
   const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
   return '<div class="subjectProgressItem' + (compact ? ' compact' : '') + '">'
@@ -150,17 +145,16 @@ function renderProgressSummary() {
     if (studyLog[e.title] && studyLog[e.title].memorized) subjectStats[s].memorized++;
   });
   const subjectOrderList = getUniqueSubjects();
-  const renderedSubjects = new Set();
-  const subjectHtml = subjectOrderList.map(s => {
-    if (renderedSubjects.has(s)) return '';
-    const group = SUBJECT_PAIR_GROUPS.find(g => g[0] === s && g.every(m => subjectStats[m] && !renderedSubjects.has(m)));
-    if (group) {
-      group.forEach(m => renderedSubjects.add(m));
-      return '<div class="subjectProgressGroupRow">' + group.map(m => buildSubjectItemHtml(m, subjectStats[m], true)).join('') + '</div>';
+  const subjectRows = [];
+  for (let i = 0; i < subjectOrderList.length; i += 2) {
+    const pair = subjectOrderList.slice(i, i + 2);
+    if (pair.length === 2) {
+      subjectRows.push('<div class="subjectProgressGroupRow">' + pair.map(s => buildSubjectItemHtml(s, subjectStats[s], true)).join('') + '</div>');
+    } else {
+      subjectRows.push(buildSubjectItemHtml(pair[0], subjectStats[pair[0]], false));
     }
-    renderedSubjects.add(s);
-    return buildSubjectItemHtml(s, subjectStats[s], false);
-  }).join('');
+  }
+  const subjectHtml = subjectRows.join('');
   el.innerHTML = '<div class="progressCard">'
     + '<div class="progressBigPct">' + pct + '%</div>'
     + '<div class="progressBarSection">'

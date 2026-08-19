@@ -402,6 +402,33 @@ function dupDeleteEntry(target) {
   const idx = entries.indexOf(target);
   if (idx !== -1) entries.splice(idx, 1);
 }
+function dupMergeHistoryArrays(a, b) {
+  const count = x => (x || []).reduce((m, d) => (m[d] = (m[d] || 0) + 1, m), {});
+  const ca = count(a), cb = count(b);
+  const days = [...new Set([...Object.keys(ca), ...Object.keys(cb)])].sort();
+  return days.flatMap(d => Array(Math.max(ca[d] || 0, cb[d] || 0)).fill(d));
+}
+function dupMergeStudyLogInto(keepEntry, dropEntry) {
+  const keepTitle = keepEntry.title, dropTitle = dropEntry.title;
+  if (keepTitle === dropTitle) return false;
+  const dropLog = studyLog[dropTitle];
+  if (!dropLog) return false;
+  const keepLog = studyLog[keepTitle] || { history: [] };
+  studyLog[keepTitle] = {
+    ...keepLog,
+    history: dupMergeHistoryArrays(keepLog.history, dropLog.history),
+    memorized: !!(keepLog.memorized || dropLog.memorized),
+    starred: !!(keepLog.starred || dropLog.starred),
+    bookmarked: !!(keepLog.bookmarked || dropLog.bookmarked),
+    skipped: !!(keepLog.skipped || dropLog.skipped),
+    confidence: keepLog.confidence || dropLog.confidence || null,
+    memo: keepLog.memo || dropLog.memo || '',
+    category: keepLog.category || dropLog.category || keepEntry.category || '',
+    subject: keepLog.subject || dropLog.subject || keepEntry.subject || ''
+  };
+  saveStudyLog();
+  return true;
+}
 function dupRemovePairsReferencing(target) {
   dupCheckPairs = dupCheckPairs.filter(p => p.a !== target && p.b !== target);
 }
@@ -424,13 +451,20 @@ document.getElementById('duplicateResultsWrap').addEventListener('click', (e) =>
     const pair = dupCheckPairs[pairIdx];
     if (!pair) return;
     const target = deleteOneBtn.dataset.side === 'a' ? pair.a : pair.b;
-    if (!confirm('「' + target.title + '」を削除しますか？（学習記録は削除されません）')) return;
+    const kept = target === pair.a ? pair.b : pair.a;
+    const willCarryOver = target.title !== kept.title && !!studyLog[target.title];
+    const confirmMsg = '「' + target.title + '」を削除しますか？'
+      + (willCarryOver ? '（学習記録は「' + kept.title + '」に引き継がれます）' : '（学習記録は削除されません）');
+    if (!confirm(confirmMsg)) return;
+    const carried = dupMergeStudyLogInto(kept, target);
     dupDeleteEntry(target);
     saveEntries();
     dupRemovePairsReferencing(target);
     renderDuplicateResults();
     renderAll();
-    status.textContent = '🗑 「' + target.title + '」を削除しました。';
+    status.textContent = carried
+      ? '🗑 「' + target.title + '」を削除し、学習記録を「' + kept.title + '」に引き継ぎました。'
+      : '🗑 「' + target.title + '」を削除しました。';
     return;
   }
   const deleteBothBtn = e.target.closest('.dupDeleteBothBtn');

@@ -63,6 +63,19 @@ h1 {
 }
 .dupEntryTitle { font-weight: 700; font-size: 13px; color: #0c2340; margin-bottom: 4px; }
 .dupEntryMeta { font-size: 11px; color: #4a6a90; margin-bottom: 8px; }
+.dupEntryBody {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #2c4a70;
+  background: #f7fafe;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 .dupDeleteOneBtn { font-size: 12px; padding: 4px 10px; }
 .dupPairActions { display: flex; gap: 10px; margin-top: 10px; }
 .dupDeleteBothBtn { background: #ffe4e4; color: #d32f2f; border: 1px solid #f0c2c2; font-size: 12px; padding: 5px 12px; border-radius: 999px; }

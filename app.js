@@ -375,6 +375,7 @@ function dupEntryColHtml(e, pairIdx, side) {
   return '<div class="dupEntryCol">'
     + '<div class="dupEntryTitle">' + escapeHtml(e.title) + '</div>'
     + '<div class="dupEntryMeta">' + escapeHtml(e.subject || '未設定') + ' ／ ' + escapeHtml(e.category || '') + ' ／ 出題年: ' + (buildYearHtml(e.year) || 'なし') + '</div>'
+    + '<div class="dupEntryBody">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
     + '<button type="button" class="dupDeleteOneBtn" data-pair-idx="' + pairIdx + '" data-side="' + side + '">🗑 これだけ削除</button>'
     + '</div>';
 }

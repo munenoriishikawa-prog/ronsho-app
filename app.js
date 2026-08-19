@@ -114,7 +114,11 @@ function buildStudyCountBarHtml(list) {
   return '<div class="studyCountBarOuter">' + segHtml + '</div>'
     + '<div class="studyCountLegend">' + legendHtml + '</div>';
 }
-const SUBJECT_PAIR_GROUPS = [['憲法', '行政法']];
+const SUBJECT_PAIR_GROUPS = [
+  ['憲法', '行政法'],
+  ['民法', '商法', '民事訴訟法'],
+  ['刑法', '刑事訴訟法']
+];
 function buildSubjectItemHtml(s, st, compact) {
   const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
   return '<div class="subjectProgressItem' + (compact ? ' compact' : '') + '">'

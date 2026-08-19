@@ -371,10 +371,17 @@ function dupReasonLabel(pair) {
   if (pair.reasons.has('fuzzy')) labels.push('🔍 類似度' + Math.round(pair.score * 100) + '%');
   return labels.join('・');
 }
+function formatImportedAt(iso) {
+  if (!iso) return '不明（旧データ）';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '不明（旧データ）';
+  return formatLocalDate(d) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
 function dupEntryColHtml(e, pairIdx, side) {
   return '<div class="dupEntryCol">'
     + '<div class="dupEntryTitle">' + escapeHtml(e.title) + '</div>'
     + '<div class="dupEntryMeta">' + escapeHtml(e.subject || '未設定') + ' ／ ' + escapeHtml(e.category || '') + ' ／ 出題年: ' + (buildYearHtml(e.year) || 'なし') + '</div>'
+    + '<div class="dupEntryMeta">📥 読込日時: ' + formatImportedAt(e.importedAt) + '</div>'
     + '<div class="dupEntryBody">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
     + '<button type="button" class="dupDeleteOneBtn" data-pair-idx="' + pairIdx + '" data-side="' + side + '">🗑 これだけ削除</button>'
     + '</div>';
@@ -858,6 +865,8 @@ async function handleFiles(files) {
       const parsed = await parseSingleFile(file);
       newEntries = newEntries.concat(parsed);
     }
+    const importedAt = new Date().toISOString();
+    newEntries.forEach(e => { e.importedAt = importedAt; });
     const touchedSubjects = new Set(newEntries.map(e => e.subject || 'その他'));
     const keptEntries = entries.filter(e => !touchedSubjects.has(e.subject || 'その他'));
     entries = keptEntries.concat(newEntries);

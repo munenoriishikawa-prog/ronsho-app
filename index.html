@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v20.5（ランダム出題にスキップ機能を追加）＋過去問ログ</title>
+<title>論証集アプリ v20.6（重複チェック機能を追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v20.5</h1>
+<h1>📚 論証集アプリ v20.6</h1>
 <div id="status"></div>
 <div id="progressSummary"></div>
 <div class="tabs">
@@ -80,6 +80,12 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <button type="button" id="deleteTitleBtn">🗑 タイトルで論証を削除</button>
 </span>
 </div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🔍 重複チェック</div>
+<div class="dupCheckIntro">タイトルまたは本文が完全に一致するもの、およびタイトル・本文・出題年の大部分が似ているものを自動で検出します。</div>
+<button type="button" id="checkDuplicatesBtn">🔍 重複をチェックする</button>
+<div id="duplicateResultsWrap"></div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📤 CSV出力</div>

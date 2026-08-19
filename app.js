@@ -283,6 +283,179 @@ document.getElementById('deleteTitleBtn').addEventListener('click', () => {
   renderAll();
   status.textContent = '🗑 「' + target + '」を削除しました（' + matches.length + '件）。';
 });
+
+/* ▼▼▼ 新規追加：重複チェック機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼ */
+const DUP_FUZZY_THRESHOLD = 0.8;
+const DUP_SUBJECT_BUCKET_LIMIT = 1000;
+let dupCheckPairs = [];
+
+function dupNgrams(str) {
+  const s = (str || '').replace(/\s+/g, '');
+  if (s.length <= 2) return [s];
+  const grams = [];
+  for (let i = 0; i <= s.length - 2; i++) grams.push(s.slice(i, i + 2));
+  return grams;
+}
+function dupJaccard(a, b) {
+  const sa = new Set(dupNgrams(a));
+  const sb = new Set(dupNgrams(b));
+  if (sa.size === 0 && sb.size === 0) return 1;
+  let inter = 0;
+  sa.forEach(g => { if (sb.has(g)) inter++; });
+  const union = sa.size + sb.size - inter;
+  return union > 0 ? inter / union : 1;
+}
+function dupYearSim(yearA, yearB) {
+  const sa = new Set(getYearTokensPlain(yearA));
+  const sb = new Set(getYearTokensPlain(yearB));
+  if (sa.size === 0 && sb.size === 0) return 1;
+  let inter = 0;
+  sa.forEach(t => { if (sb.has(t)) inter++; });
+  const union = sa.size + sb.size - inter;
+  return union > 0 ? inter / union : 1;
+}
+function dupCombinedScore(a, b) {
+  const titleSim = dupJaccard(a.title, b.title);
+  const bodySim = dupJaccard(a.body, b.body);
+  const yearSim = dupYearSim(a.year, b.year);
+  return titleSim * 0.3 + bodySim * 0.5 + yearSim * 0.2;
+}
+function findDuplicatePairs() {
+  const indexOfEntry = new Map(entries.map((e, i) => [e, i]));
+  const pairMap = new Map();
+  const addPair = (a, b, reason, score) => {
+    if (a === b) return;
+    const ia = indexOfEntry.get(a), ib = indexOfEntry.get(b);
+    if (ia == null || ib == null) return;
+    const key = ia < ib ? ia + '-' + ib : ib + '-' + ia;
+    if (!pairMap.has(key)) pairMap.set(key, { a, b, reasons: new Set(), score: 0 });
+    const p = pairMap.get(key);
+    p.reasons.add(reason);
+    if (score != null && score > p.score) p.score = score;
+  };
+
+  const norm = s => (s || '').trim();
+  const titleGroups = new Map();
+  const bodyGroups = new Map();
+  entries.forEach(e => {
+    const t = norm(e.title);
+    if (t) { if (!titleGroups.has(t)) titleGroups.set(t, []); titleGroups.get(t).push(e); }
+    const b = norm(e.body);
+    if (b) { if (!bodyGroups.has(b)) bodyGroups.set(b, []); bodyGroups.get(b).push(e); }
+  });
+  titleGroups.forEach(group => { if (group.length > 1) for (let i = 1; i < group.length; i++) addPair(group[0], group[i], 'title', 1); });
+  bodyGroups.forEach(group => { if (group.length > 1) for (let i = 1; i < group.length; i++) addPair(group[0], group[i], 'body', 1); });
+
+  const bySubject = new Map();
+  entries.forEach(e => {
+    const s = e.subject || 'その他';
+    if (!bySubject.has(s)) bySubject.set(s, []);
+    bySubject.get(s).push(e);
+  });
+  bySubject.forEach(list => {
+    if (list.length > DUP_SUBJECT_BUCKET_LIMIT) return;
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const score = dupCombinedScore(list[i], list[j]);
+        if (score >= DUP_FUZZY_THRESHOLD) addPair(list[i], list[j], 'fuzzy', score);
+      }
+    }
+  });
+
+  return [...pairMap.values()].sort((x, y) => y.score - x.score);
+}
+function dupReasonLabel(pair) {
+  const labels = [];
+  if (pair.reasons.has('title')) labels.push('🏷️ タイトル完全一致');
+  if (pair.reasons.has('body')) labels.push('📄 本文完全一致');
+  if (pair.reasons.has('fuzzy')) labels.push('🔍 類似度' + Math.round(pair.score * 100) + '%');
+  return labels.join('・');
+}
+function dupEntryColHtml(e, pairIdx, side) {
+  return '<div class="dupEntryCol">'
+    + '<div class="dupEntryTitle">' + escapeHtml(e.title) + '</div>'
+    + '<div class="dupEntryMeta">' + escapeHtml(e.subject || '未設定') + ' ／ ' + escapeHtml(e.category || '') + ' ／ 出題年: ' + (buildYearHtml(e.year) || 'なし') + '</div>'
+    + '<button type="button" class="dupDeleteOneBtn" data-pair-idx="' + pairIdx + '" data-side="' + side + '">🗑 これだけ削除</button>'
+    + '</div>';
+}
+function renderDuplicateResults() {
+  const wrap = document.getElementById('duplicateResultsWrap');
+  if (!wrap) return;
+  if (dupCheckPairs.length === 0) {
+    wrap.innerHTML = '<div class="dupCheckEmpty">重複は見つかりませんでした。</div>';
+    return;
+  }
+  const html = dupCheckPairs.map((pair, idx) => {
+    return '<div class="dupPairRow" data-pair-idx="' + idx + '">'
+      + '<div class="dupPairReason">' + dupReasonLabel(pair) + '</div>'
+      + '<div class="dupPairEntries">' + dupEntryColHtml(pair.a, idx, 'a') + dupEntryColHtml(pair.b, idx, 'b') + '</div>'
+      + '<div class="dupPairActions">'
+      + '<button type="button" class="dupDeleteBothBtn" data-pair-idx="' + idx + '">🗑 両方削除</button>'
+      + '<button type="button" class="dupKeepBothBtn" data-pair-idx="' + idx + '">✅ 両方残す</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+  wrap.innerHTML = '<div class="dupCheckSummary">' + dupCheckPairs.length + '件の重複候補が見つかりました。</div>' + html;
+}
+function dupDeleteEntry(target) {
+  const idx = entries.indexOf(target);
+  if (idx !== -1) entries.splice(idx, 1);
+}
+function dupRemovePairsReferencing(target) {
+  dupCheckPairs = dupCheckPairs.filter(p => p.a !== target && p.b !== target);
+}
+document.getElementById('checkDuplicatesBtn').addEventListener('click', () => {
+  const wrap = document.getElementById('duplicateResultsWrap');
+  if (entries.length === 0) {
+    wrap.innerHTML = '<div class="dupCheckEmpty">まずはWordファイルを読み込んでください。</div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="dupCheckEmpty">🔍 チェック中…</div>';
+  setTimeout(() => {
+    dupCheckPairs = findDuplicatePairs();
+    renderDuplicateResults();
+  }, 30);
+});
+document.getElementById('duplicateResultsWrap').addEventListener('click', (e) => {
+  const deleteOneBtn = e.target.closest('.dupDeleteOneBtn');
+  if (deleteOneBtn) {
+    const pairIdx = Number(deleteOneBtn.dataset.pairIdx);
+    const pair = dupCheckPairs[pairIdx];
+    if (!pair) return;
+    const target = deleteOneBtn.dataset.side === 'a' ? pair.a : pair.b;
+    if (!confirm('「' + target.title + '」を削除しますか？（学習記録は削除されません）')) return;
+    dupDeleteEntry(target);
+    saveEntries();
+    dupRemovePairsReferencing(target);
+    renderDuplicateResults();
+    renderAll();
+    status.textContent = '🗑 「' + target.title + '」を削除しました。';
+    return;
+  }
+  const deleteBothBtn = e.target.closest('.dupDeleteBothBtn');
+  if (deleteBothBtn) {
+    const pairIdx = Number(deleteBothBtn.dataset.pairIdx);
+    const pair = dupCheckPairs[pairIdx];
+    if (!pair) return;
+    if (!confirm('「' + pair.a.title + '」と「' + pair.b.title + '」の両方を削除しますか？（学習記録は削除されません）')) return;
+    dupDeleteEntry(pair.a);
+    dupDeleteEntry(pair.b);
+    saveEntries();
+    dupRemovePairsReferencing(pair.a);
+    dupRemovePairsReferencing(pair.b);
+    renderDuplicateResults();
+    renderAll();
+    status.textContent = '🗑 2件を削除しました。';
+    return;
+  }
+  const keepBothBtn = e.target.closest('.dupKeepBothBtn');
+  if (keepBothBtn) {
+    const pairIdx = Number(keepBothBtn.dataset.pairIdx);
+    dupCheckPairs.splice(pairIdx, 1);
+    renderDuplicateResults();
+  }
+});
+/* ▲▲▲ 新規追加：重複チェック機能 ここまで ▲▲▲ */
 document.getElementById('exportLogBtn').addEventListener('click', () => {
   const payload = { studyLog: studyLog, manualLog: manualLog };
   const json = JSON.stringify(payload, null, 2);

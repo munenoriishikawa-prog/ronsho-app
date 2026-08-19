@@ -194,6 +194,22 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .subjectProgressName { flex: 0 0 auto; min-width: 110px; }
 .subjectProgressCounts { flex: 1; font-size: 12px; color: #4a6a90; }
 .subjectProgressPct { flex: 0 0 auto; font-weight: 700; color: #0057e7; min-width: 40px; text-align: right; }
+.subjectProgressGroupRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e6f0fc;
+}
+.subjectProgressGroupRow:last-child { border-bottom: none; }
+.subjectProgressGroupRow .subjectProgressItem.compact {
+  flex: 1;
+  min-width: 200px;
+  padding: 0;
+  border-bottom: none;
+}
+.subjectProgressItem.compact .subjectProgressName { min-width: 70px; font-size: 12px; }
+.subjectProgressItem.compact .subjectProgressCounts { font-size: 11px; }
 .countdownCardInner {
   background: #fff;
   border-radius: 16px;

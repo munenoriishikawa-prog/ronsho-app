@@ -114,6 +114,18 @@ function buildStudyCountBarHtml(list) {
   return '<div class="studyCountBarOuter">' + segHtml + '</div>'
     + '<div class="studyCountLegend">' + legendHtml + '</div>';
 }
+const SUBJECT_PAIR_GROUPS = [['憲法', '行政法']];
+function buildSubjectItemHtml(s, st, compact) {
+  const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
+  return '<div class="subjectProgressItem' + (compact ? ' compact' : '') + '">'
+    + '<div class="subjectProgressHeader">'
+    + '<div class="subjectProgressName">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</div>'
+    + '<div class="subjectProgressCounts">合計' + st.total + '件 ／ 暗記' + st.memorized + '件</div>'
+    + '<div class="subjectProgressPct">' + p + '%</div>'
+    + '</div>'
+    + buildStudyCountBarHtml(st.entries)
+    + '</div>';
+}
 function renderProgressSummary() {
   const el = document.getElementById('progressSummary');
   if (!el) return;
@@ -134,17 +146,16 @@ function renderProgressSummary() {
     if (studyLog[e.title] && studyLog[e.title].memorized) subjectStats[s].memorized++;
   });
   const subjectOrderList = getUniqueSubjects();
+  const renderedSubjects = new Set();
   const subjectHtml = subjectOrderList.map(s => {
-    const st = subjectStats[s];
-    const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
-    return '<div class="subjectProgressItem">'
-      + '<div class="subjectProgressHeader">'
-      + '<div class="subjectProgressName">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</div>'
-      + '<div class="subjectProgressCounts">合計' + st.total + '件 ／ 暗記' + st.memorized + '件</div>'
-      + '<div class="subjectProgressPct">' + p + '%</div>'
-      + '</div>'
-      + buildStudyCountBarHtml(st.entries)
-      + '</div>';
+    if (renderedSubjects.has(s)) return '';
+    const group = SUBJECT_PAIR_GROUPS.find(g => g[0] === s && g.every(m => subjectStats[m] && !renderedSubjects.has(m)));
+    if (group) {
+      group.forEach(m => renderedSubjects.add(m));
+      return '<div class="subjectProgressGroupRow">' + group.map(m => buildSubjectItemHtml(m, subjectStats[m], true)).join('') + '</div>';
+    }
+    renderedSubjects.add(s);
+    return buildSubjectItemHtml(s, subjectStats[s], false);
   }).join('');
   el.innerHTML = '<div class="progressCard">'
     + '<div class="progressBigPct">' + pct + '%</div>'

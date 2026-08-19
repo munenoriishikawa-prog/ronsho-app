@@ -547,16 +547,16 @@ input[type=file] { display:none; }
 .quizJudgeRow { display: flex; gap: 12px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
 .quizJudgeRow button { padding: 10px 20px; font-size: 13px; border-radius: 999px; display:flex; align-items:center; gap:6px; }
 .quizJudgeIcon { font-size: 15px; font-weight: 800; width:24px; height:24px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; }
-.quizGoodBtn { background: linear-gradient(135deg, #22c55e, #0ea5e9); color: #fff; border: none; }
-.quizGoodBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color: transparent; font-size: 0; position: relative; }
-.quizGoodBtn .quizJudgeIcon::after { content: ''; width: 13px; height: 13px; border: 3px solid #fff; border-radius: 50%; display: block; box-sizing: border-box; }
-.quizUnsureBtn { background: linear-gradient(135deg, #ffd93d, #ff9f1c); color: #78350f; border: none; }
-.quizUnsureBtn .quizJudgeIcon { background: rgba(255,255,255,0.45); color:#78350f; }
-.quizBadBtn { background: linear-gradient(135deg, #ff6b6b, #d32f2f); color: #fff; border: none; }
-.quizBadBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color:#fff; }
+.quizGoodBtn { background: linear-gradient(135deg, #bbf7d0, #a5e9fa); color: #14532d; border: 1px solid #86e0b0; }
+.quizGoodBtn .quizJudgeIcon { background: rgba(20,83,45,0.12); color: transparent; font-size: 0; position: relative; }
+.quizGoodBtn .quizJudgeIcon::after { content: ''; width: 13px; height: 13px; border: 3px solid #14532d; border-radius: 50%; display: block; box-sizing: border-box; }
+.quizUnsureBtn { background: linear-gradient(135deg, #fef3b0, #fecf94); color: #78350f; border: 1px solid #f3d17a; }
+.quizUnsureBtn .quizJudgeIcon { background: rgba(120,53,15,0.12); color:#78350f; }
+.quizBadBtn { background: linear-gradient(135deg, #fecdd3, #fca5a5); color: #7f1d1d; border: 1px solid #f5a3a3; }
+.quizBadBtn .quizJudgeIcon { background: rgba(127,29,29,0.12); color:#7f1d1d; }
 .quizWeakBtn { background: #fff; color: #78350f; border: 2px solid #ff9f1c; }
 .quizWeakBtn .quizJudgeIcon { background: transparent; font-size: 15px; }
-.quizWeakBtn.active { background: linear-gradient(135deg, #ffb74d, #ff7043); color: #fff; border-color: transparent; }
+.quizWeakBtn.active { background: linear-gradient(135deg, #fed7aa, #fdba74); color: #7c2d12; border-color: #f3b57a; }
 .quizEmpty { color: #4a6a90; font-size: 14px; padding: 30px; }
 .quizFinished { font-size: 16px; font-weight: 700; color: #0c2340; padding: 20px; }
 /* ▼▼▼ 過去問ログ タブ用（新規追加・既存クラスとは無関係） ▼▼▼ */

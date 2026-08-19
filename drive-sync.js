@@ -1,17 +1,175 @@
-(()=>{
-  const CLIENT_ID='1008108195377-3i95ujevlk1keuf02tcitnuikniie9al.apps.googleusercontent.com',SCOPE='https://www.googleapis.com/auth/drive.file',NAME='ronsho-app-sync-v1.json',DRIVE_ID='ronshoDriveSyncFileIdV1',ENTRY_KEY='ronshoEntries';
-  let token='',timer,last='';
-  const read=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(d))}catch(_){return d}},write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-  const getEntries=()=>read(ENTRY_KEY,[]),entryKey=x=>x?.id||[x?.title,x?.body].filter(Boolean).join('|')||JSON.stringify(x),unique=a=>{const m=new Map;for(const x of a||[])m.set(entryKey(x),x);return [...m.values()]};
-  const state=t=>{const e=document.getElementById('driveSyncState');if(e)e.textContent=t};
-  const snapshot=()=>({schemaVersion:3,updatedAt:new Date().toISOString(),entries:getEntries(),studyLog:read('ronshoStudyLog',{}),manualLog:read('ronshoManualLog',{}),pastExamLogs:read('ronshoPastExamLogs_v1',[])});
-  const mergeHistory=(a,b)=>{const count=x=>(x||[]).reduce((m,d)=>(m[d]=(m[d]||0)+1,m),{}),ca=count(a),cb=count(b),days=[...new Set([...Object.keys(ca),...Object.keys(cb)])].sort();return days.flatMap(d=>Array(Math.max(ca[d]||0,cb[d]||0)).fill(d))};
-            const mergeLog=(a,b)=>{const out={...a};for(const [k,v] of Object.entries(b||{})){const o=out[k]||{};out[k]={...o,...v,history:mergeHistory(o.history,v.history),memorized:!!(o.memorized||v.memorized),starred:!!(o.starred||v.starred),weak:!!(o.weak||v.weak),bookmarked:!!(o.bookmarked||v.bookmarked),confidence:v.confidence||o.confidence||null,memo:v.memo||o.memo||''}}return out};
-  const merge=remote=>{const local=snapshot(),remoteEntries=remote.entries||Object.values(remote.fileBuckets||{}).flat();const mergedEntries=unique([...(remoteEntries||[]),...local.entries]);write(ENTRY_KEY,mergedEntries);try{entries=mergedEntries}catch(_){}const study=mergeLog(remote.studyLog||{},local.studyLog||{});write('ronshoStudyLog',study);const manual={...(remote.manualLog||{})};for(const [d,v] of Object.entries(local.manualLog||{}))manual[d]=unique([...(manual[d]||[]),...v]);write('ronshoManualLog',manual);const exams=new Map([...(remote.pastExamLogs||[]),...(local.pastExamLogs||[])].map(x=>[x.key||JSON.stringify(x),x]));write('ronshoPastExamLogs_v1',[...exams.values()]);if(typeof saveEntries==='function')saveEntries();if(typeof renderAll==='function')renderAll(true);state('統合済み：Drive '+(remoteEntries||[]).length+'件／このPC '+local.entries.length+'件／統合後 '+mergedEntries.length+'件');return snapshot()};
-  async function fileId(){let i=localStorage.getItem(DRIVE_ID);if(i)return i;const q=encodeURIComponent("name = '"+NAME+"' and trashed = false");const r=await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id)',{headers:{Authorization:'Bearer '+token}});const files=(await r.json()).files||[];i=files[0]?.id;if(i)localStorage.setItem(DRIVE_ID,i);return i}
-  async function push(data=snapshot()){if(!token)return;const i=await fileId(),b='ronsho',meta=JSON.stringify(i?{name:NAME}:{name:NAME,mimeType:'application/json'}),body='--'+b+'\r\nContent-Type: application/json\r\n\r\n'+meta+'\r\n--'+b+'\r\nContent-Type: application/json\r\n\r\n'+JSON.stringify(data)+'\r\n--'+b+'--',url=i?'https://www.googleapis.com/upload/drive/v3/files/'+i+'?uploadType=multipart':'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',r=await fetch(url,{method:i?'PATCH':'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'multipart/related; boundary='+b},body});if(!r.ok)throw Error('Driveへの保存に失敗しました');const out=await r.json();localStorage.setItem(DRIVE_ID,out.id||i);last=JSON.stringify(snapshot());state('同期済み：'+data.entries.length+'件 '+new Date().toLocaleTimeString())}
-  async function syncMerged(){const i=await fileId();let data=snapshot();if(i){const x=await fetch('https://www.googleapis.com/drive/v3/files/'+i+'?alt=media',{headers:{Authorization:'Bearer '+token}});if(x.ok)data=merge(await x.json())}await push(data)}
-  const queue=()=>{clearTimeout(timer);timer=setTimeout(()=>syncMerged().catch(e=>state(e.message)),1200)};
-  async function connect(prompt='consent'){if(prompt)state('Googleログインを開いています…');if(!window.google){await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=ok;s.onerror=no;document.head.appendChild(s)})}google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPE,callback:async r=>{if(r.error){if(!prompt)state('未接続');else state('認証に失敗しました');return}token=r.access_token;localStorage.setItem('ronshoDriveSyncAuthorizedV1','1');try{await syncMerged()}catch(e){state(e.message)}}}).requestAccessToken({prompt})}
-  window.addEventListener('load',()=>{const old=document.getElementById('driveSyncPanel');if(old)old.remove();const p=document.createElement('div');p.id='driveSyncPanel';p.style.cssText='margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70';p.innerHTML='<b>☁️ Google Drive同期</b> <button id="driveConnectBtn" type="button">Google Driveに接続</button> <button id="driveNowBtn" type="button">今すぐ同期</button> <span id="driveSyncState">未接続</span>';status.after(p);document.getElementById('driveConnectBtn').onclick=()=>connect('consent');document.getElementById('driveNowBtn').onclick=async()=>{try{if(token){await syncMerged()}else{await connect(localStorage.getItem('ronshoDriveSyncAuthorizedV1')==='1'?'':'consent')}}catch(e){state(e.message)}};if(localStorage.getItem('ronshoDriveSyncAuthorizedV1')==='1'){connect('').catch(()=>{})}setInterval(()=>{if(token){const n=JSON.stringify(snapshot());if(n!==last)queue()}},3000)})
+(() => {
+  const CLIENT_ID = '1008108195377-3i95ujevlk1keuf02tcitnuikniie9al.apps.googleusercontent.com';
+  const SCOPE = 'https://www.googleapis.com/auth/drive.file';
+  const NAME = 'ronsho-app-sync-v1.json';
+  const DRIVE_ID = 'ronshoDriveSyncFileIdV1';
+  const ENTRY_KEY = 'ronshoEntries';
+  const STUDYLOG_KEY = 'ronshoStudyLog';
+  const MANUALLOG_KEY = 'ronshoManualLog';
+  const PASTEXAM_KEY = 'ronshoPastExamLogs_v1';
+  const COUNTDOWN_KEY = 'ronshoCountdowns_v1';
+  let token = '', timer, last = '';
+
+  const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
+  const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  const getEntries = () => read(ENTRY_KEY, []);
+  const entryKey = x => x?.id || [x?.title, x?.body].filter(Boolean).join('|') || JSON.stringify(x);
+  const unique = a => { const m = new Map(); for (const x of a || []) m.set(entryKey(x), x); return [...m.values()] };
+  const state = t => { const e = document.getElementById('driveSyncState'); if (e) e.textContent = t };
+
+  const stableStringify = v => {
+    if (v === null || typeof v !== 'object') return JSON.stringify(v);
+    if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+    return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+  };
+  const sameSet = (a, b) => {
+    const sa = (a || []).map(stableStringify).sort();
+    const sb = (b || []).map(stableStringify).sort();
+    return sa.length === sb.length && sa.every((v, i) => v === sb[i]);
+  };
+  const manualLogChanged = (merged, local) => {
+    const mk = Object.keys(merged || {}), lk = Object.keys(local || {});
+    if (mk.length !== lk.length) return true;
+    return mk.some(k => !(k in local) || !sameSet(merged[k], local[k]));
+  };
+
+  const snapshot = () => ({
+    schemaVersion: 3,
+    updatedAt: new Date().toISOString(),
+    entries: getEntries(),
+    studyLog: read(STUDYLOG_KEY, {}),
+    manualLog: read(MANUALLOG_KEY, {}),
+    pastExamLogs: read(PASTEXAM_KEY, []),
+    countdowns: read(COUNTDOWN_KEY, [])
+  });
+
+  const mergeHistory = (a, b) => {
+    const count = x => (x || []).reduce((m, d) => (m[d] = (m[d] || 0) + 1, m), {});
+    const ca = count(a), cb = count(b);
+    const days = [...new Set([...Object.keys(ca), ...Object.keys(cb)])].sort();
+    return days.flatMap(d => Array(Math.max(ca[d] || 0, cb[d] || 0)).fill(d));
+  };
+  const mergeLog = (a, b) => {
+    const out = { ...a };
+    for (const [k, v] of Object.entries(b || {})) {
+      const o = out[k] || {};
+      out[k] = { ...o, ...v, history: mergeHistory(o.history, v.history), memorized: !!(o.memorized || v.memorized), starred: !!(o.starred || v.starred), weak: !!(o.weak || v.weak), bookmarked: !!(o.bookmarked || v.bookmarked), confidence: v.confidence || o.confidence || null, memo: v.memo || o.memo || '' };
+    }
+    return out;
+  };
+
+  let lastChanged = [];
+
+  const merge = remote => {
+    const local = snapshot();
+    lastChanged = [];
+
+    const remoteEntries = remote.entries || Object.values(remote.fileBuckets || {}).flat();
+    const mergedEntries = unique([...(remoteEntries || []), ...local.entries]);
+    if (!sameSet(mergedEntries, local.entries)) lastChanged.push('論証データ');
+    write(ENTRY_KEY, mergedEntries);
+    try { entries = mergedEntries } catch (_) {}
+
+    const study = mergeLog(remote.studyLog || {}, local.studyLog || {});
+    if (stableStringify(study) !== stableStringify(local.studyLog || {})) lastChanged.push('学習記録');
+    write(STUDYLOG_KEY, study);
+
+    const manual = { ...(remote.manualLog || {}) };
+    for (const [d, v] of Object.entries(local.manualLog || {})) manual[d] = unique([...(manual[d] || []), ...v]);
+    if (manualLogChanged(manual, local.manualLog || {})) lastChanged.push('学習カレンダー記録');
+    write(MANUALLOG_KEY, manual);
+
+    const exams = new Map([...(remote.pastExamLogs || []), ...(local.pastExamLogs || [])].map(x => [x.key || JSON.stringify(x), x]));
+    const mergedExams = [...exams.values()];
+    if (!sameSet(mergedExams, local.pastExamLogs)) lastChanged.push('過去問ログ');
+    write(PASTEXAM_KEY, mergedExams);
+
+    const countdowns = new Map([...(remote.countdowns || []), ...(local.countdowns || [])].map(x => [x.id || JSON.stringify(x), x]));
+    const mergedCountdowns = [...countdowns.values()];
+    if (!sameSet(mergedCountdowns, local.countdowns)) lastChanged.push('カウントダウン');
+    write(COUNTDOWN_KEY, mergedCountdowns);
+
+    if (typeof saveEntries === 'function') saveEntries();
+    if (typeof renderAll === 'function') renderAll(true);
+    if (typeof renderCountdownCard === 'function') renderCountdownCard();
+    return snapshot();
+  };
+
+  async function fileId() {
+    let i = localStorage.getItem(DRIVE_ID);
+    if (i) return i;
+    const q = encodeURIComponent("name = '" + NAME + "' and trashed = false");
+    const r = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id)', { headers: { Authorization: 'Bearer ' + token } });
+    const files = (await r.json()).files || [];
+    i = files[0]?.id;
+    if (i) localStorage.setItem(DRIVE_ID, i);
+    return i;
+  }
+
+  async function push(data = snapshot()) {
+    if (!token) return;
+    const i = await fileId(), b = 'ronsho';
+    const meta = JSON.stringify(i ? { name: NAME } : { name: NAME, mimeType: 'application/json' });
+    const body = '--' + b + '\r\nContent-Type: application/json\r\n\r\n' + meta + '\r\n--' + b + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(data) + '\r\n--' + b + '--';
+    const url = i ? 'https://www.googleapis.com/upload/drive/v3/files/' + i + '?uploadType=multipart' : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    const r = await fetch(url, { method: i ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/related; boundary=' + b }, body });
+    if (!r.ok) throw Error('Driveへの保存に失敗しました');
+    const out = await r.json();
+    localStorage.setItem(DRIVE_ID, out.id || i);
+    last = JSON.stringify(snapshot());
+    const time = new Date().toLocaleTimeString();
+    state(lastChanged.length ? '同期しました：' + lastChanged.join('・') + '（' + time + '）' : '同期済み（' + time + '）');
+  }
+
+  async function syncMerged() {
+    lastChanged = [];
+    const i = await fileId();
+    let data = snapshot();
+    if (i) {
+      const x = await fetch('https://www.googleapis.com/drive/v3/files/' + i + '?alt=media', { headers: { Authorization: 'Bearer ' + token } });
+      if (x.ok) data = merge(await x.json());
+    }
+    await push(data);
+  }
+
+  const queue = () => { clearTimeout(timer); timer = setTimeout(() => syncMerged().catch(e => state(e.message)), 1200) };
+
+  async function connect(prompt = 'consent') {
+    if (prompt) state('Googleログインを開いています…');
+    if (!window.google) {
+      await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = ok; s.onerror = no; document.head.appendChild(s) });
+    }
+    google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID, scope: SCOPE, callback: async r => {
+        if (r.error) { if (!prompt) state('未接続'); else state('認証に失敗しました'); return }
+        token = r.access_token;
+        localStorage.setItem('ronshoDriveSyncAuthorizedV1', '1');
+        try { await syncMerged() } catch (e) { state(e.message) }
+      }
+    }).requestAccessToken({ prompt });
+  }
+
+  window.addEventListener('load', () => {
+    const old = document.getElementById('driveSyncPanel');
+    if (old) old.remove();
+    const p = document.createElement('div');
+    p.id = 'driveSyncPanel';
+    p.style.cssText = 'margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70';
+    p.innerHTML = '<b>☁️ Google Drive同期</b> <button id="driveConnectBtn" type="button">Google Driveに接続</button> <button id="driveNowBtn" type="button">今すぐ同期</button> <span id="driveSyncState">未接続</span>';
+    status.after(p);
+    document.getElementById('driveConnectBtn').onclick = () => connect('consent');
+    document.getElementById('driveNowBtn').onclick = async () => {
+      try {
+        if (token) await syncMerged();
+        else await connect(localStorage.getItem('ronshoDriveSyncAuthorizedV1') === '1' ? '' : 'consent');
+      } catch (e) { state(e.message) }
+    };
+    if (localStorage.getItem('ronshoDriveSyncAuthorizedV1') === '1') connect('').catch(() => {});
+    setInterval(() => {
+      if (token) {
+        const n = JSON.stringify(snapshot());
+        if (n !== last) queue();
+      }
+    }, 3000);
+  });
 })();

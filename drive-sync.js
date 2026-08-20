@@ -154,9 +154,11 @@
     if (old) old.remove();
     const p = document.createElement('div');
     p.id = 'driveSyncPanel';
-    p.style.cssText = 'margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70';
+    p.style.cssText = 'padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70;flex-shrink:0;';
     p.innerHTML = '<b>☁️ Google Drive同期</b> <button id="driveConnectBtn" type="button">Google Driveに接続</button> <button id="driveNowBtn" type="button">今すぐ同期</button> <span id="driveSyncState">未接続</span>';
-    status.after(p);
+    const row = document.getElementById('topStatusRow');
+    if (row) row.insertBefore(p, row.firstChild);
+    else status.after(p);
     document.getElementById('driveConnectBtn').onclick = () => connect('consent');
     document.getElementById('driveNowBtn').onclick = async () => {
       try {

@@ -154,6 +154,9 @@ th {
 .bodyCellArea.collapsedState:hover { background: #fdf2a3; }
 mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; padding: 0 1px; }
 #status { margin: 10px 0; color: #0c2340; font-weight: 600; min-height: 20px; }
+.topStatusRow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; }
+#overallProgressCardWrap { flex: 1; min-width: 260px; }
+#overallProgressCardWrap .progressCard { margin-bottom: 0; height: 100%; box-sizing: border-box; }
 .progressCard {
   background: #fff;
   border-radius: 16px;

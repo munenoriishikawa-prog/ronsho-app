@@ -2491,6 +2491,27 @@ renderSpeechDictList();
 function speechSupported() {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
+let speechWakeLock = null;
+async function acquireSpeechWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    speechWakeLock = await navigator.wakeLock.request('screen');
+    speechWakeLock.addEventListener('release', () => { speechWakeLock = null; });
+  } catch (e) {
+    speechWakeLock = null;
+  }
+}
+function releaseSpeechWakeLock() {
+  if (speechWakeLock) {
+    speechWakeLock.release().catch(() => {});
+    speechWakeLock = null;
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && speechIsPlaying && !speechWakeLock) {
+    acquireSpeechWakeLock();
+  }
+});
 function renderSpeechSubjectSelect() {
   const sel = document.getElementById('speechSubjectSelect');
   if (!sel) return;
@@ -2586,11 +2607,13 @@ function speakCurrentEntry() {
       speakCurrentEntry();
     } else {
       speechIsPlaying = false;
+      releaseSpeechWakeLock();
       renderSpeechStatus('🎉 すべて読み上げが終了しました。');
     }
   };
   utterance.onerror = () => {
     speechIsPlaying = false;
+    releaseSpeechWakeLock();
     renderSpeechStatus('読み上げ中にエラーが発生しました。');
   };
   renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
@@ -2601,6 +2624,7 @@ function startSpeech() {
     renderSpeechStatus('お使いのブラウザは読み上げ機能に対応していません。');
     return;
   }
+  acquireSpeechWakeLock();
   if (window.speechSynthesis.paused && speechQueue.length > 0) {
     window.speechSynthesis.resume();
     speechIsPlaying = true;
@@ -2620,12 +2644,14 @@ function startSpeech() {
 function pauseSpeech() {
   if (!speechSupported()) return;
   window.speechSynthesis.pause();
+  releaseSpeechWakeLock();
   renderSpeechStatus('⏸ 一時停止中');
 }
 function stopSpeech() {
   if (!speechSupported()) return;
   speechIsPlaying = false;
   window.speechSynthesis.cancel();
+  releaseSpeechWakeLock();
   renderSpeechStatus('⏹ 停止しました');
 }
 function speechStep(delta) {

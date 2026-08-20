@@ -2,13 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.4（科目別カードを元の順で2科目ずつ一行に表示）＋過去問ログ</title>
+<title>論証集アプリ v21.7（Drive同期をデータ読込み・出力タブへ移動）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.4</h1>
+<h1>📚 論証集アプリ v21.7</h1>
 <div id="status"></div>
+<div id="topStatusRow" class="topStatusRow">
+<div id="overallProgressCardWrap"></div>
+</div>
 <div id="progressSummary"></div>
 <div class="tabs">
 <button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
@@ -67,6 +70,10 @@
 <div id="calendarWrap"></div>
 </div>
 <div id="csvPage" class="page">
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">☁️ Google Drive同期</div>
+<div id="driveSyncPanelSlot"></div>
+</div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📥 Wordファイルの読み込み</div>
 <div id="drop" class="dropCompact">

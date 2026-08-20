@@ -16,6 +16,7 @@
   const entryKey = x => x?.id || [x?.title, x?.body].filter(Boolean).join('|') || JSON.stringify(x);
   const unique = a => { const m = new Map(); for (const x of a || []) m.set(entryKey(x), x); return [...m.values()] };
   const state = t => { const e = document.getElementById('driveSyncState'); if (e) e.textContent = t };
+  const updateSyncBtnLabel = () => { const b = document.getElementById('driveSyncBtn'); if (b) b.textContent = token ? '🔄 今すぐ同期' : '☁️ Google Driveに接続'; };
 
   const stableStringify = v => {
     if (v === null || typeof v !== 'object') return JSON.stringify(v);
@@ -144,6 +145,7 @@
         if (r.error) { if (!prompt) state('未接続'); else state('認証に失敗しました'); return }
         token = r.access_token;
         localStorage.setItem('ronshoDriveSyncAuthorizedV1', '1');
+        updateSyncBtnLabel();
         try { await syncMerged() } catch (e) { state(e.message) }
       }
     }).requestAccessToken({ prompt });
@@ -154,14 +156,17 @@
     if (old) old.remove();
     const p = document.createElement('div');
     p.id = 'driveSyncPanel';
-    p.style.cssText = 'margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70';
-    p.innerHTML = '<b>☁️ Google Drive同期</b> <button id="driveConnectBtn" type="button">Google Driveに接続</button> <button id="driveNowBtn" type="button">今すぐ同期</button> <span id="driveSyncState">未接続</span>';
-    status.after(p);
-    document.getElementById('driveConnectBtn').onclick = () => connect('consent');
-    document.getElementById('driveNowBtn').onclick = async () => {
+    p.style.cssText = 'font-size:12px;color:#2c4a70;display:flex;align-items:center;gap:8px;';
+    p.innerHTML = '<button id="driveSyncBtn" type="button">☁️ Google Driveに接続</button> <span id="driveSyncState">未接続</span>';
+    const slot = document.getElementById('driveSyncPanelSlot');
+    const row = document.getElementById('topStatusRow');
+    if (slot) slot.appendChild(p);
+    else if (row) row.insertBefore(p, row.firstChild);
+    else status.after(p);
+    document.getElementById('driveSyncBtn').onclick = async () => {
       try {
         if (token) await syncMerged();
-        else await connect(localStorage.getItem('ronshoDriveSyncAuthorizedV1') === '1' ? '' : 'consent');
+        else await connect('consent');
       } catch (e) { state(e.message) }
     };
     if (localStorage.getItem('ronshoDriveSyncAuthorizedV1') === '1') connect('').catch(() => {});

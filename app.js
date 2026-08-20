@@ -127,8 +127,13 @@ function buildSubjectItemHtml(s, st, compact) {
 }
 function renderProgressSummary() {
   const el = document.getElementById('progressSummary');
+  const overallEl = document.getElementById('overallProgressCardWrap');
   if (!el) return;
-  if (entries.length === 0) { el.innerHTML = ''; return; }
+  if (entries.length === 0) {
+    el.innerHTML = '';
+    if (overallEl) overallEl.innerHTML = '';
+    return;
+  }
   const filtered = filterEntries(entries, '');
   const total = filtered.length;
   const memorizedCount = filtered.filter(e => studyLog[e.title] && studyLog[e.title].memorized).length;
@@ -155,14 +160,16 @@ function renderProgressSummary() {
     }
   }
   const subjectHtml = subjectRows.join('');
-  el.innerHTML = '<div class="progressCard">'
-    + '<div class="progressBigPct">' + pct + '%</div>'
-    + '<div class="progressBarSection">'
-    + '<div class="progressLabel">合計' + total + '件 ／ 暗記済み' + memorizedCount + '件</div>'
-    + buildStudyCountBarHtml(filtered)
-    + '</div>'
-    + '</div>'
-    + '<div class="subjectProgressCard">'
+  if (overallEl) {
+    overallEl.innerHTML = '<div class="progressCard">'
+      + '<div class="progressBigPct">' + pct + '%</div>'
+      + '<div class="progressBarSection">'
+      + '<div class="progressLabel">合計' + total + '件 ／ 暗記済み' + memorizedCount + '件</div>'
+      + buildStudyCountBarHtml(filtered)
+      + '</div>'
+      + '</div>';
+  }
+  el.innerHTML = '<div class="subjectProgressCard">'
     + '<div class="subjectProgressTitle">📚 科目別 暗記完了率・学習回数</div>'
     + subjectHtml
     + '</div>';

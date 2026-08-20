@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.14（読み上げ機能に分野の絞り込みを追加）＋過去問ログ</title>
+<title>論証集アプリ v21.15（読み上げ機能のデフォルト設定を変更）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.14</h1>
+<h1>📚 論証集アプリ v21.15</h1>
 <div id="status"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -72,20 +72,20 @@
 <select id="speechSubjectSelect"></select>
 <label for="speechCategorySelect">分野：</label>
 <select id="speechCategorySelect"></select>
-<label><input type="checkbox" id="speechIncludeMemorizedChk" checked> 暗記済みも含める</label>
+<label><input type="checkbox" id="speechIncludeMemorizedChk"> 暗記済みも含める</label>
 <label for="speechRateSelect">速さ：</label>
 <select id="speechRateSelect">
 <option value="0.75">0.75倍</option>
-<option value="1" selected>1倍</option>
+<option value="1">1倍</option>
 <option value="1.25">1.25倍</option>
-<option value="1.5">1.5倍</option>
+<option value="1.5" selected>1.5倍</option>
 <option value="2">2倍</option>
 </select>
 <label for="speechLoopSelect">🔁 ループ：</label>
 <select id="speechLoopSelect">
-<option value="none" selected>なし</option>
+<option value="none">なし</option>
 <option value="one">この論証を繰り返す</option>
-<option value="all">全論証を繰り返す</option>
+<option value="all" selected>全論証を繰り返す</option>
 </select>
 </div>
 <div id="speechStatus" class="speechStatus"></div>

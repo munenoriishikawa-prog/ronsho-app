@@ -1456,8 +1456,9 @@ function renderMemorizedTable(data) {
   renderProgressSummary();
 }
 function getCsvFilteredEntries() {
-  if (selectedCsvSubject === 'all') return entries;
-  return entries.filter(e => (e.subject || 'その他') === selectedCsvSubject);
+  const unmemorized = entries.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
+  if (selectedCsvSubject === 'all') return unmemorized;
+  return unmemorized.filter(e => (e.subject || 'その他') === selectedCsvSubject);
 }
 function renderCsvSubjectFilter() {
   if (!csvSubjectFilter) return;
@@ -2107,7 +2108,7 @@ function toCsv(data) {
   return lines.join('\r\n');
 }
 downloadBtn.addEventListener('click', () => {
-  const filtered = getCsvFilteredEntries().filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
+  const filtered = getCsvFilteredEntries();
   const csv = toCsv(filtered);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

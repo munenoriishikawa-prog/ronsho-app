@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.13（読み上げ機能：再開位置修正・ループ機能を追加）＋過去問ログ</title>
+<title>論証集アプリ v21.14（読み上げ機能に分野の絞り込みを追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.13</h1>
+<h1>📚 論証集アプリ v21.14</h1>
 <div id="status"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -70,6 +70,8 @@
 <div class="speechControls">
 <label for="speechSubjectSelect">科目：</label>
 <select id="speechSubjectSelect"></select>
+<label for="speechCategorySelect">分野：</label>
+<select id="speechCategorySelect"></select>
 <label><input type="checkbox" id="speechIncludeMemorizedChk" checked> 暗記済みも含める</label>
 <label for="speechRateSelect">速さ：</label>
 <select id="speechRateSelect">

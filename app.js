@@ -2411,13 +2411,40 @@ function renderSpeechSubjectSelect() {
   });
   sel.innerHTML = html;
   if ([...sel.options].some(o => o.value === current)) sel.value = current;
+  renderSpeechCategorySelect();
+}
+function getSpeechCategories(subject) {
+  const scoped = subject === 'all' ? entries : entries.filter(e => (e.subject || 'その他') === subject);
+  const seen = [];
+  scoped.forEach(e => {
+    const c = e.category || '未分類';
+    if (!seen.includes(c)) seen.push(c);
+  });
+  return seen;
+}
+function renderSpeechCategorySelect() {
+  const sel = document.getElementById('speechCategorySelect');
+  const subjectSel = document.getElementById('speechSubjectSelect');
+  if (!sel) return;
+  const subject = subjectSel ? subjectSel.value : 'all';
+  const categories = getSpeechCategories(subject);
+  const current = sel.value || 'all';
+  let html = '<option value="all">すべての分野</option>';
+  categories.forEach(c => {
+    html += '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
+  });
+  sel.innerHTML = html;
+  sel.value = [...sel.options].some(o => o.value === current) ? current : 'all';
 }
 function buildSpeechQueue() {
   const sel = document.getElementById('speechSubjectSelect');
   const subject = sel ? sel.value : 'all';
+  const catSel = document.getElementById('speechCategorySelect');
+  const category = catSel ? catSel.value : 'all';
   const includeMemorized = document.getElementById('speechIncludeMemorizedChk').checked;
   return entries.filter(e => {
     if (subject !== 'all' && (e.subject || 'その他') !== subject) return false;
+    if (category !== 'all' && (e.category || '未分類') !== category) return false;
     if (!includeMemorized && studyLog[e.title] && studyLog[e.title].memorized) return false;
     return true;
   });
@@ -2527,6 +2554,14 @@ document.getElementById('speechStopBtn').addEventListener('click', stopSpeech);
 document.getElementById('speechNextBtn').addEventListener('click', () => speechStep(1));
 document.getElementById('speechPrevBtn').addEventListener('click', () => speechStep(-1));
 document.getElementById('speechSubjectSelect').addEventListener('change', () => {
+  stopSpeech();
+  renderSpeechCategorySelect();
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  renderSpeechCurrentCard();
+  renderSpeechStatus('');
+});
+document.getElementById('speechCategorySelect').addEventListener('change', () => {
   stopSpeech();
   speechQueue = buildSpeechQueue();
   speechIndex = 0;

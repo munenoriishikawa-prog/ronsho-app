@@ -2455,8 +2455,15 @@ function speakCurrentEntry() {
   utterance.rate = rate;
   utterance.onend = () => {
     if (!speechIsPlaying) return;
-    if (speechIndex < speechQueue.length - 1) {
+    const loopSel = document.getElementById('speechLoopSelect');
+    const loopMode = loopSel ? loopSel.value : 'none';
+    if (loopMode === 'one') {
+      speakCurrentEntry();
+    } else if (speechIndex < speechQueue.length - 1) {
       speechIndex++;
+      speakCurrentEntry();
+    } else if (loopMode === 'all') {
+      speechIndex = 0;
       speakCurrentEntry();
     } else {
       speechIsPlaying = false;
@@ -2481,8 +2488,12 @@ function startSpeech() {
     renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
     return;
   }
-  speechQueue = buildSpeechQueue();
-  speechIndex = 0;
+  if (speechQueue.length === 0) {
+    speechQueue = buildSpeechQueue();
+    speechIndex = 0;
+  } else {
+    speechIndex = Math.min(speechIndex, speechQueue.length - 1);
+  }
   speechIsPlaying = true;
   renderSpeechCurrentCard();
   speakCurrentEntry();

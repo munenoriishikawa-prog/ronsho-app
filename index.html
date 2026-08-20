@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.12（科目別 読み上げ機能を追加）＋過去問ログ</title>
+<title>論証集アプリ v21.13（読み上げ機能：再開位置修正・ループ機能を追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.12</h1>
+<h1>📚 論証集アプリ v21.13</h1>
 <div id="status"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -78,6 +78,12 @@
 <option value="1.25">1.25倍</option>
 <option value="1.5">1.5倍</option>
 <option value="2">2倍</option>
+</select>
+<label for="speechLoopSelect">🔁 ループ：</label>
+<select id="speechLoopSelect">
+<option value="none" selected>なし</option>
+<option value="one">この論証を繰り返す</option>
+<option value="all">全論証を繰り返す</option>
 </select>
 </div>
 <div id="speechStatus" class="speechStatus"></div>

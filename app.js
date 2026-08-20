@@ -68,6 +68,7 @@ let quizStarted = false;
 let quizMinCount = 0;
 let quizOverdueMode = false;
 let trendMode = 'week';
+let editingEntryIdx = null;
 function formatLocalDate(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -309,6 +310,7 @@ const DUP_FUZZY_THRESHOLD = 0.8;
 const DUP_SUBJECT_BUCKET_LIMIT = 1000;
 const DUP_RESOLVED_KEY = 'ronshoDupResolvedV1';
 const DUP_DIFF_MAX_CELLS = 4000000;
+const DUP_SIG_SEP = String.fromCharCode(1);
 let dupCheckPairs = [];
 let dupResolvedSet = new Set();
 
@@ -324,13 +326,73 @@ function saveDupResolved() {
   localStorage.setItem(DUP_RESOLVED_KEY, JSON.stringify([...dupResolvedSet]));
 }
 function dupEntrySignature(e) {
-  return (e.title || '') + ' ' + (e.body || '');
+  return (e.title || '') + DUP_SIG_SEP + (e.body || '');
 }
 function dupPairSignature(a, b) {
   const sa = dupEntrySignature(a), sb = dupEntrySignature(b);
-  return sa < sb ? sa + '' + sb : sb + '' + sa;
+  return sa < sb ? sa + DUP_SIG_SEP + sb : sb + DUP_SIG_SEP + sa;
 }
 loadDupResolved();
+
+const DUP_ARCHIVE_KEY = 'ronshoDupArchiveV1';
+let dupArchiveList = [];
+function loadDupArchive() {
+  try {
+    const raw = localStorage.getItem(DUP_ARCHIVE_KEY);
+    dupArchiveList = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    dupArchiveList = [];
+  }
+}
+function saveDupArchive() {
+  localStorage.setItem(DUP_ARCHIVE_KEY, JSON.stringify(dupArchiveList));
+}
+loadDupArchive();
+function dupArchiveEntry(target, reasonLabel) {
+  dupArchiveList.unshift({ entry: target, deletedAt: new Date().toISOString(), reason: reasonLabel || '' });
+  saveDupArchive();
+}
+function renderDupArchive() {
+  const wrap = document.getElementById('dupArchiveWrap');
+  if (!wrap) return;
+  if (dupArchiveList.length === 0) {
+    wrap.innerHTML = '<div class="dupCheckEmpty">アーカイブされた論証はありません。</div>';
+    return;
+  }
+  const html = dupArchiveList.map((item, idx) => {
+    const e = item.entry;
+    return '<div class="dupArchiveRow" data-archive-idx="' + idx + '">'
+      + '<div class="dupArchiveInfo">'
+      + '<div class="dupArchiveTitle">' + escapeHtml(e.title) + '</div>'
+      + '<div class="dupArchiveMeta">' + escapeHtml(e.subject || '未設定') + ' ／ 削除理由: ' + escapeHtml(item.reason) + ' ／ 削除日時: ' + formatImportedAt(item.deletedAt) + '</div>'
+      + '</div>'
+      + '<div class="dupArchiveActions">'
+      + '<button type="button" class="dupArchiveRestoreBtn" data-archive-idx="' + idx + '">↩️ 復元</button>'
+      + '<button type="button" class="dupArchivePurgeBtn" data-archive-idx="' + idx + '">🗑 完全に削除</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+  wrap.innerHTML = '<div class="dupCheckSummary">' + dupArchiveList.length + '件のアーカイブがあります。</div>' + html;
+}
+function dupRestoreArchivedEntry(idx) {
+  const item = dupArchiveList[idx];
+  if (!item) return;
+  entries.push(item.entry);
+  dupArchiveList.splice(idx, 1);
+  saveEntries();
+  saveDupArchive();
+  renderDupArchive();
+  renderAll();
+  status.textContent = '↩️ 「' + item.entry.title + '」を復元しました。';
+}
+function dupPurgeArchivedEntry(idx) {
+  const item = dupArchiveList[idx];
+  if (!item) return;
+  if (!confirm('「' + item.entry.title + '」をアーカイブから完全に削除しますか？（元に戻せません）')) return;
+  dupArchiveList.splice(idx, 1);
+  saveDupArchive();
+  renderDupArchive();
+}
 
 function dupNgrams(str) {
   const s = (str || '').replace(/\s+/g, '');
@@ -556,15 +618,22 @@ document.getElementById('duplicateResultsWrap').addEventListener('click', (e) =>
     const confirmMsg = '「' + target.title + '」を削除しますか？'
       + (willCarryOver ? '（学習記録は「' + kept.title + '」に引き継がれます）' : '（学習記録は削除されません）');
     if (!confirm(confirmMsg)) return;
+    const isExactMatch = pair.reasons.has('title') || pair.reasons.has('body');
     const carried = dupMergeStudyLogInto(kept, target);
+    dupArchiveEntry(target, dupReasonLabel(pair));
     dupDeleteEntry(target);
     saveEntries();
+    if (isExactMatch) {
+      dupResolvedSet.add(dupPairSignature(pair.a, pair.b));
+      saveDupResolved();
+    }
     dupRemovePairsReferencing(target);
     renderDuplicateResults();
+    renderDupArchive();
     renderAll();
     status.textContent = carried
-      ? '🗑 「' + target.title + '」を削除し、学習記録を「' + kept.title + '」に引き継ぎました。'
-      : '🗑 「' + target.title + '」を削除しました。';
+      ? '🗑 「' + target.title + '」を削除し、学習記録を「' + kept.title + '」に引き継ぎました（アーカイブに保管済み）。'
+      : '🗑 「' + target.title + '」を削除しました（アーカイブに保管済み）。';
     return;
   }
   const deleteBothBtn = e.target.closest('.dupDeleteBothBtn');
@@ -573,14 +642,23 @@ document.getElementById('duplicateResultsWrap').addEventListener('click', (e) =>
     const pair = dupCheckPairs[pairIdx];
     if (!pair) return;
     if (!confirm('「' + pair.a.title + '」と「' + pair.b.title + '」の両方を削除しますか？（学習記録は削除されません）')) return;
+    const isExactMatch = pair.reasons.has('title') || pair.reasons.has('body');
+    const reasonLabel = dupReasonLabel(pair);
+    dupArchiveEntry(pair.a, reasonLabel);
+    dupArchiveEntry(pair.b, reasonLabel);
     dupDeleteEntry(pair.a);
     dupDeleteEntry(pair.b);
     saveEntries();
+    if (isExactMatch) {
+      dupResolvedSet.add(dupPairSignature(pair.a, pair.b));
+      saveDupResolved();
+    }
     dupRemovePairsReferencing(pair.a);
     dupRemovePairsReferencing(pair.b);
     renderDuplicateResults();
+    renderDupArchive();
     renderAll();
-    status.textContent = '🗑 2件を削除しました。';
+    status.textContent = '🗑 2件を削除しました（アーカイブに保管済み）。';
     return;
   }
   const keepBothBtn = e.target.closest('.dupKeepBothBtn');
@@ -595,6 +673,21 @@ document.getElementById('duplicateResultsWrap').addEventListener('click', (e) =>
     renderDuplicateResults();
   }
 });
+const dupArchiveWrapEl = document.getElementById('dupArchiveWrap');
+if (dupArchiveWrapEl) {
+  dupArchiveWrapEl.addEventListener('click', (e) => {
+    const restoreBtn = e.target.closest('.dupArchiveRestoreBtn');
+    if (restoreBtn) {
+      dupRestoreArchivedEntry(Number(restoreBtn.dataset.archiveIdx));
+      return;
+    }
+    const purgeBtn = e.target.closest('.dupArchivePurgeBtn');
+    if (purgeBtn) {
+      dupPurgeArchivedEntry(Number(purgeBtn.dataset.archiveIdx));
+      return;
+    }
+  });
+}
 /* ▲▲▲ 新規追加：重複チェック機能 ここまで ▲▲▲ */
 document.getElementById('exportLogBtn').addEventListener('click', () => {
   const payload = { studyLog: studyLog, manualLog: manualLog };
@@ -1162,6 +1255,115 @@ function buildConfidenceGroupHtml(idx, confidence) {
     + '<span class="confBtn confBad' + (confidence === 'bad' ? ' active' : '') + '" data-level="bad" data-idx="' + idx + '" title="ダメ">✕</span>'
     + '</div>';
 }
+/* ▼▼▼ 新規追加：論証の直接編集機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼ */
+function getExistingBodyColors() {
+  const colors = new Set();
+  entries.forEach(en => {
+    if (!en.bodyHtml) return;
+    for (const m of en.bodyHtml.matchAll(/color:\s*(#[0-9A-Fa-f]{3,8})/g)) colors.add(m[1].toLowerCase());
+  });
+  return [...colors];
+}
+function editRgbToHex(str) {
+  if (!str) return null;
+  const m = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (m) {
+    const h = n => Number(n).toString(16).padStart(2, '0');
+    return '#' + h(m[1]) + h(m[2]) + h(m[3]);
+  }
+  if (/^#/.test(str)) return str.toLowerCase();
+  return null;
+}
+function sanitizeEditedBodyHtml(container, allowedColors) {
+  let out = '';
+  container.childNodes.forEach(child => {
+    if (child.nodeType === 3) {
+      out += escapeHtml(child.nodeValue || '');
+    } else if (child.nodeType === 1) {
+      const tag = child.tagName.toLowerCase();
+      if (tag === 'br') { out += '<br>'; return; }
+      const inner = sanitizeEditedBodyHtml(child, allowedColors);
+      if (tag === 'div' || tag === 'p') {
+        out += (out ? '<br>' : '') + inner;
+        return;
+      }
+      const hex = child.style ? editRgbToHex(child.style.color) : null;
+      if (hex && allowedColors.has(hex)) {
+        out += '<span style="color:' + hex + '; font-weight:bold;">' + inner + '</span>';
+      } else {
+        out += inner;
+      }
+    }
+  });
+  return out;
+}
+function bodyHtmlToPlainText(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html.replace(/<br\s*\/?>/gi, '\n');
+  return tmp.textContent || '';
+}
+function buildBodyEditorHtml(e, idx) {
+  const colors = getExistingBodyColors();
+  const swatches = colors.map(c => '<span class="editColorSwatch" data-color="' + c + '" style="background:' + c + ';" title="' + c + '"></span>').join('');
+  return '<div class="editBodyWrap">'
+    + '<div class="editColorToolbar">' + swatches + '<span class="editColorClearBtn" title="文字色をクリア">色なし</span></div>'
+    + '<div class="editBodyArea" contenteditable="true" data-idx="' + idx + '">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
+    + '<div class="editActionsRow">'
+    + '<button type="button" class="editSaveBtn" data-idx="' + idx + '">💾 保存</button>'
+    + '<button type="button" class="editCancelBtn" data-idx="' + idx + '">✖ キャンセル</button>'
+    + '</div>'
+    + '</div>';
+}
+function applyBodyEditorColor(color) {
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('foreColor', false, color);
+}
+function saveEntryEdit(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const titleInput = document.querySelector('.editTitleInput[data-idx="' + idx + '"]');
+  const bodyArea = document.querySelector('.editBodyArea[data-idx="' + idx + '"]');
+  if (!titleInput || !bodyArea) return;
+  const newTitle = titleInput.value.trim();
+  if (!newTitle) { alert('タイトルを入力してください。'); return; }
+  const allowedColors = new Set(getExistingBodyColors());
+  const newBodyHtml = sanitizeEditedBodyHtml(bodyArea, allowedColors);
+  const newBodyText = bodyHtmlToPlainText(newBodyHtml);
+  const oldTitle = ent.title;
+  ent.title = newTitle;
+  ent.body = newBodyText;
+  ent.bodyHtml = newBodyHtml;
+  if (oldTitle !== newTitle) {
+    if (studyLog[oldTitle]) {
+      if (studyLog[newTitle]) {
+        const a = studyLog[newTitle], b = studyLog[oldTitle];
+        studyLog[newTitle] = {
+          ...a,
+          history: dupMergeHistoryArrays(a.history, b.history),
+          memorized: !!(a.memorized || b.memorized),
+          starred: !!(a.starred || b.starred),
+          bookmarked: !!(a.bookmarked || b.bookmarked),
+          skipped: !!(a.skipped || b.skipped),
+          confidence: a.confidence || b.confidence || null,
+          memo: a.memo || b.memo || ''
+        };
+      } else {
+        studyLog[newTitle] = studyLog[oldTitle];
+      }
+      delete studyLog[oldTitle];
+    }
+    if (expandedBodySet.has(oldTitle)) {
+      expandedBodySet.delete(oldTitle);
+      expandedBodySet.add(newTitle);
+    }
+  }
+  saveEntries();
+  saveStudyLog();
+  editingEntryIdx = null;
+  status.textContent = '✏️ 「' + newTitle + '」を更新しました。';
+  renderAll(true);
+}
+/* ▲▲▲ 新規追加：論証の直接編集機能 ここまで ▲▲▲ */
 function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const log = studyLog[e.title] || {};
   const history = log.history || [];
@@ -1186,8 +1388,15 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const bookmarkHtml = '<span class="bookmarkToggle' + (bookmarked ? ' active' : '') + '" data-idx="' + idx + '" title="要修正ブックマーク">🔖</span>';
   const memoTitle = memo ? ('メモ：' + memo) : 'メモを追加';
   const memoHtml = '<span class="memoToggle' + (memo ? ' active' : '') + '" data-idx="' + idx + '" title="' + escapeHtml(memoTitle) + '">🗒️</span>';
+  const isEditing = editingEntryIdx === idx;
+  const editToggleHtml = '<span class="editToggle' + (isEditing ? ' active' : '') + '" data-idx="' + idx + '" title="内容を編集">✏️</span>';
+  const titleCellContent = isEditing
+    ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
+    : '<div class="titleCellWrap">' + starHtml + bookmarkHtml + memoHtml + editToggleHtml + '<div class="titleText">' + titleHtml + '</div></div>';
   let bodyCellContent;
-  if (collapseBody && !expandedBodySet.has(e.title)) {
+  if (isEditing) {
+    bodyCellContent = buildBodyEditorHtml(e, idx);
+  } else if (collapseBody && !expandedBodySet.has(e.title)) {
     bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>';
   } else if (collapseBody) {
     bodyCellContent = '<div class="bodyCellArea" data-idx="' + idx + '">' + highlightSearch(e.bodyHtml, searchQuery) + '</div>';
@@ -1198,7 +1407,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'
     + '<td class="verticalCol subjectCell" data-idx="' + idx + '" title="タップして科目を編集">' + escapeHtml(e.subject || '未設定') + '</td>'
     + '<td class="verticalCol">' + escapeHtml(e.category || (studyLog[e.title] && studyLog[e.title].category) || '') + '</td>'
-    + '<td><div class="titleCellWrap">' + starHtml + bookmarkHtml + memoHtml + '<div class="titleText">' + titleHtml + '</div></div></td>'
+    + '<td>' + titleCellContent + '</td>'
     + '<td>' + bodyCellContent + '</td>'
     + '<td>' + buildYearHtml(e.year) + '</td>'
     + '<td class="countCell">' + history.length + undoBtn + '</td>'
@@ -1642,7 +1851,47 @@ function toggleBodyExpand(idx) {
   renderStudyTable(entries);
 }
 function attachTableClickHandler(wrapEl) {
+  wrapEl.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.editColorSwatch') || e.target.closest('.editColorClearBtn')) {
+      e.preventDefault();
+    }
+  });
   wrapEl.addEventListener('click', (e) => {
+    const editToggle = e.target.closest('.editToggle');
+    if (editToggle) {
+      e.stopPropagation();
+      const idx = Number(editToggle.dataset.idx);
+      editingEntryIdx = editingEntryIdx === idx ? null : idx;
+      renderStudyTable(entries);
+      renderMemorizedTable(entries);
+      return;
+    }
+    const colorSwatch = e.target.closest('.editColorSwatch');
+    if (colorSwatch) {
+      e.stopPropagation();
+      applyBodyEditorColor(colorSwatch.dataset.color);
+      return;
+    }
+    const colorClearBtn = e.target.closest('.editColorClearBtn');
+    if (colorClearBtn) {
+      e.stopPropagation();
+      document.execCommand('removeFormat');
+      return;
+    }
+    const editSaveBtn = e.target.closest('.editSaveBtn');
+    if (editSaveBtn) {
+      e.stopPropagation();
+      saveEntryEdit(Number(editSaveBtn.dataset.idx));
+      return;
+    }
+    const editCancelBtn = e.target.closest('.editCancelBtn');
+    if (editCancelBtn) {
+      e.stopPropagation();
+      editingEntryIdx = null;
+      renderStudyTable(entries);
+      renderMemorizedTable(entries);
+      return;
+    }
     const confBtn = e.target.closest('.confBtn');
     if (confBtn) {
       e.stopPropagation();
@@ -2005,6 +2254,8 @@ function renderQuizPage() {
     return;
   }
   const e = quizPool[quizIndex];
+  const idx = entries.findIndex(x => x.title === e.title);
+  const isEditingThis = idx !== -1 && editingEntryIdx === idx;
   const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
   const isSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
   const quizMemo = (studyLog[e.title] && studyLog[e.title].memo) || '';
@@ -2013,9 +2264,14 @@ function renderQuizPage() {
     + '<span class="quizMemoBtn' + (quizMemo ? ' active' : '') + '" id="quizMemoBtn" title="' + escapeHtml(quizMemo ? ('メモ：' + quizMemo) : 'メモを追加') + '">🗒️</span>'
     + '<span class="quizBookmarkBtn' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="内容修正が必要な論証としてブックマーク">🔖</span>'
     + '<span class="quizSkipBtn' + (isSkipped ? ' active' : '') + '" id="quizSkipBtn" title="スキップ（ランダム出題から除外）">⏭️</span>'
+    + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
     + '</div>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
+  if (isEditingThis) {
+    html += '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">';
+    html += buildBodyEditorHtml(e, idx);
+  } else {
   html += '<div class="quizTitle">' + buildImportanceStarsHtml(e.importance) + escapeHtml(e.title) + '</div>';
   if (!quizRevealed) {
     html += '<div class="quizShowBtn" id="quizShowBtn">📖 本文を表示</div>';
@@ -2029,6 +2285,7 @@ function renderQuizPage() {
       + '<button type="button" class="quizBadBtn" id="quizBadBtn"><span class="quizJudgeIcon">✕</span>ダメ</button>'
       + '<button type="button" class="quizWeakBtn' + (isWeak ? ' active' : '') + '" id="quizWeakBtn"><span class="quizJudgeIcon">😰</span>苦手</button>'
       + '</div>';
+  }
   }
   html += '</div>';
   quizArea.innerHTML = html;
@@ -2084,6 +2341,42 @@ function renderQuizPage() {
     }
     renderQuizPage();
   });
+  const quizEditBtn = document.getElementById('quizEditBtn');
+  if (quizEditBtn) quizEditBtn.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    const idx = entries.findIndex(x => x.title === e.title);
+    if (idx === -1) return;
+    editingEntryIdx = editingEntryIdx === idx ? null : idx;
+    renderQuizPage();
+  });
+  if (isEditingThis) {
+    quizArea.addEventListener('mousedown', (evt) => {
+      if (evt.target.closest('.editColorSwatch') || evt.target.closest('.editColorClearBtn')) {
+        evt.preventDefault();
+      }
+    });
+    const colorSwatches = quizArea.querySelectorAll('.editColorSwatch');
+    colorSwatches.forEach(sw => sw.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      applyBodyEditorColor(sw.dataset.color);
+    }));
+    const colorClearBtn = quizArea.querySelector('.editColorClearBtn');
+    if (colorClearBtn) colorClearBtn.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      document.execCommand('removeFormat');
+    });
+    const editSaveBtn = quizArea.querySelector('.editSaveBtn');
+    if (editSaveBtn) editSaveBtn.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      saveEntryEdit(Number(editSaveBtn.dataset.idx));
+    });
+    const editCancelBtn = quizArea.querySelector('.editCancelBtn');
+    if (editCancelBtn) editCancelBtn.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      editingEntryIdx = null;
+      renderQuizPage();
+    });
+  }
 }
 
 /* ▼▼▼ 新規追加：試験までのカウントダウン機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼
@@ -2329,3 +2622,4 @@ if (entries.length > 0) {
   renderAll();
 }
 renderPastLogs();
+renderDupArchive();

@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.8（重複チェック：読込日時修正・履歴保存・差分ハイライト）＋過去問ログ</title>
+<title>論証集アプリ v21.9（論証の直接編集・重複削除アーカイブ）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.8</h1>
+<h1>📚 論証集アプリ v21.9</h1>
 <div id="status"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -93,6 +93,11 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div class="dupCheckIntro">タイトルまたは本文が完全に一致するもの、およびタイトル・本文・出題年の大部分が似ているものを自動で検出します。</div>
 <button type="button" id="checkDuplicatesBtn">🔍 重複をチェックする</button>
 <div id="duplicateResultsWrap"></div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🗄 削除アーカイブ</div>
+<div class="dupCheckIntro">重複チェックから削除した論証を保管しています。誤って削除した場合はここから復元できます。</div>
+<div id="dupArchiveWrap"></div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📤 CSV出力</div>

@@ -81,6 +81,22 @@ h1 {
 .dupPairActions { display: flex; gap: 10px; margin-top: 10px; }
 .dupDeleteBothBtn { background: #ffe4e4; color: #d32f2f; border: 1px solid #f0c2c2; font-size: 12px; padding: 5px 12px; border-radius: 999px; }
 .dupKeepBothBtn { background: #e8f7ee; color: #1b7a3d; border: 1px solid #bfe6cc; font-size: 12px; padding: 5px 12px; border-radius: 999px; }
+.dupArchiveRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f7fafe;
+  border: 1px solid #dbe9fb;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.dupArchiveTitle { font-weight: 700; font-size: 13px; color: #0c2340; }
+.dupArchiveMeta { font-size: 11px; color: #4a6a90; margin-top: 2px; }
+.dupArchiveActions { display: flex; gap: 8px; flex-shrink: 0; }
+.dupArchiveRestoreBtn { background: #e8f7ee; color: #1b7a3d; border: 1px solid #bfe6cc; font-size: 12px; padding: 5px 12px; border-radius: 999px; }
+.dupArchivePurgeBtn { background: #ffe4e4; color: #d32f2f; border: 1px solid #f0c2c2; font-size: 12px; padding: 5px 12px; border-radius: 999px; }
 .clearEntriesLink:hover { color: #0057e7; }
 table { border-collapse: collapse; width: 100%; background:#fff; font-size: 13px; table-layout: fixed; }
 th, td { border: 1px solid #cfe3ff; padding: 6px 8px; vertical-align: top; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; }
@@ -349,9 +365,24 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .memoToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .memoToggle:hover { opacity: 0.7; transform: scale(1.2); }
 .memoToggle.active { opacity: 1; }
+.editToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
+.editToggle:hover { opacity: 0.7; transform: scale(1.2); }
+.editToggle.active { opacity: 1; }
 .subjectCell { cursor: pointer; }
 .subjectCell:hover { background: #eef6ff; }
 .titleText { flex: 1; }
+.editTitleInput { width: 100%; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid #9dc4f2; box-sizing: border-box; margin-bottom: 6px; }
+.editBodyWrap { display: flex; flex-direction: column; gap: 6px; }
+.editColorToolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.editColorSwatch { display: inline-block; width: 18px; height: 18px; border-radius: 5px; border: 1px solid #c7d7ec; cursor: pointer; }
+.editColorSwatch:hover { transform: scale(1.15); }
+.editColorClearBtn { font-size: 11px; padding: 3px 10px; border: 1px solid #c7d7ec; border-radius: 999px; cursor: pointer; background: #fff; color: #4a6a90; }
+.editColorClearBtn:hover { background: #eef6ff; }
+.editBodyArea { min-height: 80px; max-height: 260px; overflow-y: auto; border: 1px solid #9dc4f2; border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.7; background: #fff; white-space: pre-wrap; word-break: break-word; }
+.editBodyArea:focus { outline: 2px solid #0057e7; outline-offset: 1px; }
+.editActionsRow { display: flex; gap: 8px; }
+.editSaveBtn { background: #0057e7; color: #fff; border: none; border-radius: 999px; padding: 5px 14px; font-size: 12px; cursor: pointer; }
+.editCancelBtn { background: #eee; color: #555; border: none; border-radius: 999px; padding: 5px 14px; font-size: 12px; cursor: pointer; }
 /* --- 学習推移グラフ --- */
 .trendCard { background: #fff; border-radius: 16px; padding: 18px 22px; box-shadow: 0 4px 16px rgba(0, 87, 231, 0.08); margin-bottom: 20px; }
 .trendHeader { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }

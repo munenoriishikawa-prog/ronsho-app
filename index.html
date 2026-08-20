@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.11（読込日時の不正確な自動補完を修正）＋過去問ログ</title>
+<title>論証集アプリ v21.12（科目別 読み上げ機能を追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.11</h1>
+<h1>📚 論証集アプリ v21.12</h1>
 <div id="status"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -17,6 +17,7 @@
 <button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
 <button class="tabBtn" data-page="memorizedPage">✅ 暗記済み一覧</button>
 <button class="tabBtn" data-page="quizPage">🎲 ランダム出題</button>
+<button class="tabBtn" data-page="speechPage">🔊 読み上げ</button>
 <button class="tabBtn" data-page="calendarPage">📅 学習カレンダー・復習予定</button>
 <button class="tabBtn" data-page="csvPage">📥📤 データ読込み・出力</button>
 <button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
@@ -64,6 +65,30 @@
 </div>
 <div class="quizPriorityNote" id="quizPriorityNote"></div>
 <div id="quizArea"></div>
+</div>
+<div id="speechPage" class="page">
+<div class="speechControls">
+<label for="speechSubjectSelect">科目：</label>
+<select id="speechSubjectSelect"></select>
+<label><input type="checkbox" id="speechIncludeMemorizedChk" checked> 暗記済みも含める</label>
+<label for="speechRateSelect">速さ：</label>
+<select id="speechRateSelect">
+<option value="0.75">0.75倍</option>
+<option value="1" selected>1倍</option>
+<option value="1.25">1.25倍</option>
+<option value="1.5">1.5倍</option>
+<option value="2">2倍</option>
+</select>
+</div>
+<div id="speechStatus" class="speechStatus"></div>
+<div class="speechButtonRow">
+<button type="button" id="speechPrevBtn">⏮ 前へ</button>
+<button type="button" id="speechPlayBtn">▶ 再生</button>
+<button type="button" id="speechPauseBtn">⏸ 一時停止</button>
+<button type="button" id="speechStopBtn">⏹ 停止</button>
+<button type="button" id="speechNextBtn">⏭ 次へ</button>
+</div>
+<div id="speechCurrentCard" class="speechCurrentCard"></div>
 </div>
 <div id="calendarPage" class="page">
 <div id="trendWrap"></div>

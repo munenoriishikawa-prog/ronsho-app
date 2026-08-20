@@ -115,15 +115,47 @@ function buildStudyCountBarHtml(list) {
   return '<div class="studyCountBarOuter">' + segHtml + '</div>'
     + '<div class="studyCountLegend">' + legendHtml + '</div>';
 }
+let expandedProgressSubjects = new Set();
+function getSubjectCategoryStats(st) {
+  const order = [];
+  const stats = {};
+  st.entries.forEach(e => {
+    const c = e.category || '未分類';
+    if (!stats[c]) { stats[c] = { total: 0, memorized: 0 }; order.push(c); }
+    stats[c].total++;
+    if (studyLog[e.title] && studyLog[e.title].memorized) stats[c].memorized++;
+  });
+  return order.map(c => ({ name: c, total: stats[c].total, memorized: stats[c].memorized }));
+}
 function buildSubjectItemHtml(s, st, compact) {
   const p = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
+  const categories = getSubjectCategoryStats(st);
+  const isExpanded = expandedProgressSubjects.has(s);
+  const chipsHtml = categories.length > 1
+    ? '<div class="subjectCatChips">' + categories.map(c => {
+        const cp = c.total > 0 ? Math.round((c.memorized / c.total) * 100) : 0;
+        return '<span class="subjectCatChip"><span class="subjectCatChipName">' + escapeHtml(c.name) + '</span><span class="subjectCatChipPct">' + cp + '%</span></span>';
+      }).join('') + '</div>'
+    : '';
+  const detailHtml = categories.length > 1
+    ? '<div class="subjectCatDetail">' + categories.map(c => {
+        const cp = c.total > 0 ? Math.round((c.memorized / c.total) * 100) : 0;
+        return '<div class="subjectCatDetailRow">'
+          + '<span class="subjectCatDetailName">' + escapeHtml(c.name) + '</span>'
+          + '<span class="subjectCatDetailCounts">' + c.total + '件 ／ 暗記' + c.memorized + '件</span>'
+          + '<div class="subjectCatDetailBarWrap"><div class="studyCountBarOuter thin"><div class="studyCountSeg" style="width:' + cp + '%;background:linear-gradient(135deg,#10b981,#00c2ff);"></div><div class="studyCountSeg" style="width:' + (100 - cp) + '%;background:#f1f5f9;"></div></div></div>'
+          + '<span class="subjectCatDetailPct">' + cp + '%</span>'
+          + '</div>';
+      }).join('') + '</div>'
+    : '';
   return '<div class="subjectProgressItem' + (compact ? ' compact' : '') + '">'
     + '<div class="subjectProgressHeader">'
-    + '<div class="subjectProgressName">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</div>'
+    + '<div class="subjectProgressName' + (categories.length > 1 ? ' clickable' : '') + '" data-subject="' + escapeHtml(s) + '" title="' + (categories.length > 1 ? 'クリックで分野別の内訳を表示' : '') + '">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + (categories.length > 1 ? '<span class="subjectCatCaret">' + (isExpanded ? '▼' : '▶') + '</span>' : '') + '</div>'
     + '<div class="subjectProgressCounts">合計' + st.total + '件 ／ 暗記' + st.memorized + '件</div>'
     + '<div class="subjectProgressPct">' + p + '%</div>'
     + '</div>'
     + buildStudyCountBarHtml(st.entries)
+    + (isExpanded ? detailHtml : chipsHtml)
     + '</div>';
 }
 function renderProgressSummary() {
@@ -175,6 +207,14 @@ function renderProgressSummary() {
     + subjectHtml
     + '</div>';
 }
+document.getElementById('progressSummary').addEventListener('click', (e) => {
+  const nameEl = e.target.closest('.subjectProgressName.clickable');
+  if (!nameEl) return;
+  const s = nameEl.dataset.subject;
+  if (expandedProgressSubjects.has(s)) expandedProgressSubjects.delete(s);
+  else expandedProgressSubjects.add(s);
+  renderProgressSummary();
+});
 // --- 花火×LEVEL UP演出 ---
 function triggerFireworkLevelUp(el) {
   const rect = el.getBoundingClientRect();

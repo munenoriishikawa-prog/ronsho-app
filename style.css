@@ -230,6 +230,28 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 }
 .subjectProgressItem.compact .subjectProgressName { min-width: 70px; font-size: 12px; }
 .subjectProgressItem.compact .subjectProgressCounts { font-size: 11px; }
+.subjectProgressName.clickable { cursor: pointer; user-select: none; }
+.subjectProgressName.clickable:hover { color: #0057e7; }
+.subjectCatCaret { font-size: 9px; color: #9dc4f2; margin-left: 4px; }
+.subjectCatChips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.subjectCatChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  font-size: 11px;
+}
+.subjectCatChipName { color: #2c4a70; }
+.subjectCatChipPct { font-weight: 700; color: #0057e7; }
+.subjectCatDetail { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e6f0fc; display: flex; flex-direction: column; gap: 8px; }
+.subjectCatDetailRow { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.subjectCatDetailName { min-width: 70px; flex-shrink: 0; color: #2c4a70; }
+.subjectCatDetailCounts { min-width: 92px; flex-shrink: 0; color: #4a6a90; }
+.subjectCatDetailBarWrap { flex: 1; }
+.subjectCatDetailPct { min-width: 32px; text-align: right; font-weight: 700; color: #0057e7; }
+.studyCountBarOuter.thin { height: 8px; }
 .countdownCardInner {
   background: #fff;
   border-radius: 16px;

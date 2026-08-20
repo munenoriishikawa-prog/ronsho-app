@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.10（CSV出力から暗記済みを除外）＋過去問ログ</title>
+<title>論証集アプリ v21.11（読込日時の不正確な自動補完を修正）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.10</h1>
+<h1>📚 論証集アプリ v21.11</h1>
 <div id="status"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -92,6 +92,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div class="dataIoSectionTitle">🔍 重複チェック</div>
 <div class="dupCheckIntro">タイトルまたは本文が完全に一致するもの、およびタイトル・本文・出題年の大部分が似ているものを自動で検出します。</div>
 <button type="button" id="checkDuplicatesBtn">🔍 重複をチェックする</button>
+<span class="clearEntriesLink" id="resetImportedAtBtn">🕒 読込日時をリセット（不明表示に戻す）</span>
 <div id="duplicateResultsWrap"></div>
 </div>
 <div class="dataIoSection">

@@ -245,10 +245,6 @@ function loadEntries() {
       const inferred = inferSubjectFromCategory(e.category);
       if (inferred) { migrated = true; return { ...e, subject: inferred }; }
     }
-    if (!e.importedAt) {
-      migrated = true;
-      return { ...e, importedAt: new Date().toISOString() };
-    }
     return e;
   });
   if (migrated) saveEntries();
@@ -605,6 +601,12 @@ document.getElementById('checkDuplicatesBtn').addEventListener('click', () => {
     dupCheckPairs = findDuplicatePairs();
     renderDuplicateResults();
   }, 30);
+});
+document.getElementById('resetImportedAtBtn').addEventListener('click', () => {
+  if (!confirm('読込日時をすべて「不明」に戻しますか？（実際のWord取込日時が記録されていない論証には、正確な日時の代わりに一律の日時が表示されている場合があります。このボタンでリセットすると、以後は新しく取り込んだ論証のみ正しい読込日時が表示されます）')) return;
+  entries.forEach(e => { delete e.importedAt; });
+  saveEntries();
+  status.textContent = '🕒 読込日時をリセットしました。';
 });
 document.getElementById('duplicateResultsWrap').addEventListener('click', (e) => {
   const deleteOneBtn = e.target.closest('.dupDeleteOneBtn');

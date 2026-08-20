@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.15（読み上げ機能のデフォルト設定を変更）＋過去問ログ</title>
+<title>論証集アプリ v21.17（読み方辞書の一覧を折りたたみ表示に）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.15</h1>
+<h1>📚 論証集アプリ v21.17</h1>
 <div id="status"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -97,6 +97,17 @@
 <button type="button" id="speechNextBtn">⏭ 次へ</button>
 </div>
 <div id="speechCurrentCard" class="speechCurrentCard"></div>
+<div class="speechDictSection">
+<div class="speechDictTitle">🗣 読み方辞書（法律用語の誤読を修正）</div>
+<div class="speechDictIntro">読み上げ時に誤読されやすい用語を、正しい読み（ひらがな）に自動で置き換えます。</div>
+<div class="speechDictForm">
+<input type="text" id="speechDictWordInput" placeholder="例：瑕疵">
+<input type="text" id="speechDictReadingInput" placeholder="例：かし">
+<button type="button" id="speechDictAddBtn">＋ 追加</button>
+</div>
+<span class="speechDictToggle" id="speechDictToggleBtn">▶ 登録一覧を表示する</span>
+<div id="speechDictListWrap" class="speechDictListWrap"></div>
+</div>
 </div>
 <div id="calendarPage" class="page">
 <div id="trendWrap"></div>

@@ -627,6 +627,44 @@ input[type=file] { display:none; }
 .speechTitle { font-size: 20px; font-weight: 800; color: #0c2340; margin: 12px 0 20px; line-height: 1.5; }
 .speechBody { text-align: left; font-size: 14px; line-height: 1.8; background: #f7fafe; border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
 .speechEmpty { color: #4a6a90; font-size: 14px; padding: 30px; }
+.speechDictSection {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 16px rgba(0, 87, 231, 0.08);
+  margin: 20px auto 0;
+  max-width: 720px;
+}
+.speechDictTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 6px; }
+.speechDictIntro { font-size: 12px; color: #4a6a90; margin-bottom: 12px; }
+.speechDictForm { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.speechDictForm input { padding: 6px 10px; border-radius: 8px; border: 1px solid #9dc4f2; font-size: 13px; }
+.speechDictForm input#speechDictWordInput { width: 140px; }
+.speechDictForm input#speechDictReadingInput { width: 140px; }
+.speechDictForm button {
+  background: linear-gradient(135deg, #0057e7, #00c2ff);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.speechDictToggle { display: inline-block; font-size: 12px; color: #0057e7; cursor: pointer; margin-bottom: 8px; text-decoration: underline; }
+.speechDictEmpty { font-size: 12px; color: #4a6a90; }
+.speechDictRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #2c4a70;
+  padding: 6px 4px;
+  border-bottom: 1px solid #eef4fb;
+}
+.speechDictWord { font-weight: 700; color: #0c2340; }
+.speechDictArrow { color: #9dc4f2; }
+.speechDictDeleteBtn { margin-left: auto; cursor: pointer; opacity: 0.5; }
+.speechDictDeleteBtn:hover { opacity: 1; }
 .quizJudgeIcon { font-size: 15px; font-weight: 800; width:24px; height:24px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; }
 .quizGoodBtn { background: linear-gradient(135deg, #22c55e, #0ea5e9); color: #fff; border: none; }
 .quizGoodBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color: transparent; font-size: 0; position: relative; }

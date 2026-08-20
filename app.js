@@ -761,6 +761,14 @@ document.querySelectorAll('.tabBtn').forEach(btn => {
     document.getElementById(btn.dataset.page).classList.add('active');
     if (btn.dataset.page === 'calendarPage') { renderCalendar(); renderTrendChart(); }
     if (btn.dataset.page === 'quizPage') renderQuizPage();
+    if (btn.dataset.page === 'speechPage') {
+      renderSpeechSubjectSelect();
+      speechQueue = buildSpeechQueue();
+      speechIndex = 0;
+      renderSpeechCurrentCard();
+    } else if (speechIsPlaying) {
+      stopSpeech();
+    }
   });
 });
 drop.addEventListener('click', () => fileInput.click());
@@ -1216,6 +1224,7 @@ function renderAll(preserveQuiz) {
   renderMemorizedTable(entries);
   renderCsvSubjectFilter();
   renderCsvTable(getCsvFilteredEntries());
+  renderSpeechSubjectSelect();
   renderCalendar();
   renderTrendChart();
   renderProgressSummary();
@@ -2381,6 +2390,146 @@ function renderQuizPage() {
     });
   }
 }
+
+/* ▼▼▼ 新規追加：論証の読み上げ機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼
+   既存の entries / studyLog などには一切触れていません。ブラウザ標準の音声合成（Web Speech API）を使用します。 */
+let speechQueue = [];
+let speechIndex = 0;
+let speechIsPlaying = false;
+
+function speechSupported() {
+  return typeof window !== 'undefined' && 'speechSynthesis' in window;
+}
+function renderSpeechSubjectSelect() {
+  const sel = document.getElementById('speechSubjectSelect');
+  if (!sel) return;
+  const subjects = getUniqueSubjects();
+  const current = sel.value || 'all';
+  let html = '<option value="all">📚 すべて</option>';
+  subjects.forEach(s => {
+    html += '<option value="' + escapeHtml(s) + '">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</option>';
+  });
+  sel.innerHTML = html;
+  if ([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+function buildSpeechQueue() {
+  const sel = document.getElementById('speechSubjectSelect');
+  const subject = sel ? sel.value : 'all';
+  const includeMemorized = document.getElementById('speechIncludeMemorizedChk').checked;
+  return entries.filter(e => {
+    if (subject !== 'all' && (e.subject || 'その他') !== subject) return false;
+    if (!includeMemorized && studyLog[e.title] && studyLog[e.title].memorized) return false;
+    return true;
+  });
+}
+function renderSpeechStatus(text) {
+  const el = document.getElementById('speechStatus');
+  if (el) el.textContent = text;
+}
+function renderSpeechCurrentCard() {
+  const el = document.getElementById('speechCurrentCard');
+  if (!el) return;
+  if (speechQueue.length === 0) {
+    el.innerHTML = '<div class="speechEmpty">対象の論証がありません。科目や「暗記済みも含める」の設定を見直してください。</div>';
+    return;
+  }
+  const e = speechQueue[speechIndex];
+  el.innerHTML = '<div class="speechProgress">' + (speechIndex + 1) + ' / ' + speechQueue.length + '問</div>'
+    + '<div class="speechMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>'
+    + '<div class="speechTitle">' + escapeHtml(e.title) + '</div>'
+    + '<div class="speechBody">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>';
+}
+function speakCurrentEntry() {
+  if (!speechSupported()) {
+    renderSpeechStatus('お使いのブラウザは読み上げ機能に対応していません。');
+    return;
+  }
+  if (speechQueue.length === 0) return;
+  const e = speechQueue[speechIndex];
+  renderSpeechCurrentCard();
+  window.speechSynthesis.cancel();
+  const rateSel = document.getElementById('speechRateSelect');
+  const rate = rateSel ? Number(rateSel.value) || 1 : 1;
+  const utterance = new SpeechSynthesisUtterance(e.title + '。' + e.body);
+  utterance.lang = 'ja-JP';
+  utterance.rate = rate;
+  utterance.onend = () => {
+    if (!speechIsPlaying) return;
+    if (speechIndex < speechQueue.length - 1) {
+      speechIndex++;
+      speakCurrentEntry();
+    } else {
+      speechIsPlaying = false;
+      renderSpeechStatus('🎉 すべて読み上げが終了しました。');
+    }
+  };
+  utterance.onerror = () => {
+    speechIsPlaying = false;
+    renderSpeechStatus('読み上げ中にエラーが発生しました。');
+  };
+  renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
+  window.speechSynthesis.speak(utterance);
+}
+function startSpeech() {
+  if (!speechSupported()) {
+    renderSpeechStatus('お使いのブラウザは読み上げ機能に対応していません。');
+    return;
+  }
+  if (window.speechSynthesis.paused && speechQueue.length > 0) {
+    window.speechSynthesis.resume();
+    speechIsPlaying = true;
+    renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
+    return;
+  }
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  speechIsPlaying = true;
+  renderSpeechCurrentCard();
+  speakCurrentEntry();
+}
+function pauseSpeech() {
+  if (!speechSupported()) return;
+  window.speechSynthesis.pause();
+  renderSpeechStatus('⏸ 一時停止中');
+}
+function stopSpeech() {
+  if (!speechSupported()) return;
+  speechIsPlaying = false;
+  window.speechSynthesis.cancel();
+  renderSpeechStatus('⏹ 停止しました');
+}
+function speechStep(delta) {
+  if (speechQueue.length === 0) return;
+  const wasPlaying = speechIsPlaying;
+  speechIsPlaying = false;
+  window.speechSynthesis.cancel();
+  speechIndex = Math.min(Math.max(speechIndex + delta, 0), speechQueue.length - 1);
+  renderSpeechCurrentCard();
+  if (wasPlaying) {
+    speechIsPlaying = true;
+    speakCurrentEntry();
+  }
+}
+document.getElementById('speechPlayBtn').addEventListener('click', startSpeech);
+document.getElementById('speechPauseBtn').addEventListener('click', pauseSpeech);
+document.getElementById('speechStopBtn').addEventListener('click', stopSpeech);
+document.getElementById('speechNextBtn').addEventListener('click', () => speechStep(1));
+document.getElementById('speechPrevBtn').addEventListener('click', () => speechStep(-1));
+document.getElementById('speechSubjectSelect').addEventListener('change', () => {
+  stopSpeech();
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  renderSpeechCurrentCard();
+  renderSpeechStatus('');
+});
+document.getElementById('speechIncludeMemorizedChk').addEventListener('change', () => {
+  stopSpeech();
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  renderSpeechCurrentCard();
+  renderSpeechStatus('');
+});
+/* ▲▲▲ 新規追加：論証の読み上げ機能 ここまで ▲▲▲ */
 
 /* ▼▼▼ 新規追加：試験までのカウントダウン機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼
    既存の entries / studyLog などには一切触れていません。保存先も専用のキー 'ronshoCountdowns_v1' のみを使用します。 */

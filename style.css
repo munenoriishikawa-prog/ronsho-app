@@ -374,6 +374,21 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .editTitleInput { width: 100%; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid #9dc4f2; box-sizing: border-box; margin-bottom: 6px; }
 .editBodyWrap { display: flex; flex-direction: column; gap: 6px; }
 .editColorToolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.editBoldBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid #c7d7ec;
+  cursor: pointer;
+  background: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  color: #0c2340;
+}
+.editBoldBtn:hover { background: #eef6ff; }
 .editColorSwatch { display: inline-block; width: 18px; height: 18px; border-radius: 5px; border: 1px solid #c7d7ec; cursor: pointer; }
 .editColorSwatch:hover { transform: scale(1.15); }
 .editColorClearBtn { font-size: 11px; padding: 3px 10px; border: 1px solid #c7d7ec; border-radius: 999px; cursor: pointer; background: #fff; color: #4a6a90; }

@@ -1299,8 +1299,12 @@ function sanitizeEditedBodyHtml(container, allowedColors) {
         return;
       }
       const hex = child.style ? editRgbToHex(child.style.color) : null;
+      const fw = child.style ? child.style.fontWeight : '';
+      const isBold = tag === 'b' || tag === 'strong' || fw === 'bold' || Number(fw) >= 700;
       if (hex && allowedColors.has(hex)) {
         out += '<span style="color:' + hex + '; font-weight:bold;">' + inner + '</span>';
+      } else if (isBold) {
+        out += '<b>' + inner + '</b>';
       } else {
         out += inner;
       }
@@ -1317,7 +1321,7 @@ function buildBodyEditorHtml(e, idx) {
   const colors = getExistingBodyColors();
   const swatches = colors.map(c => '<span class="editColorSwatch" data-color="' + c + '" style="background:' + c + ';" title="' + c + '"></span>').join('');
   return '<div class="editBodyWrap">'
-    + '<div class="editColorToolbar">' + swatches + '<span class="editColorClearBtn" title="文字色をクリア">色なし</span></div>'
+    + '<div class="editColorToolbar"><span class="editBoldBtn" title="太字">B</span>' + swatches + '<span class="editColorClearBtn" title="文字色をクリア">色なし</span></div>'
     + '<div class="editBodyArea" contenteditable="true" data-idx="' + idx + '">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
     + '<div class="editActionsRow">'
     + '<button type="button" class="editSaveBtn" data-idx="' + idx + '">💾 保存</button>'
@@ -1328,6 +1332,10 @@ function buildBodyEditorHtml(e, idx) {
 function applyBodyEditorColor(color) {
   document.execCommand('styleWithCSS', false, true);
   document.execCommand('foreColor', false, color);
+}
+function applyBodyEditorBold() {
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('bold');
 }
 function saveEntryEdit(idx) {
   const ent = entries[idx];
@@ -1864,7 +1872,7 @@ function toggleBodyExpand(idx) {
 }
 function attachTableClickHandler(wrapEl) {
   wrapEl.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.editColorSwatch') || e.target.closest('.editColorClearBtn')) {
+    if (e.target.closest('.editColorSwatch') || e.target.closest('.editColorClearBtn') || e.target.closest('.editBoldBtn')) {
       e.preventDefault();
     }
   });
@@ -1876,6 +1884,12 @@ function attachTableClickHandler(wrapEl) {
       editingEntryIdx = editingEntryIdx === idx ? null : idx;
       renderStudyTable(entries);
       renderMemorizedTable(entries);
+      return;
+    }
+    const boldBtn = e.target.closest('.editBoldBtn');
+    if (boldBtn) {
+      e.stopPropagation();
+      applyBodyEditorBold();
       return;
     }
     const colorSwatch = e.target.closest('.editColorSwatch');
@@ -2363,9 +2377,14 @@ function renderQuizPage() {
   });
   if (isEditingThis) {
     quizArea.addEventListener('mousedown', (evt) => {
-      if (evt.target.closest('.editColorSwatch') || evt.target.closest('.editColorClearBtn')) {
+      if (evt.target.closest('.editColorSwatch') || evt.target.closest('.editColorClearBtn') || evt.target.closest('.editBoldBtn')) {
         evt.preventDefault();
       }
+    });
+    const boldBtn = quizArea.querySelector('.editBoldBtn');
+    if (boldBtn) boldBtn.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      applyBodyEditorBold();
     });
     const colorSwatches = quizArea.querySelectorAll('.editColorSwatch');
     colorSwatches.forEach(sw => sw.addEventListener('click', (evt) => {

@@ -2397,6 +2397,97 @@ let speechQueue = [];
 let speechIndex = 0;
 let speechIsPlaying = false;
 
+const SPEECH_DICT_KEY = 'ronshoSpeechDictV1';
+const SPEECH_DICT_DEFAULT = [
+  { word: '瑕疵', reading: 'かし' },
+  { word: '相殺', reading: 'そうさい' },
+  { word: '幇助', reading: 'ほうじょ' },
+  { word: '教唆', reading: 'きょうさ' },
+  { word: '心裡留保', reading: 'しんりりゅうほ' },
+  { word: '表見代理', reading: 'ひょうけんだいり' },
+  { word: '既判力', reading: 'きはんりょく' },
+  { word: '不当利得', reading: 'ふとうりとく' },
+  { word: '詐害行為', reading: 'さがいこうい' },
+  { word: '帰責事由', reading: 'きせきじゆう' }
+];
+let speechDict = [];
+function loadSpeechDict() {
+  try {
+    const raw = localStorage.getItem(SPEECH_DICT_KEY);
+    speechDict = raw ? JSON.parse(raw) : SPEECH_DICT_DEFAULT.slice();
+  } catch (e) {
+    speechDict = SPEECH_DICT_DEFAULT.slice();
+  }
+}
+function saveSpeechDict() {
+  localStorage.setItem(SPEECH_DICT_KEY, JSON.stringify(speechDict));
+}
+loadSpeechDict();
+function applySpeechDict(text) {
+  if (!text) return '';
+  const sorted = [...speechDict].sort((a, b) => b.word.length - a.word.length);
+  let out = text;
+  sorted.forEach(({ word, reading }) => {
+    if (!word) return;
+    out = out.split(word).join(reading);
+  });
+  return out;
+}
+let speechDictListVisible = false;
+function renderSpeechDictToggle() {
+  const btn = document.getElementById('speechDictToggleBtn');
+  if (!btn) return;
+  btn.textContent = (speechDictListVisible ? '▼ 登録一覧を隠す' : '▶ 登録一覧を表示する') + '（' + speechDict.length + '件）';
+}
+function renderSpeechDictList() {
+  const wrap = document.getElementById('speechDictListWrap');
+  if (!wrap) return;
+  wrap.style.display = speechDictListVisible ? '' : 'none';
+  renderSpeechDictToggle();
+  if (speechDict.length === 0) {
+    wrap.innerHTML = '<div class="speechDictEmpty">登録された読み方はありません。</div>';
+    return;
+  }
+  wrap.innerHTML = speechDict.map((d, idx) =>
+    '<div class="speechDictRow" data-idx="' + idx + '">'
+    + '<span class="speechDictWord">' + escapeHtml(d.word) + '</span>'
+    + '<span class="speechDictArrow">→</span>'
+    + '<span class="speechDictReading">' + escapeHtml(d.reading) + '</span>'
+    + '<span class="speechDictDeleteBtn" data-idx="' + idx + '">🗑</span>'
+    + '</div>'
+  ).join('');
+}
+document.getElementById('speechDictAddBtn').addEventListener('click', () => {
+  const wordInput = document.getElementById('speechDictWordInput');
+  const readingInput = document.getElementById('speechDictReadingInput');
+  const word = wordInput.value.trim();
+  const reading = readingInput.value.trim();
+  if (!word || !reading) {
+    alert('表記と読みの両方を入力してください。');
+    return;
+  }
+  const existingIdx = speechDict.findIndex(d => d.word === word);
+  if (existingIdx !== -1) speechDict[existingIdx].reading = reading;
+  else speechDict.push({ word, reading });
+  saveSpeechDict();
+  wordInput.value = '';
+  readingInput.value = '';
+  renderSpeechDictList();
+});
+document.getElementById('speechDictListWrap').addEventListener('click', (e) => {
+  const deleteBtn = e.target.closest('.speechDictDeleteBtn');
+  if (!deleteBtn) return;
+  const idx = Number(deleteBtn.dataset.idx);
+  speechDict.splice(idx, 1);
+  saveSpeechDict();
+  renderSpeechDictList();
+});
+document.getElementById('speechDictToggleBtn').addEventListener('click', () => {
+  speechDictListVisible = !speechDictListVisible;
+  renderSpeechDictList();
+});
+renderSpeechDictList();
+
 function speechSupported() {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
@@ -2477,7 +2568,8 @@ function speakCurrentEntry() {
   window.speechSynthesis.cancel();
   const rateSel = document.getElementById('speechRateSelect');
   const rate = rateSel ? Number(rateSel.value) || 1 : 1;
-  const utterance = new SpeechSynthesisUtterance(e.title + '。' + e.body);
+  const spokenText = applySpeechDict(e.title) + '。' + applySpeechDict(e.body);
+  const utterance = new SpeechSynthesisUtterance(spokenText);
   utterance.lang = 'ja-JP';
   utterance.rate = rate;
   utterance.onend = () => {

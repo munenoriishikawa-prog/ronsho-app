@@ -76,6 +76,7 @@ h1 {
   white-space: pre-wrap;
   word-break: break-word;
 }
+.dupDiffMark { text-decoration: underline; text-decoration-color: #e64545; text-decoration-thickness: 2px; background: #fff1ee; border-radius: 3px; }
 .dupDeleteOneBtn { font-size: 12px; padding: 4px 10px; }
 .dupPairActions { display: flex; gap: 10px; margin-top: 10px; }
 .dupDeleteBothBtn { background: #ffe4e4; color: #d32f2f; border: 1px solid #f0c2c2; font-size: 12px; padding: 5px 12px; border-radius: 999px; }

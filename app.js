@@ -244,6 +244,10 @@ function loadEntries() {
       const inferred = inferSubjectFromCategory(e.category);
       if (inferred) { migrated = true; return { ...e, subject: inferred }; }
     }
+    if (!e.importedAt) {
+      migrated = true;
+      return { ...e, importedAt: new Date().toISOString() };
+    }
     return e;
   });
   if (migrated) saveEntries();
@@ -303,7 +307,30 @@ document.getElementById('deleteTitleBtn').addEventListener('click', () => {
 /* ▼▼▼ 新規追加：重複チェック機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼ */
 const DUP_FUZZY_THRESHOLD = 0.8;
 const DUP_SUBJECT_BUCKET_LIMIT = 1000;
+const DUP_RESOLVED_KEY = 'ronshoDupResolvedV1';
+const DUP_DIFF_MAX_CELLS = 4000000;
 let dupCheckPairs = [];
+let dupResolvedSet = new Set();
+
+function loadDupResolved() {
+  try {
+    const raw = localStorage.getItem(DUP_RESOLVED_KEY);
+    dupResolvedSet = new Set(raw ? JSON.parse(raw) : []);
+  } catch (e) {
+    dupResolvedSet = new Set();
+  }
+}
+function saveDupResolved() {
+  localStorage.setItem(DUP_RESOLVED_KEY, JSON.stringify([...dupResolvedSet]));
+}
+function dupEntrySignature(e) {
+  return (e.title || '') + ' ' + (e.body || '');
+}
+function dupPairSignature(a, b) {
+  const sa = dupEntrySignature(a), sb = dupEntrySignature(b);
+  return sa < sb ? sa + '' + sb : sb + '' + sa;
+}
+loadDupResolved();
 
 function dupNgrams(str) {
   const s = (str || '').replace(/\s+/g, '');
@@ -378,7 +405,50 @@ function findDuplicatePairs() {
     }
   });
 
-  return [...pairMap.values()].sort((x, y) => y.score - x.score);
+  return [...pairMap.values()]
+    .filter(p => !dupResolvedSet.has(dupPairSignature(p.a, p.b)))
+    .sort((x, y) => y.score - x.score);
+}
+function dupCharDiffMarks(a, b) {
+  const n = a.length, m = b.length;
+  if (n === 0 && m === 0) return { aDiff: [], bDiff: [] };
+  if (n * m > DUP_DIFF_MAX_CELLS) return null;
+  const dp = new Array(n + 1);
+  for (let i = 0; i <= n; i++) dp[i] = new Uint16Array(m + 1);
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  const aDiff = new Array(n).fill(true);
+  const bDiff = new Array(m).fill(true);
+  let i = n, j = m;
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      aDiff[i - 1] = false;
+      bDiff[j - 1] = false;
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+  return { aDiff, bDiff };
+}
+function dupHighlightHtml(str, diffMarks) {
+  if (!diffMarks || !str) return escapeHtml(str || '');
+  let html = '';
+  let i = 0;
+  while (i < str.length) {
+    const marked = diffMarks[i];
+    let j = i;
+    while (j < str.length && diffMarks[j] === marked) j++;
+    const seg = escapeHtml(str.slice(i, j));
+    html += marked ? '<span class="dupDiffMark">' + seg + '</span>' : seg;
+    i = j;
+  }
+  return html;
 }
 function dupReasonLabel(pair) {
   const labels = [];
@@ -393,12 +463,14 @@ function formatImportedAt(iso) {
   if (isNaN(d.getTime())) return '不明（旧データ）';
   return formatLocalDate(d) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
-function dupEntryColHtml(e, pairIdx, side) {
+function dupEntryColHtml(e, pairIdx, side, titleMarks, bodyMarks) {
+  const titleHtml = titleMarks ? dupHighlightHtml(e.title || '', titleMarks) : escapeHtml(e.title || '');
+  const bodyHtmlOut = bodyMarks ? dupHighlightHtml(e.body || '', bodyMarks) : (e.bodyHtml || escapeHtml(e.body || ''));
   return '<div class="dupEntryCol">'
-    + '<div class="dupEntryTitle">' + escapeHtml(e.title) + '</div>'
+    + '<div class="dupEntryTitle">' + titleHtml + '</div>'
     + '<div class="dupEntryMeta">' + escapeHtml(e.subject || '未設定') + ' ／ ' + escapeHtml(e.category || '') + ' ／ 出題年: ' + (buildYearHtml(e.year) || 'なし') + '</div>'
     + '<div class="dupEntryMeta">📥 読込日時: ' + formatImportedAt(e.importedAt) + '</div>'
-    + '<div class="dupEntryBody">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
+    + '<div class="dupEntryBody">' + bodyHtmlOut + '</div>'
     + '<button type="button" class="dupDeleteOneBtn" data-pair-idx="' + pairIdx + '" data-side="' + side + '">🗑 これだけ削除</button>'
     + '</div>';
 }
@@ -410,9 +482,14 @@ function renderDuplicateResults() {
     return;
   }
   const html = dupCheckPairs.map((pair, idx) => {
+    const titleDiff = dupCharDiffMarks(pair.a.title || '', pair.b.title || '');
+    const bodyDiff = dupCharDiffMarks(pair.a.body || '', pair.b.body || '');
     return '<div class="dupPairRow" data-pair-idx="' + idx + '">'
       + '<div class="dupPairReason">' + dupReasonLabel(pair) + '</div>'
-      + '<div class="dupPairEntries">' + dupEntryColHtml(pair.a, idx, 'a') + dupEntryColHtml(pair.b, idx, 'b') + '</div>'
+      + '<div class="dupPairEntries">'
+      + dupEntryColHtml(pair.a, idx, 'a', titleDiff && titleDiff.aDiff, bodyDiff && bodyDiff.aDiff)
+      + dupEntryColHtml(pair.b, idx, 'b', titleDiff && titleDiff.bDiff, bodyDiff && bodyDiff.bDiff)
+      + '</div>'
       + '<div class="dupPairActions">'
       + '<button type="button" class="dupDeleteBothBtn" data-pair-idx="' + idx + '">🗑 両方削除</button>'
       + '<button type="button" class="dupKeepBothBtn" data-pair-idx="' + idx + '">✅ 両方残す</button>'
@@ -509,6 +586,11 @@ document.getElementById('duplicateResultsWrap').addEventListener('click', (e) =>
   const keepBothBtn = e.target.closest('.dupKeepBothBtn');
   if (keepBothBtn) {
     const pairIdx = Number(keepBothBtn.dataset.pairIdx);
+    const pair = dupCheckPairs[pairIdx];
+    if (pair) {
+      dupResolvedSet.add(dupPairSignature(pair.a, pair.b));
+      saveDupResolved();
+    }
     dupCheckPairs.splice(pairIdx, 1);
     renderDuplicateResults();
   }

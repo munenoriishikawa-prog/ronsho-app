@@ -156,10 +156,12 @@
     if (old) old.remove();
     const p = document.createElement('div');
     p.id = 'driveSyncPanel';
-    p.style.cssText = 'padding:8px 14px;background:#fff;border:1px solid #9dc4f2;border-radius:12px;font-size:12px;color:#2c4a70;flex-shrink:0;display:flex;align-items:center;gap:8px;';
+    p.style.cssText = 'font-size:12px;color:#2c4a70;display:flex;align-items:center;gap:8px;';
     p.innerHTML = '<button id="driveSyncBtn" type="button">☁️ Google Driveに接続</button> <span id="driveSyncState">未接続</span>';
+    const slot = document.getElementById('driveSyncPanelSlot');
     const row = document.getElementById('topStatusRow');
-    if (row) row.insertBefore(p, row.firstChild);
+    if (slot) slot.appendChild(p);
+    else if (row) row.insertBefore(p, row.firstChild);
     else status.after(p);
     document.getElementById('driveSyncBtn').onclick = async () => {
       try {

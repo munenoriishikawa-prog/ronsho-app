@@ -621,6 +621,17 @@ input[type=file] { display:none; }
 .quizMemoBtn.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(0, 87, 231, 0.5)); }
 .quizSkipBtn.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.6)); }
 .quizProgress { font-size: 12px; color: #4a6a90; margin-bottom: 10px; }
+.quizNavRow { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
+.quizNavBtn {
+  background: #eef4ff;
+  color: #0057e7;
+  border: 1px solid #cfe0fb;
+  padding: 6px 16px;
+  font-size: 12px;
+  border-radius: 999px;
+}
+.quizNavBtn:hover:not(:disabled) { background: #dbe8ff; }
+.quizNavBtn:disabled { opacity: 0.35; cursor: default; }
 .quizMeta { font-size: 12px; color: #4a6a90; margin-bottom: 6px; }
 .quizTitle { font-size: 20px; font-weight: 800; color: #0c2340; margin: 12px 0 20px; line-height: 1.5; }
 .quizShowBtn {

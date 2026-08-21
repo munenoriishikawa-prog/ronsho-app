@@ -412,6 +412,21 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   color: #0c2340;
 }
 .editBoldBtn:hover { background: #eef6ff; }
+.editUnboldBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: 1px solid #c7d7ec;
+  cursor: pointer;
+  background: #fff;
+  font-weight: 500;
+  font-size: 11px;
+  color: #4a6a90;
+}
+.editUnboldBtn:hover { background: #eef6ff; }
 .editColorSwatch { display: inline-block; width: 18px; height: 18px; border-radius: 5px; border: 1px solid #c7d7ec; cursor: pointer; }
 .editColorSwatch:hover { transform: scale(1.15); }
 .editColorClearBtn { font-size: 11px; padding: 3px 10px; border: 1px solid #c7d7ec; border-radius: 999px; cursor: pointer; background: #fff; color: #4a6a90; }

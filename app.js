@@ -876,11 +876,11 @@ function buildBodyHtml(bodyRunLines) {
     for (const r of runList) {
       const text = isFirstRun ? r.text.replace(/^[\s\u3000]+/, '') : r.text;
       const escaped = escapeHtml(text);
+      let content = r.bold ? '<b>' + escaped + '</b>' : escaped;
       if (r.color) {
-        lineHtml += '<span style="color:' + r.color + '; font-weight:bold;">' + escaped + '</span>';
-      } else {
-        lineHtml += escaped;
+        content = '<span style="color:' + r.color + ';">' + content + '</span>';
       }
+      lineHtml += content;
       isFirstRun = false;
     }
     return lineHtml;
@@ -1093,7 +1093,9 @@ async function parseSingleFile(file) {
           color = '#' + v;
         }
       }
-      runList.push({ text: text, color: color });
+      const boldEls = r.getElementsByTagName('w:b');
+      const bold = boldEls.length > 0 && boldEls[0].getAttribute('w:val') !== '0' && boldEls[0].getAttribute('w:val') !== 'false';
+      runList.push({ text: text, color: color, bold: bold });
     }
     paraRuns.push(runList);
   }
@@ -1353,13 +1355,11 @@ function sanitizeEditedBodyHtml(container, allowedColors) {
       const hex = child.style ? editRgbToHex(child.style.color) : null;
       const fw = child.style ? child.style.fontWeight : '';
       const isBold = tag === 'b' || tag === 'strong' || fw === 'bold' || Number(fw) >= 700;
-      if (hex && allowedColors.has(hex)) {
-        out += '<span style="color:' + hex + '; font-weight:bold;">' + inner + '</span>';
-      } else if (isBold) {
-        out += '<b>' + inner + '</b>';
-      } else {
-        out += inner;
-      }
+      const isUnbold = fw === 'normal' || Number(fw) === 400;
+      let content = inner;
+      if (isBold && !isUnbold) content = '<b>' + content + '</b>';
+      if (hex && allowedColors.has(hex)) content = '<span style="color:' + hex + ';">' + content + '</span>';
+      out += content;
     }
   });
   return out;
@@ -1373,7 +1373,7 @@ function buildBodyEditorHtml(e, idx) {
   const colors = getExistingBodyColors();
   const swatches = colors.map(c => '<span class="editColorSwatch" data-color="' + c + '" style="background:' + c + ';" title="' + c + '"></span>').join('');
   return '<div class="editBodyWrap">'
-    + '<div class="editColorToolbar"><span class="editBoldBtn" title="太字">B</span>' + swatches + '<span class="editColorClearBtn" title="文字色をクリア">色なし</span></div>'
+    + '<div class="editColorToolbar"><span class="editBoldBtn" title="太字">B</span><span class="editUnboldBtn" title="太字を解除">B解除</span>' + swatches + '<span class="editColorClearBtn" title="文字色をクリア">色なし</span></div>'
     + '<div class="editBodyArea" contenteditable="true" data-idx="' + idx + '">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
     + '<div class="editActionsRow">'
     + '<button type="button" class="editSaveBtn" data-idx="' + idx + '">💾 保存</button>'
@@ -1388,6 +1388,13 @@ function applyBodyEditorColor(color) {
 function applyBodyEditorBold() {
   document.execCommand('styleWithCSS', false, true);
   document.execCommand('bold');
+}
+function applyBodyEditorUnbold() {
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('bold');
+  if (document.queryCommandState('bold')) {
+    document.execCommand('bold');
+  }
 }
 function saveEntryEdit(idx) {
   const ent = entries[idx];
@@ -1924,7 +1931,7 @@ function toggleBodyExpand(idx) {
 }
 function attachTableClickHandler(wrapEl) {
   wrapEl.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.editColorSwatch') || e.target.closest('.editColorClearBtn') || e.target.closest('.editBoldBtn')) {
+    if (e.target.closest('.editColorSwatch') || e.target.closest('.editColorClearBtn') || e.target.closest('.editBoldBtn') || e.target.closest('.editUnboldBtn')) {
       e.preventDefault();
     }
   });
@@ -1942,6 +1949,12 @@ function attachTableClickHandler(wrapEl) {
     if (boldBtn) {
       e.stopPropagation();
       applyBodyEditorBold();
+      return;
+    }
+    const unboldBtn = e.target.closest('.editUnboldBtn');
+    if (unboldBtn) {
+      e.stopPropagation();
+      applyBodyEditorUnbold();
       return;
     }
     const colorSwatch = e.target.closest('.editColorSwatch');
@@ -2447,7 +2460,7 @@ function renderQuizPage() {
   });
   if (isEditingThis) {
     quizArea.addEventListener('mousedown', (evt) => {
-      if (evt.target.closest('.editColorSwatch') || evt.target.closest('.editColorClearBtn') || evt.target.closest('.editBoldBtn')) {
+      if (evt.target.closest('.editColorSwatch') || evt.target.closest('.editColorClearBtn') || evt.target.closest('.editBoldBtn') || evt.target.closest('.editUnboldBtn')) {
         evt.preventDefault();
       }
     });
@@ -2455,6 +2468,11 @@ function renderQuizPage() {
     if (boldBtn) boldBtn.addEventListener('click', (evt) => {
       evt.stopPropagation();
       applyBodyEditorBold();
+    });
+    const unboldBtn = quizArea.querySelector('.editUnboldBtn');
+    if (unboldBtn) unboldBtn.addEventListener('click', (evt) => {
+      evt.stopPropagation();
+      applyBodyEditorUnbold();
     });
     const colorSwatches = quizArea.querySelectorAll('.editColorSwatch');
     colorSwatches.forEach(sw => sw.addEventListener('click', (evt) => {

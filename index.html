@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>論証集アプリ v21.22（Drive同期に重複履歴・読み方辞書を追加）＋過去問ログ</title>
+<title>論証集アプリ v21.23（読み上げに間・重要度フィルタを追加）＋過去問ログ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.22</h1>
+<h1>📚 論証集アプリ v21.23</h1>
 <div id="status"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -72,6 +72,13 @@
 <select id="speechSubjectSelect"></select>
 <label for="speechCategorySelect">分野：</label>
 <select id="speechCategorySelect"></select>
+<label for="speechImportanceSelect">重要度：</label>
+<select id="speechImportanceSelect">
+<option value="all">すべて</option>
+<option value="2">⭐⭐</option>
+<option value="1">⭐</option>
+<option value="0">なし</option>
+</select>
 <label><input type="checkbox" id="speechIncludeMemorizedChk"> 暗記済みも含める</label>
 <label for="speechRateSelect">速さ：</label>
 <select id="speechRateSelect">

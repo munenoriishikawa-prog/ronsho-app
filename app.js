@@ -2459,6 +2459,15 @@ function renderQuizPage() {
 let speechQueue = [];
 let speechIndex = 0;
 let speechIsPlaying = false;
+let speechGapTimer = null;
+const SPEECH_TITLE_BODY_PAUSE_MS = 700;
+const SPEECH_ENTRY_PAUSE_MS = 1400;
+function clearSpeechGapTimer() {
+  if (speechGapTimer) {
+    clearTimeout(speechGapTimer);
+    speechGapTimer = null;
+  }
+}
 
 const SPEECH_DICT_KEY = 'ronshoSpeechDictV1';
 const SPEECH_DICT_DEFAULT = [
@@ -2616,10 +2625,13 @@ function buildSpeechQueue() {
   const subject = sel ? sel.value : 'all';
   const catSel = document.getElementById('speechCategorySelect');
   const category = catSel ? catSel.value : 'all';
+  const importanceSel = document.getElementById('speechImportanceSelect');
+  const importance = importanceSel ? importanceSel.value : 'all';
   const includeMemorized = document.getElementById('speechIncludeMemorizedChk').checked;
   return entries.filter(e => {
     if (subject !== 'all' && (e.subject || 'その他') !== subject) return false;
     if (category !== 'all' && (e.category || '未分類') !== category) return false;
+    if (importance !== 'all' && (e.importance || 0) !== Number(importance)) return false;
     if (!includeMemorized && studyLog[e.title] && studyLog[e.title].memorized) return false;
     return true;
   });
@@ -2641,6 +2653,24 @@ function renderSpeechCurrentCard() {
     + '<div class="speechTitle">' + escapeHtml(e.title) + '</div>'
     + '<div class="speechBody">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>';
 }
+function advanceSpeechAfterEntry() {
+  if (!speechIsPlaying) return;
+  const loopSel = document.getElementById('speechLoopSelect');
+  const loopMode = loopSel ? loopSel.value : 'none';
+  if (loopMode === 'one') {
+    speechGapTimer = setTimeout(() => { if (speechIsPlaying) speakCurrentEntry(); }, SPEECH_ENTRY_PAUSE_MS);
+  } else if (speechIndex < speechQueue.length - 1) {
+    speechIndex++;
+    speechGapTimer = setTimeout(() => { if (speechIsPlaying) speakCurrentEntry(); }, SPEECH_ENTRY_PAUSE_MS);
+  } else if (loopMode === 'all') {
+    speechIndex = 0;
+    speechGapTimer = setTimeout(() => { if (speechIsPlaying) speakCurrentEntry(); }, SPEECH_ENTRY_PAUSE_MS);
+  } else {
+    speechIsPlaying = false;
+    releaseSpeechWakeLock();
+    renderSpeechStatus('🎉 すべて読み上げが終了しました。');
+  }
+}
 function speakCurrentEntry() {
   if (!speechSupported()) {
     renderSpeechStatus('お使いのブラウザは読み上げ機能に対応していません。');
@@ -2649,38 +2679,36 @@ function speakCurrentEntry() {
   if (speechQueue.length === 0) return;
   const e = speechQueue[speechIndex];
   renderSpeechCurrentCard();
+  clearSpeechGapTimer();
   window.speechSynthesis.cancel();
   const rateSel = document.getElementById('speechRateSelect');
   const rate = rateSel ? Number(rateSel.value) || 1 : 1;
-  const spokenText = applySpeechDict(e.title) + '。' + applySpeechDict(e.body);
-  const utterance = new SpeechSynthesisUtterance(spokenText);
-  utterance.lang = 'ja-JP';
-  utterance.rate = rate;
-  utterance.onend = () => {
+  const titleUtterance = new SpeechSynthesisUtterance(applySpeechDict(e.title));
+  titleUtterance.lang = 'ja-JP';
+  titleUtterance.rate = rate;
+  const bodyUtterance = new SpeechSynthesisUtterance(applySpeechDict(e.body));
+  bodyUtterance.lang = 'ja-JP';
+  bodyUtterance.rate = rate;
+  titleUtterance.onend = () => {
     if (!speechIsPlaying) return;
-    const loopSel = document.getElementById('speechLoopSelect');
-    const loopMode = loopSel ? loopSel.value : 'none';
-    if (loopMode === 'one') {
-      speakCurrentEntry();
-    } else if (speechIndex < speechQueue.length - 1) {
-      speechIndex++;
-      speakCurrentEntry();
-    } else if (loopMode === 'all') {
-      speechIndex = 0;
-      speakCurrentEntry();
-    } else {
-      speechIsPlaying = false;
-      releaseSpeechWakeLock();
-      renderSpeechStatus('🎉 すべて読み上げが終了しました。');
-    }
+    speechGapTimer = setTimeout(() => {
+      if (!speechIsPlaying) return;
+      window.speechSynthesis.speak(bodyUtterance);
+    }, SPEECH_TITLE_BODY_PAUSE_MS);
   };
-  utterance.onerror = () => {
+  titleUtterance.onerror = () => {
+    speechIsPlaying = false;
+    releaseSpeechWakeLock();
+    renderSpeechStatus('読み上げ中にエラーが発生しました。');
+  };
+  bodyUtterance.onend = advanceSpeechAfterEntry;
+  bodyUtterance.onerror = () => {
     speechIsPlaying = false;
     releaseSpeechWakeLock();
     renderSpeechStatus('読み上げ中にエラーが発生しました。');
   };
   renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
-  window.speechSynthesis.speak(utterance);
+  window.speechSynthesis.speak(titleUtterance);
 }
 function startSpeech() {
   if (!speechSupported()) {
@@ -2706,6 +2734,8 @@ function startSpeech() {
 }
 function pauseSpeech() {
   if (!speechSupported()) return;
+  speechIsPlaying = false;
+  clearSpeechGapTimer();
   window.speechSynthesis.pause();
   releaseSpeechWakeLock();
   renderSpeechStatus('⏸ 一時停止中');
@@ -2713,6 +2743,7 @@ function pauseSpeech() {
 function stopSpeech() {
   if (!speechSupported()) return;
   speechIsPlaying = false;
+  clearSpeechGapTimer();
   window.speechSynthesis.cancel();
   releaseSpeechWakeLock();
   renderSpeechStatus('⏹ 停止しました');
@@ -2721,6 +2752,7 @@ function speechStep(delta) {
   if (speechQueue.length === 0) return;
   const wasPlaying = speechIsPlaying;
   speechIsPlaying = false;
+  clearSpeechGapTimer();
   window.speechSynthesis.cancel();
   speechIndex = Math.min(Math.max(speechIndex + delta, 0), speechQueue.length - 1);
   renderSpeechCurrentCard();
@@ -2743,6 +2775,13 @@ document.getElementById('speechSubjectSelect').addEventListener('change', () => 
   renderSpeechStatus('');
 });
 document.getElementById('speechCategorySelect').addEventListener('change', () => {
+  stopSpeech();
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  renderSpeechCurrentCard();
+  renderSpeechStatus('');
+});
+document.getElementById('speechImportanceSelect').addEventListener('change', () => {
   stopSpeech();
   speechQueue = buildSpeechQueue();
   speechIndex = 0;

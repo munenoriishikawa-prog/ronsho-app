@@ -215,7 +215,8 @@
     const p = document.createElement('div');
     p.id = 'driveSyncPanel';
     p.className = 'driveSyncPanel';
-    p.innerHTML = '<button id="driveSyncBtn" type="button">☁️ Google Driveに接続</button> <span id="driveSyncState">未接続</span>';
+    p.innerHTML = '<button id="driveSyncBtn" type="button">☁️ Google Driveに接続</button> <span id="driveSyncState">未接続</span>'
+      + '<button id="pageReloadBtn" type="button" title="このページを最新の状態に読み込み直します">🔄 ページ読込</button>';
     const slot = document.getElementById('driveSyncPanelSlot');
     const row = document.getElementById('topStatusRow');
     if (slot) slot.appendChild(p);
@@ -227,6 +228,7 @@
         else await connect('consent');
       } catch (e) { state(e.message) }
     };
+    document.getElementById('pageReloadBtn').onclick = () => location.reload();
     if (isAuthorized()) connect('').catch(() => {});
 
     // ローカル変更を検知したら短い遅延で自動アップロード

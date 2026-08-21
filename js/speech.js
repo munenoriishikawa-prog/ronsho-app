@@ -1,0 +1,369 @@
+/* ▼▼▼ 新規追加：論証の読み上げ機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼
+   既存の entries / studyLog などには一切触れていません。ブラウザ標準の音声合成（Web Speech API）を使用します。 */
+let speechQueue = [];
+let speechIndex = 0;
+let speechIsPlaying = false;
+let speechGapTimer = null;
+const SPEECH_TITLE_BODY_PAUSE_MS = 700;
+const SPEECH_ENTRY_PAUSE_MS = 1400;
+function clearSpeechGapTimer() {
+  if (speechGapTimer) {
+    clearTimeout(speechGapTimer);
+    speechGapTimer = null;
+  }
+}
+let speechKeepAliveTimer = null;
+function startSpeechKeepAlive() {
+  stopSpeechKeepAlive();
+  speechKeepAliveTimer = setInterval(() => {
+    if (!speechIsPlaying) return;
+    if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    }
+  }, 10000);
+}
+function stopSpeechKeepAlive() {
+  if (speechKeepAliveTimer) {
+    clearInterval(speechKeepAliveTimer);
+    speechKeepAliveTimer = null;
+  }
+}
+
+const SPEECH_DICT_KEY = 'ronshoSpeechDictV1';
+const SPEECH_DICT_DEFAULT = [
+  { word: '瑕疵', reading: 'かし' },
+  { word: '相殺', reading: 'そうさい' },
+  { word: '幇助', reading: 'ほうじょ' },
+  { word: '教唆', reading: 'きょうさ' },
+  { word: '心裡留保', reading: 'しんりりゅうほ' },
+  { word: '表見代理', reading: 'ひょうけんだいり' },
+  { word: '既判力', reading: 'きはんりょく' },
+  { word: '不当利得', reading: 'ふとうりとく' },
+  { word: '詐害行為', reading: 'さがいこうい' },
+  { word: '帰責事由', reading: 'きせきじゆう' }
+];
+let speechDict = [];
+function loadSpeechDict() {
+  try {
+    const raw = localStorage.getItem(SPEECH_DICT_KEY);
+    speechDict = raw ? JSON.parse(raw) : SPEECH_DICT_DEFAULT.slice();
+  } catch (e) {
+    speechDict = SPEECH_DICT_DEFAULT.slice();
+  }
+}
+function saveSpeechDict() {
+  localStorage.setItem(SPEECH_DICT_KEY, JSON.stringify(speechDict));
+}
+loadSpeechDict();
+function applySpeechDict(text) {
+  if (!text) return '';
+  const sorted = [...speechDict].sort((a, b) => b.word.length - a.word.length);
+  let out = text;
+  sorted.forEach(({ word, reading }) => {
+    if (!word) return;
+    out = out.split(word).join(reading);
+  });
+  return out;
+}
+let speechDictListVisible = false;
+function renderSpeechDictToggle() {
+  const btn = document.getElementById('speechDictToggleBtn');
+  if (!btn) return;
+  btn.textContent = (speechDictListVisible ? '▼ 登録一覧を隠す' : '▶ 登録一覧を表示する') + '（' + speechDict.length + '件）';
+}
+function renderSpeechDictList() {
+  const wrap = document.getElementById('speechDictListWrap');
+  if (!wrap) return;
+  wrap.style.display = speechDictListVisible ? '' : 'none';
+  renderSpeechDictToggle();
+  if (speechDict.length === 0) {
+    wrap.innerHTML = '<div class="speechDictEmpty">登録された読み方はありません。</div>';
+    return;
+  }
+  wrap.innerHTML = speechDict.map((d, idx) =>
+    '<div class="speechDictRow" data-idx="' + idx + '">'
+    + '<span class="speechDictWord">' + escapeHtml(d.word) + '</span>'
+    + '<span class="speechDictArrow">→</span>'
+    + '<span class="speechDictReading">' + escapeHtml(d.reading) + '</span>'
+    + '<span class="speechDictDeleteBtn" data-idx="' + idx + '">🗑</span>'
+    + '</div>'
+  ).join('');
+}
+document.getElementById('speechDictAddBtn').addEventListener('click', () => {
+  const wordInput = document.getElementById('speechDictWordInput');
+  const readingInput = document.getElementById('speechDictReadingInput');
+  const word = wordInput.value.trim();
+  const reading = readingInput.value.trim();
+  if (!word || !reading) {
+    alert('表記と読みの両方を入力してください。');
+    return;
+  }
+  const existingIdx = speechDict.findIndex(d => d.word === word);
+  if (existingIdx !== -1) speechDict[existingIdx].reading = reading;
+  else speechDict.push({ word, reading });
+  saveSpeechDict();
+  wordInput.value = '';
+  readingInput.value = '';
+  renderSpeechDictList();
+});
+document.getElementById('speechDictListWrap').addEventListener('click', (e) => {
+  const deleteBtn = e.target.closest('.speechDictDeleteBtn');
+  if (!deleteBtn) return;
+  const idx = Number(deleteBtn.dataset.idx);
+  speechDict.splice(idx, 1);
+  saveSpeechDict();
+  renderSpeechDictList();
+});
+document.getElementById('speechDictToggleBtn').addEventListener('click', () => {
+  speechDictListVisible = !speechDictListVisible;
+  renderSpeechDictList();
+});
+renderSpeechDictList();
+
+function speechSupported() {
+  return typeof window !== 'undefined' && 'speechSynthesis' in window;
+}
+let speechWakeLock = null;
+async function acquireSpeechWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    speechWakeLock = await navigator.wakeLock.request('screen');
+    speechWakeLock.addEventListener('release', () => { speechWakeLock = null; });
+  } catch (e) {
+    speechWakeLock = null;
+  }
+}
+function releaseSpeechWakeLock() {
+  if (speechWakeLock) {
+    speechWakeLock.release().catch(() => {});
+    speechWakeLock = null;
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && speechIsPlaying && !speechWakeLock) {
+    acquireSpeechWakeLock();
+  }
+});
+function renderSpeechSubjectSelect() {
+  const sel = document.getElementById('speechSubjectSelect');
+  if (!sel) return;
+  const subjects = getUniqueSubjects();
+  const current = sel.value || 'all';
+  let html = '<option value="all">📚 すべて</option>';
+  subjects.forEach(s => {
+    html += '<option value="' + escapeHtml(s) + '">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</option>';
+  });
+  sel.innerHTML = html;
+  if ([...sel.options].some(o => o.value === current)) sel.value = current;
+  renderSpeechCategorySelect();
+}
+function getSpeechCategories(subject) {
+  const scoped = subject === 'all' ? entries : entries.filter(e => (e.subject || 'その他') === subject);
+  const seen = [];
+  scoped.forEach(e => {
+    const c = e.category || '未分類';
+    if (!seen.includes(c)) seen.push(c);
+  });
+  return seen;
+}
+function renderSpeechCategorySelect() {
+  const sel = document.getElementById('speechCategorySelect');
+  const subjectSel = document.getElementById('speechSubjectSelect');
+  if (!sel) return;
+  const subject = subjectSel ? subjectSel.value : 'all';
+  const categories = getSpeechCategories(subject);
+  const current = sel.value || 'all';
+  let html = '<option value="all">すべての分野</option>';
+  categories.forEach(c => {
+    html += '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
+  });
+  sel.innerHTML = html;
+  sel.value = [...sel.options].some(o => o.value === current) ? current : 'all';
+}
+function buildSpeechQueue() {
+  const sel = document.getElementById('speechSubjectSelect');
+  const subject = sel ? sel.value : 'all';
+  const catSel = document.getElementById('speechCategorySelect');
+  const category = catSel ? catSel.value : 'all';
+  const importanceSel = document.getElementById('speechImportanceSelect');
+  const importance = importanceSel ? importanceSel.value : 'all';
+  const includeMemorized = document.getElementById('speechIncludeMemorizedChk').checked;
+  return entries.filter(e => {
+    if (subject !== 'all' && (e.subject || 'その他') !== subject) return false;
+    if (category !== 'all' && (e.category || '未分類') !== category) return false;
+    if (importance !== 'all' && (e.importance || 0) !== Number(importance)) return false;
+    if (!includeMemorized && studyLog[e.title] && studyLog[e.title].memorized) return false;
+    return true;
+  });
+}
+function renderSpeechStatus(text) {
+  const el = document.getElementById('speechStatus');
+  if (el) el.textContent = text;
+}
+function renderSpeechCurrentCard() {
+  const el = document.getElementById('speechCurrentCard');
+  if (!el) return;
+  if (speechQueue.length === 0) {
+    el.innerHTML = '<div class="speechEmpty">対象の論証がありません。科目や「暗記済みも含める」の設定を見直してください。</div>';
+    return;
+  }
+  const e = speechQueue[speechIndex];
+  el.innerHTML = '<div class="speechProgress">' + (speechIndex + 1) + ' / ' + speechQueue.length + '問</div>'
+    + '<div class="speechMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>'
+    + '<div class="speechTitle">' + escapeHtml(e.title) + '</div>'
+    + '<div class="speechBody">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>';
+}
+function advanceSpeechAfterEntry() {
+  if (!speechIsPlaying) return;
+  const loopSel = document.getElementById('speechLoopSelect');
+  const loopMode = loopSel ? loopSel.value : 'none';
+  if (loopMode === 'one') {
+    speechGapTimer = setTimeout(() => { if (speechIsPlaying) speakCurrentEntry(); }, SPEECH_ENTRY_PAUSE_MS);
+  } else if (speechIndex < speechQueue.length - 1) {
+    speechIndex++;
+    speechGapTimer = setTimeout(() => { if (speechIsPlaying) speakCurrentEntry(); }, SPEECH_ENTRY_PAUSE_MS);
+  } else if (loopMode === 'all') {
+    speechIndex = 0;
+    speechGapTimer = setTimeout(() => { if (speechIsPlaying) speakCurrentEntry(); }, SPEECH_ENTRY_PAUSE_MS);
+  } else {
+    speechIsPlaying = false;
+    stopSpeechKeepAlive();
+    releaseSpeechWakeLock();
+    renderSpeechStatus('🎉 すべて読み上げが終了しました。');
+  }
+}
+function speakCurrentEntry() {
+  if (!speechSupported()) {
+    renderSpeechStatus('お使いのブラウザは読み上げ機能に対応していません。');
+    return;
+  }
+  if (speechQueue.length === 0) return;
+  const e = speechQueue[speechIndex];
+  renderSpeechCurrentCard();
+  clearSpeechGapTimer();
+  window.speechSynthesis.cancel();
+  const rateSel = document.getElementById('speechRateSelect');
+  const rate = rateSel ? Number(rateSel.value) || 1 : 1;
+  const titleUtterance = new SpeechSynthesisUtterance(applySpeechDict(e.title));
+  titleUtterance.lang = 'ja-JP';
+  titleUtterance.rate = rate;
+  const bodyUtterance = new SpeechSynthesisUtterance(applySpeechDict(e.body));
+  bodyUtterance.lang = 'ja-JP';
+  bodyUtterance.rate = rate;
+  titleUtterance.onend = () => {
+    if (!speechIsPlaying) return;
+    speechGapTimer = setTimeout(() => {
+      if (!speechIsPlaying) return;
+      window.speechSynthesis.speak(bodyUtterance);
+    }, SPEECH_TITLE_BODY_PAUSE_MS);
+  };
+  titleUtterance.onerror = (evt) => {
+    if (evt.error === 'interrupted' || evt.error === 'canceled') return;
+    speechIsPlaying = false;
+    stopSpeechKeepAlive();
+    releaseSpeechWakeLock();
+    renderSpeechStatus('読み上げ中にエラーが発生しました。');
+  };
+  bodyUtterance.onend = advanceSpeechAfterEntry;
+  bodyUtterance.onerror = (evt) => {
+    if (evt.error === 'interrupted' || evt.error === 'canceled') return;
+    speechIsPlaying = false;
+    stopSpeechKeepAlive();
+    releaseSpeechWakeLock();
+    renderSpeechStatus('読み上げ中にエラーが発生しました。');
+  };
+  renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
+  startSpeechKeepAlive();
+  window.speechSynthesis.speak(titleUtterance);
+}
+function startSpeech() {
+  if (!speechSupported()) {
+    renderSpeechStatus('お使いのブラウザは読み上げ機能に対応していません。');
+    return;
+  }
+  acquireSpeechWakeLock();
+  if (window.speechSynthesis.paused && speechQueue.length > 0) {
+    window.speechSynthesis.resume();
+    speechIsPlaying = true;
+    startSpeechKeepAlive();
+    renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
+    return;
+  }
+  if (speechQueue.length === 0) {
+    speechQueue = buildSpeechQueue();
+    speechIndex = 0;
+  } else {
+    speechIndex = Math.min(speechIndex, speechQueue.length - 1);
+  }
+  speechIsPlaying = true;
+  renderSpeechCurrentCard();
+  speakCurrentEntry();
+}
+function pauseSpeech() {
+  if (!speechSupported()) return;
+  speechIsPlaying = false;
+  clearSpeechGapTimer();
+  stopSpeechKeepAlive();
+  window.speechSynthesis.pause();
+  releaseSpeechWakeLock();
+  renderSpeechStatus('⏸ 一時停止中');
+}
+function stopSpeech() {
+  if (!speechSupported()) return;
+  speechIsPlaying = false;
+  clearSpeechGapTimer();
+  stopSpeechKeepAlive();
+  window.speechSynthesis.cancel();
+  releaseSpeechWakeLock();
+  renderSpeechStatus('⏹ 停止しました');
+}
+function speechStep(delta) {
+  if (speechQueue.length === 0) return;
+  const wasPlaying = speechIsPlaying;
+  speechIsPlaying = false;
+  clearSpeechGapTimer();
+  window.speechSynthesis.cancel();
+  speechIndex = Math.min(Math.max(speechIndex + delta, 0), speechQueue.length - 1);
+  renderSpeechCurrentCard();
+  if (wasPlaying) {
+    speechIsPlaying = true;
+    speakCurrentEntry();
+  }
+}
+document.getElementById('speechPlayBtn').addEventListener('click', startSpeech);
+document.getElementById('speechPauseBtn').addEventListener('click', pauseSpeech);
+document.getElementById('speechStopBtn').addEventListener('click', stopSpeech);
+document.getElementById('speechNextBtn').addEventListener('click', () => speechStep(1));
+document.getElementById('speechPrevBtn').addEventListener('click', () => speechStep(-1));
+document.getElementById('speechSubjectSelect').addEventListener('change', () => {
+  stopSpeech();
+  renderSpeechCategorySelect();
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  renderSpeechCurrentCard();
+  renderSpeechStatus('');
+});
+document.getElementById('speechCategorySelect').addEventListener('change', () => {
+  stopSpeech();
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  renderSpeechCurrentCard();
+  renderSpeechStatus('');
+});
+document.getElementById('speechImportanceSelect').addEventListener('change', () => {
+  stopSpeech();
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  renderSpeechCurrentCard();
+  renderSpeechStatus('');
+});
+document.getElementById('speechIncludeMemorizedChk').addEventListener('change', () => {
+  stopSpeech();
+  speechQueue = buildSpeechQueue();
+  speechIndex = 0;
+  renderSpeechCurrentCard();
+  renderSpeechStatus('');
+});
+/* ▲▲▲ 新規追加：論証の読み上げ機能 ここまで ▲▲▲ */
+

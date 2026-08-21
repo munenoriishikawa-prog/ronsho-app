@@ -245,6 +245,7 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 }
 .subjectCatChipName { color: #2c4a70; }
 .subjectCatChipPct { font-weight: 700; color: #0057e7; }
+.subjectCatChipStudyPct { font-weight: 700; color: #38bdf8; }
 .subjectCatDetail { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e6f0fc; display: flex; flex-direction: column; gap: 8px; }
 .subjectCatDetailRow { display: flex; align-items: center; gap: 8px; font-size: 11px; }
 .subjectCatDetailName { min-width: 70px; flex-shrink: 0; color: #2c4a70; }

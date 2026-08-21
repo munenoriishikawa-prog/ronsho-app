@@ -2468,6 +2468,23 @@ function clearSpeechGapTimer() {
     speechGapTimer = null;
   }
 }
+let speechKeepAliveTimer = null;
+function startSpeechKeepAlive() {
+  stopSpeechKeepAlive();
+  speechKeepAliveTimer = setInterval(() => {
+    if (!speechIsPlaying) return;
+    if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    }
+  }, 10000);
+}
+function stopSpeechKeepAlive() {
+  if (speechKeepAliveTimer) {
+    clearInterval(speechKeepAliveTimer);
+    speechKeepAliveTimer = null;
+  }
+}
 
 const SPEECH_DICT_KEY = 'ronshoSpeechDictV1';
 const SPEECH_DICT_DEFAULT = [
@@ -2667,6 +2684,7 @@ function advanceSpeechAfterEntry() {
     speechGapTimer = setTimeout(() => { if (speechIsPlaying) speakCurrentEntry(); }, SPEECH_ENTRY_PAUSE_MS);
   } else {
     speechIsPlaying = false;
+    stopSpeechKeepAlive();
     releaseSpeechWakeLock();
     renderSpeechStatus('🎉 すべて読み上げが終了しました。');
   }
@@ -2696,18 +2714,23 @@ function speakCurrentEntry() {
       window.speechSynthesis.speak(bodyUtterance);
     }, SPEECH_TITLE_BODY_PAUSE_MS);
   };
-  titleUtterance.onerror = () => {
+  titleUtterance.onerror = (evt) => {
+    if (evt.error === 'interrupted' || evt.error === 'canceled') return;
     speechIsPlaying = false;
+    stopSpeechKeepAlive();
     releaseSpeechWakeLock();
     renderSpeechStatus('読み上げ中にエラーが発生しました。');
   };
   bodyUtterance.onend = advanceSpeechAfterEntry;
-  bodyUtterance.onerror = () => {
+  bodyUtterance.onerror = (evt) => {
+    if (evt.error === 'interrupted' || evt.error === 'canceled') return;
     speechIsPlaying = false;
+    stopSpeechKeepAlive();
     releaseSpeechWakeLock();
     renderSpeechStatus('読み上げ中にエラーが発生しました。');
   };
   renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
+  startSpeechKeepAlive();
   window.speechSynthesis.speak(titleUtterance);
 }
 function startSpeech() {
@@ -2719,6 +2742,7 @@ function startSpeech() {
   if (window.speechSynthesis.paused && speechQueue.length > 0) {
     window.speechSynthesis.resume();
     speechIsPlaying = true;
+    startSpeechKeepAlive();
     renderSpeechStatus('🔊 読み上げ中… (' + (speechIndex + 1) + ' / ' + speechQueue.length + ')');
     return;
   }
@@ -2736,6 +2760,7 @@ function pauseSpeech() {
   if (!speechSupported()) return;
   speechIsPlaying = false;
   clearSpeechGapTimer();
+  stopSpeechKeepAlive();
   window.speechSynthesis.pause();
   releaseSpeechWakeLock();
   renderSpeechStatus('⏸ 一時停止中');
@@ -2744,6 +2769,7 @@ function stopSpeech() {
   if (!speechSupported()) return;
   speechIsPlaying = false;
   clearSpeechGapTimer();
+  stopSpeechKeepAlive();
   window.speechSynthesis.cancel();
   releaseSpeechWakeLock();
   renderSpeechStatus('⏹ 停止しました');

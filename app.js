@@ -392,9 +392,17 @@ function dupArchiveEntry(target, reasonLabel) {
   dupArchiveList.unshift({ entry: target, deletedAt: new Date().toISOString(), reason: reasonLabel || '' });
   saveDupArchive();
 }
+let dupArchiveListVisible = false;
+function renderDupArchiveToggle() {
+  const btn = document.getElementById('dupArchiveToggleBtn');
+  if (!btn) return;
+  btn.textContent = (dupArchiveListVisible ? '▼ アーカイブ一覧を隠す' : '▶ アーカイブ一覧を表示する') + '（' + dupArchiveList.length + '件）';
+}
 function renderDupArchive() {
   const wrap = document.getElementById('dupArchiveWrap');
   if (!wrap) return;
+  wrap.style.display = dupArchiveListVisible ? '' : 'none';
+  renderDupArchiveToggle();
   if (dupArchiveList.length === 0) {
     wrap.innerHTML = '<div class="dupCheckEmpty">アーカイブされた論証はありません。</div>';
     return;
@@ -2337,6 +2345,10 @@ function renderQuizPage() {
     + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
     + '</div>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
+  html += '<div class="quizNavRow">'
+    + '<button type="button" class="quizNavBtn" id="quizPrevBtn"' + (quizIndex === 0 ? ' disabled' : '') + '>◀ 前の問題</button>'
+    + '<button type="button" class="quizNavBtn" id="quizNextBtn"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>次の問題 ▶</button>'
+    + '</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
   if (isEditingThis) {
     html += '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">';
@@ -2366,6 +2378,20 @@ function renderQuizPage() {
       renderQuizPage();
     });
   }
+  const prevBtn = document.getElementById('quizPrevBtn');
+  if (prevBtn) prevBtn.addEventListener('click', () => {
+    if (quizIndex <= 0) return;
+    quizIndex--;
+    quizRevealed = false;
+    renderQuizPage();
+  });
+  const nextBtn = document.getElementById('quizNextBtn');
+  if (nextBtn) nextBtn.addEventListener('click', () => {
+    if (quizIndex >= quizPool.length - 1) return;
+    quizIndex++;
+    quizRevealed = false;
+    renderQuizPage();
+  });
   function advanceQuiz(level, sourceEl) {
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) setConfidence(idx, level, sourceEl);
@@ -3066,4 +3092,9 @@ if (entries.length > 0) {
   renderAll();
 }
 renderPastLogs();
+const dupArchiveToggleBtn = document.getElementById('dupArchiveToggleBtn');
+if (dupArchiveToggleBtn) dupArchiveToggleBtn.addEventListener('click', () => {
+  dupArchiveListVisible = !dupArchiveListVisible;
+  renderDupArchive();
+});
 renderDupArchive();

@@ -192,17 +192,34 @@
     }).requestAccessToken({ prompt });
   }
 
+  const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+  const MIN_SYNC_GAP_MS = 20 * 1000;
+  const isAuthorized = () => localStorage.getItem('ronshoDriveSyncAuthorizedV1') === '1';
+  let lastSyncAttempt = 0;
+
+  function periodicSync() {
+    if (!isAuthorized()) return;
+    const now = Date.now();
+    if (now - lastSyncAttempt < MIN_SYNC_GAP_MS) return;
+    lastSyncAttempt = now;
+    if (token) {
+      syncMerged().catch(e => state(e.message));
+    } else {
+      connect('').catch(() => {});
+    }
+  }
+
   window.addEventListener('load', () => {
     const old = document.getElementById('driveSyncPanel');
     if (old) old.remove();
     const p = document.createElement('div');
     p.id = 'driveSyncPanel';
-    p.style.cssText = 'font-size:12px;color:#2c4a70;display:flex;align-items:center;gap:8px;';
+    p.className = 'driveSyncPanel';
     p.innerHTML = '<button id="driveSyncBtn" type="button">☁️ Google Driveに接続</button> <span id="driveSyncState">未接続</span>';
     const slot = document.getElementById('driveSyncPanelSlot');
     const row = document.getElementById('topStatusRow');
     if (slot) slot.appendChild(p);
-    else if (row) row.insertBefore(p, row.firstChild);
+    else if (row) row.appendChild(p);
     else status.after(p);
     document.getElementById('driveSyncBtn').onclick = async () => {
       try {
@@ -210,12 +227,23 @@
         else await connect('consent');
       } catch (e) { state(e.message) }
     };
-    if (localStorage.getItem('ronshoDriveSyncAuthorizedV1') === '1') connect('').catch(() => {});
+    if (isAuthorized()) connect('').catch(() => {});
+
+    // ローカル変更を検知したら短い遅延で自動アップロード
     setInterval(() => {
       if (token) {
         const n = JSON.stringify(snapshot());
         if (n !== last) queue();
       }
     }, 3000);
+
+    // 変更の有無に関わらず、数分おきに他端末の更新も取り込む安全策の自動同期
+    setInterval(periodicSync, AUTO_SYNC_INTERVAL_MS);
+
+    // タブを再度開いた／フォーカスした直後にも最新状態を取り込む
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') periodicSync();
+    });
+    window.addEventListener('focus', periodicSync);
   });
 })();

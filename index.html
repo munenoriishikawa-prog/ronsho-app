@@ -2,13 +2,19 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>論証集アプリ v21.25（重複チェックの削除を他端末にも同期）＋過去問ログ</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0057e7">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <h1>📚 論証集アプリ v21.25</h1>
 <div id="status"></div>
+<div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
 </div>
@@ -32,6 +38,7 @@
 </div>
 <div id="subjectTabsStudy" class="subjectTabs"></div>
 <div id="categoryTabsStudy" class="categoryTabs"></div>
+<div id="tagTabsStudy" class="categoryTabs"></div>
 <div id="starTabsStudy" class="starFilterTabs"></div>
 <div id="importanceTabsStudy" class="starFilterTabs"></div>
 <div id="freqTabsStudy" class="starFilterTabs"></div>
@@ -45,6 +52,7 @@
 </div>
 <div id="subjectTabsMemorized" class="subjectTabs"></div>
 <div id="categoryTabsMemorized" class="categoryTabs"></div>
+<div id="tagTabsMemorized" class="categoryTabs"></div>
 <div id="starTabsMemorized" class="starFilterTabs"></div>
 <div id="importanceTabsMemorized" class="starFilterTabs"></div>
 <div id="freqTabsMemorized" class="starFilterTabs"></div>
@@ -53,6 +61,7 @@
 <div id="quizPage" class="page">
 <div id="subjectTabsQuiz" class="subjectTabs"></div>
 <div id="categoryTabsQuiz" class="categoryTabs"></div>
+<div id="tagTabsQuiz" class="categoryTabs"></div>
 <div id="starTabsQuiz" class="starFilterTabs"></div>
 <div id="importanceTabsQuiz" class="starFilterTabs"></div>
 <div class="quizControls">
@@ -202,6 +211,8 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
   </table>
 </div>
 <!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
+<div id="compareBar" class="compareBar"></div>
+<div id="compareModalRoot"></div>
 <datalist id="subjectSuggestions">
 <option value="民法"></option>
 <option value="刑法"></option>
@@ -220,6 +231,13 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 
 <!-- merge-safe-google-drive-sync-module -->
 <script src="drive-sync.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
 
 </body>
 </html>

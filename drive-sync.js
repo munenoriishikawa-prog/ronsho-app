@@ -11,6 +11,7 @@
   const DUPARCHIVE_KEY = 'ronshoDupArchiveV1';
   const DUPRESOLVED_KEY = 'ronshoDupResolvedV1';
   const SPEECHDICT_KEY = 'ronshoSpeechDictV1';
+  const CONFLICT_KEY = 'ronshoSyncConflictsV1';
   let token = '', timer, last = '';
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
@@ -81,6 +82,16 @@
       .filter(e => !deletedTitleBodySet.has([e.title, e.body].join('|')));
     if (!sameSet(mergedEntries, local.entries)) lastChanged.push('論証データ');
     write(ENTRY_KEY, mergedEntries);
+
+    const titleCount = list => { const m = {}; (list || []).forEach(x => { m[x.title] = (m[x.title] || 0) + 1 }); return m };
+    const localTitleCounts = titleCount(local.entries);
+    const mergedTitleCounts = titleCount(mergedEntries);
+    const stillDuplicated = new Set(Object.keys(mergedTitleCounts).filter(t => mergedTitleCounts[t] > 1));
+    const newlyConflicted = Object.keys(mergedTitleCounts).filter(t => mergedTitleCounts[t] > (localTitleCounts[t] || 0) && mergedTitleCounts[t] > 1);
+    const prevConflicts = read(CONFLICT_KEY, []);
+    const conflictTitles = [...new Set([...prevConflicts.filter(t => stillDuplicated.has(t)), ...newlyConflicted])];
+    if (conflictTitles.length) lastChanged.push('⚠️編集競合(' + conflictTitles.length + '件)');
+    write(CONFLICT_KEY, conflictTitles);
     try { entries = mergedEntries } catch (_) {}
 
     const study = mergeLog(remote.studyLog || {}, local.studyLog || {});

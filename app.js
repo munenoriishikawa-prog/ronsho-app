@@ -15,6 +15,9 @@ const subjectTabsQuiz = document.getElementById('subjectTabsQuiz');
 const categoryTabsStudy = document.getElementById('categoryTabsStudy');
 const categoryTabsMemorized = document.getElementById('categoryTabsMemorized');
 const categoryTabsQuiz = document.getElementById('categoryTabsQuiz');
+const tagTabsStudy = document.getElementById('tagTabsStudy');
+const tagTabsMemorized = document.getElementById('tagTabsMemorized');
+const tagTabsQuiz = document.getElementById('tagTabsQuiz');
 const starTabsStudy = document.getElementById('starTabsStudy');
 const starTabsMemorized = document.getElementById('starTabsMemorized');
 const starTabsQuiz = document.getElementById('starTabsQuiz');
@@ -53,6 +56,7 @@ let selectedDay = null;
 let selectedSubject = 'all';
 let selectedCsvSubject = 'all';
 let selectedCategory = 'all';
+let selectedTag = 'all';
 let starOnlyFilter = false;
 let bookmarkOnlyFilter = false;
 let minYearFrequency = 0;
@@ -69,6 +73,8 @@ let quizMinCount = 0;
 let quizOverdueMode = false;
 let trendMode = 'week';
 let editingEntryIdx = null;
+let compareList = [];
+let compareModalOpen = false;
 function formatLocalDate(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -1236,6 +1242,40 @@ function renderSubjectTabs() {
   const freqHtml = renderFreqTabsHtml();
   freqTabsStudy.innerHTML = freqHtml;
   freqTabsMemorized.innerHTML = freqHtml;
+  const tagHtml = renderTagTabsHtml();
+  if (tagTabsStudy) tagTabsStudy.innerHTML = tagHtml;
+  if (tagTabsMemorized) tagTabsMemorized.innerHTML = tagHtml;
+  if (tagTabsQuiz) tagTabsQuiz.innerHTML = tagHtml;
+}
+function getUniqueTags() {
+  const seen = [];
+  entries.forEach(e => {
+    (e.tags || []).forEach(t => { if (t && !seen.includes(t)) seen.push(t); });
+  });
+  return seen.sort((a, b) => a.localeCompare(b, 'ja'));
+}
+function getRelatedEntries(e) {
+  const tags = e.tags || [];
+  if (tags.length === 0) return [];
+  return entries.filter(other => other !== e && (other.tags || []).some(t => tags.includes(t)));
+}
+function jumpToEntryByTitle(title) {
+  const tabBtn = document.querySelector('.tabBtn[data-page="studyPage"]');
+  if (tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
+  selectedTag = 'all';
+  searchQueryStudy = title;
+  if (searchInputStudy) searchInputStudy.value = title;
+  renderSubjectTabs();
+  renderStudyTable(entries);
+}
+function renderTagTabsHtml() {
+  const tags = getUniqueTags();
+  if (tags.length === 0) return '';
+  let html = '<button type="button" class="tagFilterBtn' + (selectedTag === 'all' ? ' active' : '') + '" data-tag="all">🏷 タグすべて</button>';
+  tags.forEach(t => {
+    html += '<button type="button" class="tagFilterBtn' + (selectedTag === t ? ' active' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
+  });
+  return html;
 }
 function filterEntries(data, searchQuery) {
   let result = data;
@@ -1244,6 +1284,9 @@ function filterEntries(data, searchQuery) {
   }
   if (selectedCategory !== 'all') {
     result = result.filter(e => (e.category || '未分類') === selectedCategory);
+  }
+  if (selectedTag !== 'all') {
+    result = result.filter(e => (e.tags || []).includes(selectedTag));
   }
   if (starOnlyFilter) {
     result = result.filter(e => studyLog[e.title] && studyLog[e.title].starred);
@@ -1287,6 +1330,8 @@ function renderAll(preserveQuiz) {
   }
   renderQuizPage();
   renderPastLogs();
+  renderCompareBar();
+  renderSyncConflictBanner();
 }
 function getNextReviewInfo(title) {
   const log = studyLog[title] || {};
@@ -1375,11 +1420,111 @@ function buildBodyEditorHtml(e, idx) {
   return '<div class="editBodyWrap">'
     + '<div class="editColorToolbar"><span class="editBoldBtn" title="太字（Ctrl+B / Cmd+Bで切替）">B</span>' + swatches + '<span class="editColorClearBtn" title="文字色をクリア">色なし</span></div>'
     + '<div class="editBodyArea" contenteditable="true" data-idx="' + idx + '">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
+    + '<div class="editTagsRow"><label>🏷 タグ（カンマ区切り）</label>'
+    + '<input type="text" class="editTagsInput" data-idx="' + idx + '" value="' + escapeHtml((e.tags || []).join(', ')) + '" placeholder="例：物権, 対抗要件"></div>'
     + '<div class="editActionsRow">'
     + '<button type="button" class="editSaveBtn" data-idx="' + idx + '">💾 保存</button>'
     + '<button type="button" class="editCancelBtn" data-idx="' + idx + '">✖ キャンセル</button>'
     + '</div>'
     + '</div>';
+}
+function buildEntryTagsBlockHtml(e) {
+  const tags = e.tags || [];
+  let html = '';
+  if (tags.length) {
+    html += '<div class="entryTagsRow">' + tags.map(t =>
+      '<span class="entryTagChip" data-tag="' + escapeHtml(t) + '" title="このタグで絞り込む">🏷 ' + escapeHtml(t) + '</span>'
+    ).join('') + '</div>';
+  }
+  const related = getRelatedEntries(e);
+  if (related.length) {
+    html += '<div class="relatedEntriesRow"><span class="relatedEntriesLabel">🔗 関連論証（' + related.length + '件）：</span>'
+      + related.map(r => '<span class="relatedEntryLink" data-title="' + escapeHtml(r.title) + '">' + escapeHtml(r.title) + '</span>').join('、')
+      + '</div>';
+  }
+  return html;
+}
+const SYNC_CONFLICT_KEY = 'ronshoSyncConflictsV1';
+function renderSyncConflictBanner() {
+  const banner = document.getElementById('syncConflictBanner');
+  if (!banner) return;
+  let conflicts = [];
+  try { conflicts = JSON.parse(localStorage.getItem(SYNC_CONFLICT_KEY) || '[]'); } catch (_) { conflicts = []; }
+  if (!conflicts.length) {
+    banner.innerHTML = '';
+    banner.classList.remove('visible');
+    return;
+  }
+  banner.classList.add('visible');
+  banner.innerHTML = '⚠️ 他端末との同期で <strong>' + conflicts.length + '件</strong> の論証が編集競合しています（同じタイトルで内容が異なる論証が両方残っています）。'
+    + '<button type="button" id="syncConflictResolveBtn">🔍 重複チェックで確認する</button>'
+    + '<span class="syncConflictDismissBtn" id="syncConflictDismissBtn">✖</span>';
+}
+function toggleCompare(title) {
+  const i = compareList.indexOf(title);
+  if (i !== -1) {
+    compareList.splice(i, 1);
+  } else {
+    compareList.push(title);
+    if (compareList.length > 2) compareList.shift();
+  }
+  renderCompareBar();
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+}
+function renderCompareBar() {
+  const bar = document.getElementById('compareBar');
+  if (!bar) return;
+  if (compareList.length === 0) {
+    bar.innerHTML = '';
+    bar.classList.remove('visible');
+    return;
+  }
+  bar.classList.add('visible');
+  bar.innerHTML = '<span class="compareBarLabel">⚖️ 比較：' + compareList.map(t => escapeHtml(t)).join(' ／ ') + '</span>'
+    + (compareList.length === 2
+      ? '<button type="button" id="compareOpenBtn">比較を表示</button>'
+      : '<span class="compareBarHint">あと1件選ぶと比較できます</span>')
+    + '<button type="button" id="compareClearBtn">✖ クリア</button>';
+}
+function openCompareModal() {
+  if (compareList.length !== 2) return;
+  compareModalOpen = true;
+  renderCompareModal();
+}
+function closeCompareModal() {
+  compareModalOpen = false;
+  renderCompareModal();
+}
+function renderCompareModal() {
+  const root = document.getElementById('compareModalRoot');
+  if (!root) return;
+  if (!compareModalOpen || compareList.length !== 2) {
+    root.innerHTML = '';
+    return;
+  }
+  const [t1, t2] = compareList;
+  const e1 = entries.find(x => x.title === t1);
+  const e2 = entries.find(x => x.title === t2);
+  if (!e1 || !e2) {
+    root.innerHTML = '';
+    return;
+  }
+  const col = (e) => '<div class="compareCol">'
+    + '<div class="compareColTitle">' + buildImportanceStarsHtml(e.importance) + escapeHtml(e.title) + '</div>'
+    + '<div class="compareColMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>'
+    + '<div class="compareColBody">' + e.bodyHtml + '</div>'
+    + buildEntryTagsBlockHtml(e)
+    + '</div>';
+  root.innerHTML = '<div class="compareModalOverlay" id="compareModalOverlay">'
+    + '<div class="compareModalBox">'
+    + '<div class="compareModalHeader"><span>⚖️ 論証の比較</span><span class="compareModalCloseBtn" id="compareModalCloseBtn">✖</span></div>'
+    + '<div class="compareModalBody">' + col(e1) + col(e2) + '</div>'
+    + '</div>'
+    + '</div>';
+}
+function parseTagsInputValue(v) {
+  return (v || '').split(/[,、，]/).map(t => t.trim()).filter(Boolean).filter((t, i, arr) => arr.indexOf(t) === i);
 }
 function applyBodyEditorColor(color) {
   document.execCommand('styleWithCSS', false, true);
@@ -1401,6 +1546,7 @@ function saveEntryEdit(idx) {
   if (!ent) return;
   const titleInput = document.querySelector('.editTitleInput[data-idx="' + idx + '"]');
   const bodyArea = document.querySelector('.editBodyArea[data-idx="' + idx + '"]');
+  const tagsInput = document.querySelector('.editTagsInput[data-idx="' + idx + '"]');
   if (!titleInput || !bodyArea) return;
   const newTitle = titleInput.value.trim();
   if (!newTitle) { alert('タイトルを入力してください。'); return; }
@@ -1411,6 +1557,7 @@ function saveEntryEdit(idx) {
   ent.title = newTitle;
   ent.body = newBodyText;
   ent.bodyHtml = newBodyHtml;
+  ent.tags = tagsInput ? parseTagsInputValue(tagsInput.value) : (ent.tags || []);
   if (oldTitle !== newTitle) {
     if (studyLog[oldTitle]) {
       if (studyLog[newTitle]) {
@@ -1468,18 +1615,20 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const memoHtml = '<span class="memoToggle' + (memo ? ' active' : '') + '" data-idx="' + idx + '" title="' + escapeHtml(memoTitle) + '">🗒️</span>';
   const isEditing = editingEntryIdx === idx;
   const editToggleHtml = '<span class="editToggle' + (isEditing ? ' active' : '') + '" data-idx="' + idx + '" title="内容を編集">✏️</span>';
+  const isCompareSelected = compareList.includes(e.title);
+  const compareToggleHtml = '<span class="compareToggle' + (isCompareSelected ? ' active' : '') + '" data-title="' + escapeHtml(e.title) + '" title="比較に追加／解除">⚖️</span>';
   const titleCellContent = isEditing
     ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
-    : '<div class="titleCellWrap">' + starHtml + bookmarkHtml + memoHtml + editToggleHtml + '<div class="titleText">' + titleHtml + '</div></div>';
+    : '<div class="titleCellWrap">' + starHtml + bookmarkHtml + memoHtml + compareToggleHtml + editToggleHtml + '<div class="titleText">' + titleHtml + '</div></div>';
   let bodyCellContent;
   if (isEditing) {
     bodyCellContent = buildBodyEditorHtml(e, idx);
   } else if (collapseBody && !expandedBodySet.has(e.title)) {
-    bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>';
+    bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>' + buildEntryTagsBlockHtml(e);
   } else if (collapseBody) {
-    bodyCellContent = '<div class="bodyCellArea" data-idx="' + idx + '">' + highlightSearch(e.bodyHtml, searchQuery) + '</div>';
+    bodyCellContent = '<div class="bodyCellArea" data-idx="' + idx + '">' + highlightSearch(e.bodyHtml, searchQuery) + '</div>' + buildEntryTagsBlockHtml(e);
   } else {
-    bodyCellContent = highlightSearch(e.bodyHtml, searchQuery);
+    bodyCellContent = highlightSearch(e.bodyHtml, searchQuery) + buildEntryTagsBlockHtml(e);
   }
   return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + (bookmarked ? ' bookmarkedRow' : '') + '" data-idx="' + idx + '">'
     + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'
@@ -2105,6 +2254,72 @@ document.addEventListener('click', (e) => {
     renderQuizPage();
     return;
   }
+  const tagFilterBtn = e.target.closest('.tagFilterBtn');
+  if (tagFilterBtn) {
+    selectedTag = tagFilterBtn.dataset.tag;
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const relatedEntryLink = e.target.closest('.relatedEntryLink');
+  if (relatedEntryLink) {
+    jumpToEntryByTitle(relatedEntryLink.dataset.title);
+    return;
+  }
+  const tagChip = e.target.closest('.entryTagChip');
+  if (tagChip) {
+    selectedTag = tagChip.dataset.tag;
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const compareToggle = e.target.closest('.compareToggle');
+  if (compareToggle) {
+    toggleCompare(compareToggle.dataset.title);
+    return;
+  }
+  const compareOpenBtn = e.target.closest('#compareOpenBtn');
+  if (compareOpenBtn) {
+    openCompareModal();
+    return;
+  }
+  const compareClearBtn = e.target.closest('#compareClearBtn');
+  if (compareClearBtn) {
+    compareList = [];
+    renderCompareBar();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    return;
+  }
+  const compareModalCloseBtn = e.target.closest('#compareModalCloseBtn');
+  if (compareModalCloseBtn) {
+    closeCompareModal();
+    return;
+  }
+  if (e.target.id === 'compareModalOverlay') {
+    closeCompareModal();
+    return;
+  }
+  const syncConflictResolveBtn = e.target.closest('#syncConflictResolveBtn');
+  if (syncConflictResolveBtn) {
+    const tabBtn = document.querySelector('.tabBtn[data-page="csvPage"]');
+    if (tabBtn) tabBtn.click();
+    const checkBtn = document.getElementById('checkDuplicatesBtn');
+    if (checkBtn) checkBtn.click();
+    return;
+  }
+  const syncConflictDismissBtn = e.target.closest('#syncConflictDismissBtn');
+  if (syncConflictDismissBtn) {
+    const banner = document.getElementById('syncConflictBanner');
+    if (banner) { banner.innerHTML = ''; banner.classList.remove('visible'); }
+    return;
+  }
   const delBtn = e.target.closest('.deleteDayItemBtn');
   if (delBtn) {
     const d = delBtn.dataset.date;
@@ -2369,6 +2584,7 @@ function renderQuizPage() {
     html += '<div class="quizShowBtn" id="quizShowBtn">📖 本文を表示</div>';
   } else {
     html += '<div class="quizBody">' + e.bodyHtml + '</div>';
+    html += buildEntryTagsBlockHtml(e);
     html += '<div class="quizYear">出題年：' + (buildYearHtml(e.year) || 'なし') + '</div>';
     const isWeak = !!(studyLog[e.title] && studyLog[e.title].starred);
     html += '<div class="quizJudgeRow">'
@@ -3111,3 +3327,4 @@ if (dupArchiveToggleBtn) dupArchiveToggleBtn.addEventListener('click', () => {
   renderDupArchive();
 });
 renderDupArchive();
+renderSyncConflictBanner();

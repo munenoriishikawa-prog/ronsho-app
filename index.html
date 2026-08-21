@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.28（タグ・比較表示・PWA対応・同期競合検知）＋過去問ログ</title>
+<title>論証集アプリ v21.29（同期ボタンを画面右上に移動・自動同期を強化）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.28</h1>
+<h1>📚 論証集アプリ v21.29</h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="topStatusRow" class="topStatusRow">
@@ -132,7 +132,7 @@
 <div id="csvPage" class="page">
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">☁️ Google Drive同期</div>
-<div id="driveSyncPanelSlot"></div>
+<div class="dupCheckIntro">同期ボタンは画面右上に移動しました。数分おきに自動でも同期されます（他端末の更新分も自動で取り込みます）。</div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📥 Wordファイルの読み込み</div>

@@ -1373,7 +1373,7 @@ function buildBodyEditorHtml(e, idx) {
   const colors = getExistingBodyColors();
   const swatches = colors.map(c => '<span class="editColorSwatch" data-color="' + c + '" style="background:' + c + ';" title="' + c + '"></span>').join('');
   return '<div class="editBodyWrap">'
-    + '<div class="editColorToolbar"><span class="editBoldBtn" title="太字">B</span><span class="editUnboldBtn" title="太字を解除">B解除</span>' + swatches + '<span class="editColorClearBtn" title="文字色をクリア">色なし</span></div>'
+    + '<div class="editColorToolbar"><span class="editBoldBtn" title="太字（Ctrl+B / Cmd+Bで切替）">B</span>' + swatches + '<span class="editColorClearBtn" title="文字色をクリア">色なし</span></div>'
     + '<div class="editBodyArea" contenteditable="true" data-idx="' + idx + '">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
     + '<div class="editActionsRow">'
     + '<button type="button" class="editSaveBtn" data-idx="' + idx + '">💾 保存</button>'
@@ -1389,11 +1389,11 @@ function applyBodyEditorBold() {
   document.execCommand('styleWithCSS', false, true);
   document.execCommand('bold');
 }
-function applyBodyEditorUnbold() {
-  document.execCommand('styleWithCSS', false, true);
-  document.execCommand('bold');
-  if (document.queryCommandState('bold')) {
-    document.execCommand('bold');
+function handleBodyEditorKeydown(evt) {
+  const key = (evt.key || '').toLowerCase();
+  if ((evt.ctrlKey || evt.metaKey) && key === 'b') {
+    evt.preventDefault();
+    applyBodyEditorBold();
   }
 }
 function saveEntryEdit(idx) {
@@ -1931,9 +1931,12 @@ function toggleBodyExpand(idx) {
 }
 function attachTableClickHandler(wrapEl) {
   wrapEl.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.editColorSwatch') || e.target.closest('.editColorClearBtn') || e.target.closest('.editBoldBtn') || e.target.closest('.editUnboldBtn')) {
+    if (e.target.closest('.editColorSwatch') || e.target.closest('.editColorClearBtn') || e.target.closest('.editBoldBtn')) {
       e.preventDefault();
     }
+  });
+  wrapEl.addEventListener('keydown', (e) => {
+    if (e.target.closest('.editBodyArea')) handleBodyEditorKeydown(e);
   });
   wrapEl.addEventListener('click', (e) => {
     const editToggle = e.target.closest('.editToggle');
@@ -1949,12 +1952,6 @@ function attachTableClickHandler(wrapEl) {
     if (boldBtn) {
       e.stopPropagation();
       applyBodyEditorBold();
-      return;
-    }
-    const unboldBtn = e.target.closest('.editUnboldBtn');
-    if (unboldBtn) {
-      e.stopPropagation();
-      applyBodyEditorUnbold();
       return;
     }
     const colorSwatch = e.target.closest('.editColorSwatch');
@@ -2460,19 +2457,17 @@ function renderQuizPage() {
   });
   if (isEditingThis) {
     quizArea.addEventListener('mousedown', (evt) => {
-      if (evt.target.closest('.editColorSwatch') || evt.target.closest('.editColorClearBtn') || evt.target.closest('.editBoldBtn') || evt.target.closest('.editUnboldBtn')) {
+      if (evt.target.closest('.editColorSwatch') || evt.target.closest('.editColorClearBtn') || evt.target.closest('.editBoldBtn')) {
         evt.preventDefault();
       }
+    });
+    quizArea.addEventListener('keydown', (evt) => {
+      if (evt.target.closest('.editBodyArea')) handleBodyEditorKeydown(evt);
     });
     const boldBtn = quizArea.querySelector('.editBoldBtn');
     if (boldBtn) boldBtn.addEventListener('click', (evt) => {
       evt.stopPropagation();
       applyBodyEditorBold();
-    });
-    const unboldBtn = quizArea.querySelector('.editUnboldBtn');
-    if (unboldBtn) unboldBtn.addEventListener('click', (evt) => {
-      evt.stopPropagation();
-      applyBodyEditorUnbold();
     });
     const colorSwatches = quizArea.querySelectorAll('.editColorSwatch');
     colorSwatches.forEach(sw => sw.addEventListener('click', (evt) => {

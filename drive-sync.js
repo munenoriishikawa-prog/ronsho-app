@@ -8,6 +8,9 @@
   const MANUALLOG_KEY = 'ronshoManualLog';
   const PASTEXAM_KEY = 'ronshoPastExamLogs_v1';
   const COUNTDOWN_KEY = 'ronshoCountdowns_v1';
+  const DUPARCHIVE_KEY = 'ronshoDupArchiveV1';
+  const DUPRESOLVED_KEY = 'ronshoDupResolvedV1';
+  const SPEECHDICT_KEY = 'ronshoSpeechDictV1';
   let token = '', timer, last = '';
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
@@ -41,7 +44,10 @@
     studyLog: read(STUDYLOG_KEY, {}),
     manualLog: read(MANUALLOG_KEY, {}),
     pastExamLogs: read(PASTEXAM_KEY, []),
-    countdowns: read(COUNTDOWN_KEY, [])
+    countdowns: read(COUNTDOWN_KEY, []),
+    dupArchive: read(DUPARCHIVE_KEY, []),
+    dupResolved: read(DUPRESOLVED_KEY, []),
+    speechDict: read(SPEECHDICT_KEY, [])
   });
 
   const mergeHistory = (a, b) => {
@@ -90,9 +96,30 @@
     if (!sameSet(mergedCountdowns, local.countdowns)) lastChanged.push('カウントダウン');
     write(COUNTDOWN_KEY, mergedCountdowns);
 
+    const archiveKey = x => [x?.entry?.title, x?.entry?.body].filter(Boolean).join('|') || JSON.stringify(x);
+    const dupArchive = new Map([...(remote.dupArchive || []), ...(local.dupArchive || [])].map(x => [archiveKey(x), x]));
+    const mergedDupArchive = [...dupArchive.values()];
+    if (!sameSet(mergedDupArchive, local.dupArchive)) lastChanged.push('重複チェックアーカイブ');
+    write(DUPARCHIVE_KEY, mergedDupArchive);
+    try { dupArchiveList = mergedDupArchive } catch (_) {}
+
+    const mergedDupResolved = [...new Set([...(remote.dupResolved || []), ...(local.dupResolved || [])])];
+    if (!sameSet(mergedDupResolved, local.dupResolved)) lastChanged.push('重複チェック履歴');
+    write(DUPRESOLVED_KEY, mergedDupResolved);
+    try { dupResolvedSet = new Set(mergedDupResolved) } catch (_) {}
+
+    const dictKey = x => x?.word;
+    const speechDict = new Map([...(remote.speechDict || []), ...(local.speechDict || [])].map(x => [dictKey(x), x]));
+    const mergedSpeechDict = [...speechDict.values()];
+    if (!sameSet(mergedSpeechDict, local.speechDict)) lastChanged.push('読み方辞書');
+    write(SPEECHDICT_KEY, mergedSpeechDict);
+    try { speechDict = mergedSpeechDict } catch (_) {}
+
     if (typeof saveEntries === 'function') saveEntries();
     if (typeof renderAll === 'function') renderAll(true);
     if (typeof renderCountdownCard === 'function') renderCountdownCard();
+    if (typeof renderDupArchive === 'function') renderDupArchive();
+    if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
     return snapshot();
   };
 

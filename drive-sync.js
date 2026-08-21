@@ -71,8 +71,14 @@
     const local = snapshot();
     lastChanged = [];
 
+    const archiveKey = x => [x?.entry?.title, x?.entry?.body].filter(Boolean).join('|') || JSON.stringify(x);
+    const dupArchive = new Map([...(remote.dupArchive || []), ...(local.dupArchive || [])].map(x => [archiveKey(x), x]));
+    const mergedDupArchive = [...dupArchive.values()];
+    const deletedTitleBodySet = new Set(mergedDupArchive.map(x => [x?.entry?.title, x?.entry?.body].join('|')));
+
     const remoteEntries = remote.entries || Object.values(remote.fileBuckets || {}).flat();
-    const mergedEntries = unique([...(remoteEntries || []), ...local.entries]);
+    const mergedEntries = unique([...(remoteEntries || []), ...local.entries])
+      .filter(e => !deletedTitleBodySet.has([e.title, e.body].join('|')));
     if (!sameSet(mergedEntries, local.entries)) lastChanged.push('論証データ');
     write(ENTRY_KEY, mergedEntries);
     try { entries = mergedEntries } catch (_) {}
@@ -96,9 +102,6 @@
     if (!sameSet(mergedCountdowns, local.countdowns)) lastChanged.push('カウントダウン');
     write(COUNTDOWN_KEY, mergedCountdowns);
 
-    const archiveKey = x => [x?.entry?.title, x?.entry?.body].filter(Boolean).join('|') || JSON.stringify(x);
-    const dupArchive = new Map([...(remote.dupArchive || []), ...(local.dupArchive || [])].map(x => [archiveKey(x), x]));
-    const mergedDupArchive = [...dupArchive.values()];
     if (!sameSet(mergedDupArchive, local.dupArchive)) lastChanged.push('重複チェックアーカイブ');
     write(DUPARCHIVE_KEY, mergedDupArchive);
     try { dupArchiveList = mergedDupArchive } catch (_) {}

@@ -100,7 +100,7 @@ function renderQuizPage() {
     return;
   }
   const e = quizPool[quizIndex];
-  const idx = entries.findIndex(x => x.title === e.title);
+  const idx = entries.indexOf(e);
   const isEditingThis = idx !== -1 && editingEntryIdx === idx;
   const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
   const isSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
@@ -164,7 +164,7 @@ function renderQuizPage() {
     renderQuizPage();
   });
   function advanceQuiz(level, sourceEl) {
-    const idx = entries.findIndex(x => x.title === e.title);
+    const idx = entries.indexOf(e);
     if (idx !== -1) setConfidence(idx, level, sourceEl);
     quizIndex++;
     quizRevealed = false;
@@ -178,21 +178,21 @@ function renderQuizPage() {
   if (badBtn) badBtn.addEventListener('click', () => advanceQuiz('bad', badBtn));
   const weakBtn = document.getElementById('quizWeakBtn');
   if (weakBtn) weakBtn.addEventListener('click', () => {
-    const idx = entries.findIndex(x => x.title === e.title);
+    const idx = entries.indexOf(e);
     if (idx !== -1) toggleStar(idx);
     renderQuizPage();
   });
   const bookmarkBtn = document.getElementById('quizBookmarkBtn');
   if (bookmarkBtn) bookmarkBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
-    const idx = entries.findIndex(x => x.title === e.title);
+    const idx = entries.indexOf(e);
     if (idx !== -1) toggleBookmark(idx);
     renderQuizPage();
   });
   const memoBtn = document.getElementById('quizMemoBtn');
   if (memoBtn) memoBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
-    const idx = entries.findIndex(x => x.title === e.title);
+    const idx = entries.indexOf(e);
     if (idx !== -1) editMemo(idx);
     renderQuizPage();
   });
@@ -200,7 +200,7 @@ function renderQuizPage() {
   if (skipBtn) skipBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
     const wasSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
-    const idx = entries.findIndex(x => x.title === e.title);
+    const idx = entries.indexOf(e);
     if (idx !== -1) toggleSkip(idx);
     if (!wasSkipped) {
       quizIndex++;
@@ -211,14 +211,14 @@ function renderQuizPage() {
   const sourceEditBtn = document.getElementById('quizSourceEditBtn');
   if (sourceEditBtn) sourceEditBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
-    const idx = entries.findIndex(x => x.title === e.title);
+    const idx = entries.indexOf(e);
     if (idx !== -1) editSource(idx);
     renderQuizPage();
   });
   const quizEditBtn = document.getElementById('quizEditBtn');
   if (quizEditBtn) quizEditBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
-    const idx = entries.findIndex(x => x.title === e.title);
+    const idx = entries.indexOf(e);
     if (idx === -1) return;
     editingEntryIdx = editingEntryIdx === idx ? null : idx;
     renderQuizPage();

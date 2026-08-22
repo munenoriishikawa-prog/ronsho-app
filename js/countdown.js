@@ -26,6 +26,13 @@ function getDaysUntil(dateStr) {
   return Math.round((target - today) / 86400000);
 }
 
+function buildCountdownPaceHtml(days) {
+  if (typeof entries === 'undefined' || entries.length === 0) return '';
+  const remaining = entries.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized)).length;
+  if (remaining === 0) return '<div class="countdownPace">🎉 未暗記の論証はありません！</div>';
+  const quota = Math.ceil(remaining / Math.max(days, 1));
+  return '<div class="countdownPace">📌 未暗記' + remaining + '件 ÷ 残り' + Math.max(days, 1) + '日 = 1日あたり<strong>' + quota + '問</strong>のペースが必要です。</div>';
+}
 function renderCountdownCard() {
   const el = document.getElementById('countdownCard');
   if (!el) return;
@@ -35,15 +42,19 @@ function renderCountdownCard() {
   const past = withDays.filter(c => c.days < 0).sort((a, b) => b.days - a.days);
   const ordered = upcoming.concat(past);
 
+  const nearestUpcoming = upcoming.length > 0 ? upcoming[0] : null;
   const itemsHtml = ordered.map(c => {
     const isPast = c.days < 0;
     const daysLabel = isPast ? (Math.abs(c.days) + '日経過') : (c.days === 0 ? '本日！' : 'あと' + c.days + '日');
     const urgentClass = (!isPast && c.days <= 7) ? ' countdownUrgent' : (isPast ? ' countdownPast' : '');
+    const isNearest = nearestUpcoming && c.id === nearestUpcoming.id;
+    const paceHtml = isNearest ? buildCountdownPaceHtml(c.days) : '';
     return '<div class="countdownItem' + urgentClass + '">'
       + '<span class="countdownLabel">' + escapeHtml(c.label) + '</span>'
       + '<span class="countdownDays">' + daysLabel + '</span>'
       + '<span class="countdownDate">（' + escapeHtml(c.date) + '）</span>'
       + '<span class="countdownDeleteBtn" data-id="' + c.id + '" title="削除">🗑</span>'
+      + paceHtml
       + '</div>';
   }).join('');
 

@@ -314,10 +314,10 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .badgeIcon { font-size: 26px; }
 .badgeName { font-size: 11px; color: #0c2340; margin-top: 4px; line-height: 1.3; }
 .calCell.calHeatLevel0 { background: #fff; }
-.calCell.calHeatLevel1 { background: #eaf4ff; }
-.calCell.calHeatLevel2 { background: #cfe6ff; }
-.calCell.calHeatLevel3 { background: #a8d4ff; }
-.calCell.calHeatLevel4 { background: #7ec2ff; }
+.calCell.calHeatLevel1 { background: #fff8db; }
+.calCell.calHeatLevel2 { background: #ffecab; }
+.calCell.calHeatLevel3 { background: #ffdb72; }
+.calCell.calHeatLevel4 { background: #ffc33e; }
 .quizCombo {
   text-align: center;
   font-weight: 800;

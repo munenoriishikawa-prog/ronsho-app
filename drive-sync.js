@@ -110,11 +110,13 @@
     const study = mergeLog(remote.studyLog || {}, local.studyLog || {});
     if (stableStringify(study) !== stableStringify(local.studyLog || {})) lastChanged.push('学習記録');
     write(STUDYLOG_KEY, study);
+    try { studyLog = study } catch (_) {}
 
     const manual = { ...(remote.manualLog || {}) };
     for (const [d, v] of Object.entries(local.manualLog || {})) manual[d] = unique([...(manual[d] || []), ...v]);
     if (manualLogChanged(manual, local.manualLog || {})) lastChanged.push('学習カレンダー記録');
     write(MANUALLOG_KEY, manual);
+    try { manualLog = manual } catch (_) {}
 
     const exams = new Map([...(remote.pastExamLogs || []), ...(local.pastExamLogs || [])].map(x => [x.key || JSON.stringify(x), x]));
     const mergedExams = [...exams.values()];

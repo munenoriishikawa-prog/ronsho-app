@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.36（やる気が出る名言のランダム表示を追加）＋過去問ログ</title>
+<title>論証集アプリ v21.37（サマリーとカウントダウンを同じ行に配置）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.36</h1>
+<h1>📚 論証集アプリ v21.37</h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="quoteCard" class="quoteCard"></div>
@@ -22,7 +22,6 @@
 <div id="gamificationRow" class="gamificationRow"></div>
 <div id="progressSummary"></div>
 <div id="badgesSection"></div>
-<div id="summarySection" class="summarySection"></div>
 <div class="tabs">
 <button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
 <button class="tabBtn" data-page="memorizedPage">✅ 暗記済み一覧</button>
@@ -33,7 +32,10 @@
 <button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
 </div>
 <div id="studyPage" class="page active">
+<div id="homeSummaryRow" class="homeSummaryRow">
 <div id="countdownCard"></div>
+<div id="summarySection" class="summarySection"></div>
+</div>
 <div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。😰＝苦手フラグ。○バッチリ＝暗記済みへ移動／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
 <div class="searchBox">
 <input type="text" id="searchInputStudy" placeholder="🔍 タイトル・本文をキーワード検索">

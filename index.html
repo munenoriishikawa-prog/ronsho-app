@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.31（学習カレンダーの一覧を折りたたみ表示に変更）＋過去問ログ</title>
+<title>論証集アプリ v21.32（レベル・目標リング・実績バッジ・ヒートマップ・コンボ表示を追加）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,13 +12,15 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.31</h1>
+<h1>📚 論証集アプリ v21.32</h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
 </div>
+<div id="gamificationRow" class="gamificationRow"></div>
 <div id="progressSummary"></div>
+<div id="badgesSection"></div>
 <div class="tabs">
 <button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
 <button class="tabBtn" data-page="memorizedPage">✅ 暗記済み一覧</button>
@@ -128,6 +130,7 @@
 </div>
 </div>
 <div id="calendarPage" class="page">
+<div id="studyHeatmapWrap" class="studyHeatmapWrap"></div>
 <div id="trendWrap"></div>
 <div id="calendarWrap"></div>
 </div>
@@ -235,6 +238,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <script src="js/speech.js"></script>
 <script src="js/countdown.js"></script>
 <script src="js/past-exam.js"></script>
+<script src="js/gamification.js"></script>
 <script src="js/init.js"></script>
 
 

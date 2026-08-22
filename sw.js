@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ronsho-app-cache-v7';
+const CACHE_NAME = 'ronsho-app-cache-v8';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const PRECACHE_URLS = [
   './js/speech.js',
   './js/countdown.js',
   './js/past-exam.js',
+  './js/gamification.js',
   './js/init.js',
   './style.css',
   './drive-sync.js',

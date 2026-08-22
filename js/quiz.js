@@ -70,6 +70,7 @@ function startQuiz() {
   quizIndex = 0;
   quizRevealed = false;
   quizStarted = true;
+  quizComboCount = 0;
   renderQuizPage();
 }
 function renderQuizPage() {
@@ -120,6 +121,9 @@ function renderQuizPage() {
     + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
     + '</div>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
+  if (quizComboCount >= 2) {
+    html += '<div class="quizCombo">🔥 ' + quizComboCount + '連続バッチリ！</div>';
+  }
   html += '<div class="quizNavRow">'
     + '<button type="button" class="quizNavBtn" id="quizPrevBtn"' + (quizIndex === 0 ? ' disabled' : '') + '>◀ 前の問題</button>'
     + '<button type="button" class="quizNavBtn" id="quizNextBtn"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>次の問題 ▶</button>'
@@ -173,6 +177,7 @@ function renderQuizPage() {
   function advanceQuiz(level, sourceEl) {
     const idx = entries.indexOf(e);
     if (idx !== -1) setConfidence(idx, level, sourceEl);
+    quizComboCount = (level === 'good') ? quizComboCount + 1 : 0;
     quizIndex++;
     quizRevealed = false;
     renderQuizPage();

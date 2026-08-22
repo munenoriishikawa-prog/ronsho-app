@@ -19,3 +19,4 @@ renderSyncConflictBanner();
 if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
 if (typeof renderBadgesSection === 'function') renderBadgesSection();
 if (typeof renderSummarySection === 'function') renderSummarySection();
+if (typeof renderQuoteCard === 'function') renderQuoteCard();

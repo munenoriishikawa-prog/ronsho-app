@@ -944,6 +944,7 @@ function renderAll(preserveQuiz) {
   if (typeof renderBadgesSection === 'function') renderBadgesSection();
   if (typeof renderSummarySection === 'function') renderSummarySection();
   if (typeof renderCountdownCard === 'function') renderCountdownCard();
+  if (typeof renderQuoteCard === 'function') renderQuoteCard();
 }
 function getNextReviewInfo(title) {
   const log = studyLog[title] || {};

@@ -442,7 +442,7 @@ function toggleSkip(idx) {
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
   saveStudyLog();
-  status.textContent = studyLog[title].skipped ? '⏭️ 「' + title + '」をスキップしました（ランダム出題から除外）。' : '「' + title + '」のスキップを解除しました。';
+  status.textContent = studyLog[title].skipped ? '⏭️ 「' + title + '」をスキップしました（問題演習から除外）。' : '「' + title + '」のスキップを解除しました。';
   renderStudyTable(entries);
   renderMemorizedTable(entries);
 }

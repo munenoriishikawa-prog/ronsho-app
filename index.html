@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.29（同期ボタンを画面右上に移動・自動同期を強化）＋過去問ログ</title>
+<title>論証集アプリ v21.30（問題演習にタブ名変更・論証の順番通り演習を追加）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.29</h1>
+<h1>📚 論証集アプリ v21.30</h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="topStatusRow" class="topStatusRow">
@@ -22,7 +22,7 @@
 <div class="tabs">
 <button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
 <button class="tabBtn" data-page="memorizedPage">✅ 暗記済み一覧</button>
-<button class="tabBtn" data-page="quizPage">🎲 ランダム出題</button>
+<button class="tabBtn" data-page="quizPage">📝 問題演習</button>
 <button class="tabBtn" data-page="speechPage">🔊 読み上げ</button>
 <button class="tabBtn" data-page="calendarPage">📅 学習カレンダー・復習予定</button>
 <button class="tabBtn" data-page="csvPage">📥📤 データ読込み・出力</button>
@@ -65,12 +65,14 @@
 <div id="starTabsQuiz" class="starFilterTabs"></div>
 <div id="importanceTabsQuiz" class="starFilterTabs"></div>
 <div class="quizControls">
+<label><input type="radio" name="quizOrderMode" id="quizOrderRandomRadio" value="random" checked> 🔀 ランダム順</label>
+<label><input type="radio" name="quizOrderMode" id="quizOrderSequentialRadio" value="sequential"> 📖 論証の順番通り</label>
 <label><input type="checkbox" id="quizIncludeMemorizedChk"> 暗記済みも出題に含める</label>
 <label><input type="checkbox" id="quizOverdueOnlyChk"> ⏰ 復習期限が来ているものだけ出題</label>
 <label><input type="checkbox" id="quizExcludeTodayChk"> 🚫 本日学習済みを除外</label>
 <label><input type="checkbox" id="quizWeakOnlyChk"> 😰 苦手のみ出題</label>
 <label><input type="checkbox" id="quizSkippedOnlyChk"> ⏭️ スキップしたものだけ出題</label>
-<button id="quizStartBtn">🎲 スタート／シャッフルし直す</button>
+<button id="quizStartBtn">▶ スタート／やり直す</button>
 </div>
 <div class="quizPriorityNote" id="quizPriorityNote"></div>
 <div id="quizArea"></div>

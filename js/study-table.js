@@ -115,6 +115,8 @@ function renderCsvTable(data) {
 }
 let calViewYear = new Date().getFullYear();
 let calViewMonth = new Date().getMonth();
+let categoryTotalListVisible = false;
+let reviewListVisible = false;
 function getAllStudyDates() {
   const map = {};
   Object.keys(studyLog).forEach(title => {
@@ -300,7 +302,9 @@ function renderCalendar() {
       categoryTotal[c] = (categoryTotal[c] || 0) + (Number(it.count) || 1);
     });
   });
-  html += '<h3>分野別 学習回数（全期間合計）</h3><div class="reviewList">';
+  html += '<h3>分野別 学習回数（全期間合計）</h3>';
+  html += '<span class="speechDictToggle" id="categoryTotalToggleBtn">' + (categoryTotalListVisible ? '▼ 一覧を隠す' : '▶ 一覧を表示する') + '（' + Object.keys(categoryTotal).length + '件）</span>';
+  html += '<div class="reviewList" id="categoryTotalListWrap" style="display:' + (categoryTotalListVisible ? '' : 'none') + ';">';
   if (Object.keys(categoryTotal).length === 0) {
     html += '<div class="reviewItem">まだ学習記録がありません。</div>';
   } else {
@@ -319,8 +323,10 @@ function renderCalendar() {
     }
   });
   reviewItems.sort((a, b) => a.nextDate.localeCompare(b.nextDate));
-  html += '<h3>復習が推奨される論点（忘却曲線ベース）</h3><div class="reviewList">';
   const upcoming = reviewItems.filter(r => r.overdue || r.nextDate <= addDays(today, 7));
+  html += '<h3>復習が推奨される論点（忘却曲線ベース）</h3>';
+  html += '<span class="speechDictToggle" id="reviewListToggleBtn">' + (reviewListVisible ? '▼ 一覧を隠す' : '▶ 一覧を表示する') + '（' + upcoming.length + '件）</span>';
+  html += '<div class="reviewList" id="reviewListWrap" style="display:' + (reviewListVisible ? '' : 'none') + ';">';
   if (upcoming.length === 0) {
     html += '<div class="reviewItem">現在、復習が近い論点はありません。</div>';
   } else {
@@ -811,6 +817,18 @@ document.addEventListener('click', (e) => {
   if (dayCell) {
     const d = dayCell.dataset.date;
     selectedDay = (selectedDay === d) ? null : d;
+    renderCalendar();
+    return;
+  }
+  const categoryTotalToggleBtn = e.target.closest('#categoryTotalToggleBtn');
+  if (categoryTotalToggleBtn) {
+    categoryTotalListVisible = !categoryTotalListVisible;
+    renderCalendar();
+    return;
+  }
+  const reviewListToggleBtn = e.target.closest('#reviewListToggleBtn');
+  if (reviewListToggleBtn) {
+    reviewListVisible = !reviewListVisible;
     renderCalendar();
     return;
   }

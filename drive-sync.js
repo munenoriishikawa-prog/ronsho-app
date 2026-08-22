@@ -228,7 +228,9 @@
         else await connect('consent');
       } catch (e) { state(e.message) }
     };
-    document.getElementById('pageReloadBtn').onclick = () => location.reload();
+    document.getElementById('pageReloadBtn').onclick = () => {
+      if (confirm('ページを読み込み直します。保存していない編集内容は失われますが、よろしいですか？')) location.reload();
+    };
     if (isAuthorized()) connect('').catch(() => {});
 
     // ローカル変更を検知したら短い遅延で自動アップロード

@@ -1,7 +1,7 @@
 /* ▼▼▼ 新規追加：学習モチベーション向上機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼
-   レベル/XP・今日の目標リング・実績バッジ・学習ヒートマップ。
+   レベル/XP・今日の目標リング・実績バッジ・学習ヒートマップ・今日の伸びしろ・週次月次サマリー。
    既存の entries / studyLog には一切書き込まず、既存データから導出するだけ。
-   保存先は専用のキー 'ronshoDailyGoalV1' のみを使用する。 */
+   保存先は専用のキー 'ronshoDailyGoalV1'・'ronshoDailyStatsV1' のみを使用する。 */
 
 const DAILY_GOAL_KEY = 'ronshoDailyGoalV1';
 const DEFAULT_DAILY_GOAL = 10;
@@ -44,6 +44,37 @@ function getTodayStudiedCount() {
   }).length;
 }
 
+const DAILY_STATS_KEY = 'ronshoDailyStatsV1';
+function loadDailyStats() {
+  try {
+    return JSON.parse(localStorage.getItem(DAILY_STATS_KEY) || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+function saveDailyStats(obj) {
+  localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(obj));
+}
+function recordTodayMemorizedSnapshot() {
+  const stats = loadDailyStats();
+  stats[todayStr()] = computeMemorizedCount();
+  saveDailyStats(stats);
+  return stats;
+}
+function getGrowthToday() {
+  const stats = recordTodayMemorizedSnapshot();
+  const today = todayStr();
+  const priorDates = Object.keys(stats).filter(d => d < today).sort();
+  if (priorDates.length === 0) return null;
+  const prevDate = priorDates[priorDates.length - 1];
+  const prevCount = stats[prevDate];
+  const todayCount = stats[today];
+  const total = entries.length;
+  const prevPct = total > 0 ? Math.round((prevCount / total) * 100) : 0;
+  const todayPct = total > 0 ? Math.round((todayCount / total) * 100) : 0;
+  return { prevDate: prevDate, countDiff: todayCount - prevCount, pctDiff: todayPct - prevPct, todayPct: todayPct };
+}
+
 function renderGamificationPanel() {
   const wrap = document.getElementById('gamificationRow');
   if (!wrap) return;
@@ -56,6 +87,18 @@ function renderGamificationPanel() {
   const todayCount = getTodayStudiedCount();
   const goal = loadDailyGoal();
   const goalPct = goal > 0 ? Math.min(100, Math.round((todayCount / goal) * 100)) : 0;
+  const growth = getGrowthToday();
+  let growthHtml;
+  if (!growth) {
+    growthHtml = '<div class="gamiCardTitle">📈 今日の伸びしろ</div><div class="gamiCardSub">記録は明日から表示されます</div>';
+  } else if (growth.countDiff === 0) {
+    growthHtml = '<div class="gamiCardTitle">📈 今日の伸びしろ</div><div class="gamiCardSub">暗記率はまだ変化なし（現在' + growth.todayPct + '%）</div>';
+  } else {
+    const sign = growth.countDiff > 0 ? '+' : '';
+    growthHtml = '<div class="gamiCardTitle">📈 今日の伸びしろ</div>'
+      + '<div class="gamiGrowthValue' + (growth.countDiff > 0 ? ' up' : ' down') + '">' + sign + growth.pctDiff + '%</div>'
+      + '<div class="gamiCardSub">暗記済み ' + sign + growth.countDiff + '件（現在' + growth.todayPct + '%）</div>';
+  }
   wrap.innerHTML = '<div class="gamiCard gamiLevelCard">'
     + '<div class="gamiCardTitle">🏆 LV.' + info.level + '</div>'
     + '<div class="gamiBarOuter"><div class="gamiBarInner" style="width:' + levelPct + '%;"></div></div>'
@@ -64,7 +107,8 @@ function renderGamificationPanel() {
     + '<div class="gamiCard gamiGoalCard" id="dailyGoalRing" title="クリックして今日の目標を変更">'
     + '<div class="gamiRing" style="background: conic-gradient(#0057e7 ' + goalPct + '%, #e6edf7 ' + goalPct + '% 100%);"><div class="gamiRingInner">' + todayCount + ' / ' + goal + '</div></div>'
     + '<div class="gamiCardTitle">🎯 今日の目標</div>'
-    + '</div>';
+    + '</div>'
+    + '<div class="gamiCard gamiGrowthCard">' + growthHtml + '</div>';
 }
 document.getElementById('gamificationRow') && document.getElementById('gamificationRow').addEventListener('click', (e) => {
   const ring = e.target.closest('#dailyGoalRing');
@@ -135,4 +179,51 @@ document.getElementById('badgesSection') && document.getElementById('badgesSecti
   badgesListVisible = !badgesListVisible;
   renderBadgesSection();
 });
+
+function sumStudyCountsInRange(dailyCounts, startOffsetDays, endOffsetDaysExclusive) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let sum = 0;
+  for (let i = startOffsetDays; i < endOffsetDaysExclusive; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    sum += dailyCounts[formatLocalDate(d)] || 0;
+  }
+  return sum;
+}
+function computeSummaryStats() {
+  const counts = (typeof getDailyStudyCounts === 'function') ? getDailyStudyCounts() : {};
+  return {
+    thisWeek: sumStudyCountsInRange(counts, 0, 7),
+    lastWeek: sumStudyCountsInRange(counts, 7, 14),
+    thisMonth: sumStudyCountsInRange(counts, 0, 30),
+    lastMonth: sumStudyCountsInRange(counts, 30, 60)
+  };
+}
+function buildSummaryBlockHtml(label, current, prev) {
+  const diff = current - prev;
+  const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '→';
+  const diffClass = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+  const maxVal = Math.max(current, prev, 1);
+  return '<div class="summaryBlock">'
+    + '<div class="summaryLabel">' + escapeHtml(label) + '</div>'
+    + '<div class="summaryValue">' + current + '件 <span class="summaryDiff ' + diffClass + '">' + arrow + Math.abs(diff) + '（前期間比）</span></div>'
+    + '<div class="summaryBarRow"><span class="summaryBarTag">前期間</span><div class="summaryBarOuter"><div class="summaryBarInner" style="width:' + Math.round(prev / maxVal * 100) + '%;"></div></div></div>'
+    + '<div class="summaryBarRow"><span class="summaryBarTag">今期間</span><div class="summaryBarOuter"><div class="summaryBarInner current" style="width:' + Math.round(current / maxVal * 100) + '%;"></div></div></div>'
+    + '</div>';
+}
+function renderSummarySection() {
+  const wrap = document.getElementById('summarySection');
+  if (!wrap) return;
+  if (entries.length === 0) {
+    wrap.innerHTML = '';
+    return;
+  }
+  const s = computeSummaryStats();
+  wrap.innerHTML = '<div class="summarySectionTitle">📊 週次・月次サマリー（過去の自分と比較）</div>'
+    + '<div class="summaryRow">'
+    + buildSummaryBlockHtml('今週の学習（先週比）', s.thisWeek, s.lastWeek)
+    + buildSummaryBlockHtml('今月の学習（先月比）', s.thisMonth, s.lastMonth)
+    + '</div>';
+}
 /* ▲▲▲ 新規追加：学習モチベーション向上機能 ここまで ▲▲▲ */

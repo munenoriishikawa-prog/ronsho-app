@@ -332,6 +332,9 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .gamiGrowthValue { font-size: 22px; font-weight: 800; }
 .gamiGrowthValue.up { color: #16a34a; }
 .gamiGrowthValue.down { color: #dc2626; }
+.homeSummaryRow { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-bottom: 20px; }
+.homeSummaryRow > #countdownCard { flex: 1; min-width: 280px; }
+.homeSummaryRow > .summarySection { flex: 1; min-width: 280px; margin-bottom: 0; }
 .summarySection { margin-bottom: 20px; }
 .summarySectionTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin: 4px 0 10px; }
 .summaryRow { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -434,7 +437,9 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   border-radius: 16px;
   padding: 14px 20px;
   box-shadow: 0 4px 16px rgba(0, 87, 231, 0.1);
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  height: 100%;
+  box-sizing: border-box;
 }
 .countdownTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 8px; }
 .countdownEmpty { font-size: 12px; color: #4a6a90; margin-bottom: 8px; }

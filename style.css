@@ -821,7 +821,10 @@ input[type=file] { display:none; }
   display: inline-block;
 }
 .quizBody { text-align: left; font-size: 14px; line-height: 1.8; background: #f7fafe; border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
-.quizYear { font-size: 12px; color: #4a6a90; margin-bottom: 16px; }
+.quizYear { font-size: 12px; color: #4a6a90; margin-bottom: 4px; }
+.quizSource { font-size: 12px; color: #4a6a90; margin-bottom: 16px; }
+.quizSourceEditBtn { cursor: pointer; opacity: 0.5; }
+.quizSourceEditBtn:hover { opacity: 1; }
 .quizJudgeRow { display: flex; gap: 12px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
 .quizJudgeRow button { padding: 10px 20px; font-size: 13px; border-radius: 999px; display:flex; align-items:center; gap:6px; }
 .speechControls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }

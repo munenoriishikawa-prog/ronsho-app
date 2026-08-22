@@ -461,6 +461,18 @@ function editSubject(idx) {
   renderStudyTable(entries);
   renderMemorizedTable(entries);
 }
+function editSource(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const input = prompt('「' + ent.title + '」の出典（教材名・ページ数など）を入力してください', ent.source || '');
+  if (input === null) return;
+  const trimmed = input.trim();
+  ent.source = trimmed;
+  saveEntries();
+  status.textContent = trimmed ? '📚 「' + ent.title + '」の出典を保存しました。' : '「' + ent.title + '」の出典を削除しました。';
+  renderStudyTable(entries);
+  renderMemorizedTable(entries);
+}
 function editMemo(idx) {
   const ent = entries[idx];
   if (!ent) return;

@@ -135,38 +135,4 @@ document.getElementById('badgesSection') && document.getElementById('badgesSecti
   badgesListVisible = !badgesListVisible;
   renderBadgesSection();
 });
-
-function renderStudyHeatmap() {
-  const wrap = document.getElementById('studyHeatmapWrap');
-  if (!wrap) return;
-  if (entries.length === 0) {
-    wrap.innerHTML = '';
-    return;
-  }
-  const counts = getDailyStudyCounts();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const weeksToShow = 12;
-  const totalDays = weeksToShow * 7 + today.getDay();
-  const cells = [];
-  for (let i = totalDays - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = formatLocalDate(d);
-    cells.push({ dateStr: dateStr, count: counts[dateStr] || 0 });
-  }
-  const weeks = [];
-  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
-  const levelOf = c => c === 0 ? 0 : c <= 2 ? 1 : c <= 5 ? 2 : c <= 9 ? 3 : 4;
-  let html = '<div class="heatmapTitle">📅 学習ヒートマップ（直近12週間）</div><div class="heatmapGrid">';
-  weeks.forEach(week => {
-    html += '<div class="heatmapCol">';
-    week.forEach(cell => {
-      html += '<div class="heatmapCell heatmapLevel' + levelOf(cell.count) + '" title="' + cell.dateStr + '：' + cell.count + '件"></div>';
-    });
-    html += '</div>';
-  });
-  html += '</div>';
-  wrap.innerHTML = html;
-}
 /* ▲▲▲ 新規追加：学習モチベーション向上機能 ここまで ▲▲▲ */

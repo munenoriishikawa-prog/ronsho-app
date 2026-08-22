@@ -282,7 +282,8 @@ function renderCalendar() {
     const count = summary.totalCount;
     const catSummary = Object.keys(summary.catCounts).map(c => c + ':' + summary.catCounts[c]).join(' / ');
     const isSelected = (dateStr === selectedDay);
-    html += '<div class="calCell calDayClickable' + (isSelected ? ' selectedDay' : '') + '" data-date="' + dateStr + '" style="cursor:pointer;">'
+    const heatLevel = (typeof heatmapLevelOf === 'function') ? heatmapLevelOf(count) : 0;
+    html += '<div class="calCell calHeatLevel' + heatLevel + ' calDayClickable' + (isSelected ? ' selectedDay' : '') + '" data-date="' + dateStr + '" style="cursor:pointer;">'
       + '<div class="calDate">' + d + '</div>'
       + (count > 0 ? '<div class="calCount">' + count + '件</div><div style="font-size:11px;color:#555;">' + escapeHtml(catSummary) + '</div>' : '')
       + '</div>';
@@ -803,7 +804,7 @@ document.addEventListener('click', (e) => {
     if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
     selectedDay = null;
     renderCalendar();
-    if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap();
+   
     return;
   }
   const nextBtn = e.target.closest('#nextMonthBtn');
@@ -812,7 +813,7 @@ document.addEventListener('click', (e) => {
     if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
     selectedDay = null;
     renderCalendar();
-    if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap();
+   
     return;
   }
   const dayCell = e.target.closest('.calDayClickable');
@@ -820,7 +821,7 @@ document.addEventListener('click', (e) => {
     const d = dayCell.dataset.date;
     selectedDay = (selectedDay === d) ? null : d;
     renderCalendar();
-    if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap();
+   
     return;
   }
   const categoryTotalToggleBtn = e.target.closest('#categoryTotalToggleBtn');

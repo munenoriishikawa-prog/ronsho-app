@@ -87,6 +87,9 @@ function formatLocalDate(d) {
 function todayStr() {
   return formatLocalDate(new Date());
 }
+function heatmapLevelOf(count) {
+  return count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : count <= 9 ? 3 : 4;
+}
 const SUBJECT_EMOJI = { '民法': '⚖️', '刑法': '🚨', '憲法': '📜', '商法': '💼', '民事訴訟法': '🧑\u200d⚖️', '刑事訴訟法': '🚓', '行政法': '🏛️', '労働法': '👷', '実務基礎民事': '📄', '実務基礎刑事': '🚔' };
 function getSubjectEmoji(subject) {
   return SUBJECT_EMOJI[subject] || '📘';
@@ -422,7 +425,7 @@ document.querySelectorAll('.tabBtn').forEach(btn => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(btn.dataset.page).classList.add('active');
-    if (btn.dataset.page === 'calendarPage') { renderCalendar(); renderTrendChart(); if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap(); }
+    if (btn.dataset.page === 'calendarPage') { renderCalendar(); renderTrendChart(); }
     if (btn.dataset.page === 'quizPage') renderQuizPage();
     if (btn.dataset.page === 'speechPage') {
       renderSpeechSubjectSelect();
@@ -939,7 +942,7 @@ function renderAll(preserveQuiz) {
   renderSyncConflictBanner();
   if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
   if (typeof renderBadgesSection === 'function') renderBadgesSection();
-  if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap();
+ 
 }
 function getNextReviewInfo(title) {
   const log = studyLog[title] || {};

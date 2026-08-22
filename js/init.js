@@ -16,3 +16,5 @@ if (dupArchiveToggleBtn) dupArchiveToggleBtn.addEventListener('click', () => {
 });
 renderDupArchive();
 renderSyncConflictBanner();
+if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
+if (typeof renderBadgesSection === 'function') renderBadgesSection();

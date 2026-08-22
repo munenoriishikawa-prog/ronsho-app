@@ -73,6 +73,7 @@ let quizStarted = false;
 let quizMinCount = 0;
 let quizOverdueMode = false;
 let quizSequentialMode = false;
+let quizComboCount = 0;
 let trendMode = 'week';
 let editingEntryIdx = null;
 let compareList = [];
@@ -421,7 +422,7 @@ document.querySelectorAll('.tabBtn').forEach(btn => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(btn.dataset.page).classList.add('active');
-    if (btn.dataset.page === 'calendarPage') { renderCalendar(); renderTrendChart(); }
+    if (btn.dataset.page === 'calendarPage') { renderCalendar(); renderTrendChart(); if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap(); }
     if (btn.dataset.page === 'quizPage') renderQuizPage();
     if (btn.dataset.page === 'speechPage') {
       renderSpeechSubjectSelect();
@@ -936,6 +937,9 @@ function renderAll(preserveQuiz) {
   renderPastLogs();
   renderCompareBar();
   renderSyncConflictBanner();
+  if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
+  if (typeof renderBadgesSection === 'function') renderBadgesSection();
+  if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap();
 }
 function getNextReviewInfo(title) {
   const log = studyLog[title] || {};

@@ -259,6 +259,82 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 }
 .progressBarSection { flex: 1; min-width: 220px; }
 .progressLabel { font-size: 12px; color: #4a6a90; margin-bottom: 4px; }
+.gamificationRow { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.gamiCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 4px 16px rgba(0, 87, 231, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 160px;
+}
+.gamiCardTitle { font-weight: 800; font-size: 14px; color: #0c2340; }
+.gamiCardSub { font-size: 11px; color: #4a6a90; }
+.gamiBarOuter { width: 100%; height: 8px; background: #e6edf7; border-radius: 999px; overflow: hidden; }
+.gamiBarInner { height: 100%; background: linear-gradient(135deg, #7c3aed, #a78bfa); border-radius: 999px; transition: width 0.3s ease; }
+.gamiGoalCard { cursor: pointer; }
+.gamiGoalCard:hover { box-shadow: 0 6px 20px rgba(0, 87, 231, 0.18); }
+.gamiRing {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gamiRingInner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0c2340;
+}
+.badgesSectionTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin: 4px 0 6px; }
+.badgesGrid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; margin-bottom: 12px; }
+.badgeItem {
+  width: 84px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: #f2f6fc;
+  text-align: center;
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.badgeItem.earned { opacity: 1; filter: none; background: #fff8e6; box-shadow: 0 2px 8px rgba(255, 159, 28, 0.2); }
+.badgeIcon { font-size: 26px; }
+.badgeName { font-size: 11px; color: #0c2340; margin-top: 4px; line-height: 1.3; }
+.studyHeatmapWrap { background: #fff; border-radius: 16px; padding: 14px 20px; box-shadow: 0 4px 16px rgba(0, 87, 231, 0.1); margin-bottom: 20px; overflow-x: auto; }
+.heatmapTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 10px; }
+.heatmapGrid { display: flex; gap: 3px; }
+.heatmapCol { display: flex; flex-direction: column; gap: 3px; }
+.heatmapCell { width: 12px; height: 12px; border-radius: 3px; background: #e6edf7; }
+.heatmapLevel0 { background: #e6edf7; }
+.heatmapLevel1 { background: #b8d9ff; }
+.heatmapLevel2 { background: #6fb3ff; }
+.heatmapLevel3 { background: #0077e6; }
+.heatmapLevel4 { background: #0057e7; }
+.quizCombo {
+  text-align: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: #d9770a;
+  margin-bottom: 8px;
+  animation: comboPulse 0.4s ease;
+}
+@keyframes comboPulse {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
 .subjectProgressCard {
   background: #fff;
   border-radius: 16px;

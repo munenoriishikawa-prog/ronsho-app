@@ -787,25 +787,18 @@ input[type=file] { display:none; }
 }
 .subjectTabSelect:hover { background: #eef6ff; }
 .categoryTabs { margin-bottom: 8px; }
-.categoryTabBtn {
-  padding: 3px 11px;
-  margin-right: 6px;
-  margin-bottom: 6px;
+.categoryTabSelect {
+  padding: 6px 12px;
   cursor: pointer;
-  border: 1px solid rgba(0, 87, 231, 0.12);
+  border: 1px solid rgba(0, 87, 231, 0.15);
   background: #eef6ff;
   border-radius: 999px;
-  font-size: 11px;
-  color: #2c4a70;
-}
-.categoryTabBtn:hover { background: #d6ebff; }
-.categoryTabBtn.active {
-  background: linear-gradient(135deg, #0057e7, #38bdf8);
-  color: #fff;
-  border-color: transparent;
+  font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 3px 8px rgba(0, 87, 231, 0.3);
+  color: #2c4a70;
+  max-width: 100%;
 }
+.categoryTabSelect:hover { background: #d6ebff; }
 .starFilterTabs { margin-bottom: 14px; }
 .importanceStars { margin-right: 4px; letter-spacing: -1px; }
 .starFilterBtn {

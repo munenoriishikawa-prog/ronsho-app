@@ -129,6 +129,8 @@ function renderQuizPage() {
     html += '<div class="quizBody">' + e.bodyHtml + '</div>';
     html += buildEntryTagsBlockHtml(e);
     html += '<div class="quizYear">出題年：' + (buildYearHtml(e.year) || 'なし') + '</div>';
+    html += '<div class="quizSource" id="quizSourceRow">出典：' + (e.source ? escapeHtml(e.source) : 'なし')
+      + ' <span class="quizSourceEditBtn" id="quizSourceEditBtn" title="出典を編集">✏️</span></div>';
     const isWeak = !!(studyLog[e.title] && studyLog[e.title].starred);
     html += '<div class="quizJudgeRow">'
       + '<button type="button" class="quizGoodBtn" id="quizGoodBtn"><span class="quizJudgeIcon">○</span>バッチリ</button>'
@@ -204,6 +206,13 @@ function renderQuizPage() {
       quizIndex++;
       quizRevealed = false;
     }
+    renderQuizPage();
+  });
+  const sourceEditBtn = document.getElementById('quizSourceEditBtn');
+  if (sourceEditBtn) sourceEditBtn.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    const idx = entries.findIndex(x => x.title === e.title);
+    if (idx !== -1) editSource(idx);
     renderQuizPage();
   });
   const quizEditBtn = document.getElementById('quizEditBtn');

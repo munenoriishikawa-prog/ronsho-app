@@ -3,6 +3,53 @@
    既存の entries / studyLog には一切書き込まず、既存データから導出するだけ。
    保存先は専用のキー 'ronshoDailyGoalV1'・'ronshoDailyStatsV1' のみを使用する。 */
 
+const MOTIVATION_QUOTES = [
+  { text: '継続は力なり。', by: '住岡夜晃' },
+  { text: '為すことによって学ぶ。', by: 'アリストテレス' },
+  { text: '千里の道も一歩から。', by: '老子' },
+  { text: '塵も積もれば山となる。', by: 'ことわざ' },
+  { text: '習慣は第二の天性なり。', by: 'キケロ' },
+  { text: '今日為すべきことを明日に延ばすな。', by: 'ベンジャミン・フランクリン' },
+  { text: '知は力なり。', by: 'フランシス・ベーコン' },
+  { text: '法律を知らないことは、これを守る義務を免れさせない。', by: '法諺（法の不知は許さず）' },
+  { text: '正義が行われないなら、その社会に安寧はない。', by: 'フレデリック・ダグラス' },
+  { text: '思考は運命を決める。まず良い習慣を身につけよ。', by: 'ウィリアム・ジェームズ' },
+  { text: '準備を怠る者は、失敗を準備しているのだ。', by: 'ベンジャミン・フランクリン' },
+  { text: '一日一日を、人生最後の日だと思って生きよ。', by: 'スティーブ・ジョブズ' },
+  { text: '天才とは1%のひらめきと99%の努力である。', by: 'トーマス・エジソン' },
+  { text: '為せば成る、為さねば成らぬ何事も。', by: '上杉鷹山' },
+  { text: '失敗は成功のもと。', by: 'ことわざ' },
+  { text: '学びて時にこれを習う、亦説ばしからずや。', by: '孔子' },
+  { text: '諦めたらそこで試合終了ですよ。', by: '安西先生（SLAM DUNK）' },
+  { text: '正義の女神は、目隠しをしていても天秤は正しく量る。', by: '法諺' },
+  { text: '雨垂れ石を穿つ。', by: 'ことわざ' },
+  { text: '努力は必ず報われる。もし報われない努力があるのならそれはまだ努力とは呼べない。', by: 'イチロー' }
+];
+let currentQuoteIndex = null;
+function renderQuoteCard(forceNew) {
+  const wrap = document.getElementById('quoteCard');
+  if (!wrap) return;
+  if (entries.length === 0) {
+    wrap.innerHTML = '';
+    return;
+  }
+  if (currentQuoteIndex === null || forceNew) {
+    let next = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
+    if (MOTIVATION_QUOTES.length > 1 && next === currentQuoteIndex) {
+      next = (next + 1) % MOTIVATION_QUOTES.length;
+    }
+    currentQuoteIndex = next;
+  }
+  const q = MOTIVATION_QUOTES[currentQuoteIndex];
+  wrap.innerHTML = '<span class="quoteText">💬 ' + escapeHtml(q.text) + '</span>'
+    + '<span class="quoteBy">－ ' + escapeHtml(q.by) + '</span>'
+    + '<span class="quoteRefreshBtn" id="quoteRefreshBtn" title="別の名言を見る">🔄</span>';
+}
+document.getElementById('quoteCard') && document.getElementById('quoteCard').addEventListener('click', (e) => {
+  if (!e.target.closest('#quoteRefreshBtn')) return;
+  renderQuoteCard(true);
+});
+
 const DAILY_GOAL_KEY = 'ronshoDailyGoalV1';
 const DEFAULT_DAILY_GOAL = 10;
 function loadDailyGoal() {

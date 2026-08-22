@@ -39,6 +39,22 @@ h1 {
 }
 .syncConflictDismissBtn { margin-left: auto; cursor: pointer; color: #b45309; font-size: 14px; }
 .syncConflictDismissBtn:hover { color: #7a4a00; }
+.quoteCard {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: linear-gradient(135deg, #0057e7, #00c2ff);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.quoteText { font-weight: 700; }
+.quoteBy { font-size: 12px; opacity: 0.85; }
+.quoteRefreshBtn { margin-left: auto; cursor: pointer; opacity: 0.8; transition: opacity 0.15s ease, transform 0.15s ease; }
+.quoteRefreshBtn:hover { opacity: 1; transform: rotate(90deg); }
 #drop {
   border: 2px dashed #9dc4f2;
   border-radius: 16px;

@@ -484,7 +484,7 @@ function buildBodyHtml(bodyRunLines) {
     for (const r of runList) {
       const text = isFirstRun ? r.text.replace(/^[\s\u3000]+/, '') : r.text;
       const escaped = escapeHtml(text);
-      let content = r.bold ? '<b>' + escaped + '</b>' : escaped;
+      let content = (r.bold && r.color) ? '<b>' + escaped + '</b>' : escaped;
       if (r.color) {
         content = '<span style="color:' + r.color + ';">' + content + '</span>';
       }

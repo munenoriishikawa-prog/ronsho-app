@@ -803,6 +803,7 @@ document.addEventListener('click', (e) => {
     if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
     selectedDay = null;
     renderCalendar();
+    if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap();
     return;
   }
   const nextBtn = e.target.closest('#nextMonthBtn');
@@ -811,6 +812,7 @@ document.addEventListener('click', (e) => {
     if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
     selectedDay = null;
     renderCalendar();
+    if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap();
     return;
   }
   const dayCell = e.target.closest('.calDayClickable');
@@ -818,6 +820,7 @@ document.addEventListener('click', (e) => {
     const d = dayCell.dataset.date;
     selectedDay = (selectedDay === d) ? null : d;
     renderCalendar();
+    if (typeof renderStudyHeatmap === 'function') renderStudyHeatmap();
     return;
   }
   const categoryTotalToggleBtn = e.target.closest('#categoryTotalToggleBtn');

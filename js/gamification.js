@@ -158,15 +158,30 @@ function renderStudyHeatmap() {
   const weeks = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
   const levelOf = c => c === 0 ? 0 : c <= 2 ? 1 : c <= 5 ? 2 : c <= 9 ? 3 : 4;
-  let html = '<div class="heatmapTitle">📅 学習ヒートマップ（直近12週間）</div><div class="heatmapGrid">';
+  let html = '<div class="heatmapTitle">📅 学習ヒートマップ（直近12週間・クリックでカレンダーに移動）</div><div class="heatmapGrid">';
   weeks.forEach(week => {
     html += '<div class="heatmapCol">';
     week.forEach(cell => {
-      html += '<div class="heatmapCell heatmapLevel' + levelOf(cell.count) + '" title="' + cell.dateStr + '：' + cell.count + '件"></div>';
+      const isSelected = cell.dateStr === selectedDay;
+      html += '<div class="heatmapCell heatmapClickable heatmapLevel' + levelOf(cell.count) + (isSelected ? ' heatmapSelected' : '')
+        + '" data-date="' + cell.dateStr + '" title="' + cell.dateStr + '：' + cell.count + '件"></div>';
     });
     html += '</div>';
   });
   html += '</div>';
   wrap.innerHTML = html;
 }
+document.getElementById('studyHeatmapWrap') && document.getElementById('studyHeatmapWrap').addEventListener('click', (e) => {
+  const cell = e.target.closest('.heatmapClickable');
+  if (!cell) return;
+  const d = cell.dataset.date;
+  const dt = new Date(d + 'T00:00:00');
+  calViewYear = dt.getFullYear();
+  calViewMonth = dt.getMonth();
+  selectedDay = (selectedDay === d) ? null : d;
+  renderCalendar();
+  renderStudyHeatmap();
+  const calWrap = document.getElementById('calendarWrap');
+  if (calWrap) calWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 /* ▲▲▲ 新規追加：学習モチベーション向上機能 ここまで ▲▲▲ */

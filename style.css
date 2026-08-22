@@ -317,12 +317,15 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .heatmapTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 10px; }
 .heatmapGrid { display: flex; gap: 3px; }
 .heatmapCol { display: flex; flex-direction: column; gap: 3px; }
-.heatmapCell { width: 12px; height: 12px; border-radius: 3px; background: #e6edf7; }
+.heatmapCell { width: 12px; height: 12px; border-radius: 3px; background: #e6edf7; box-sizing: border-box; }
 .heatmapLevel0 { background: #e6edf7; }
 .heatmapLevel1 { background: #b8d9ff; }
 .heatmapLevel2 { background: #6fb3ff; }
 .heatmapLevel3 { background: #0077e6; }
 .heatmapLevel4 { background: #0057e7; }
+.heatmapClickable { cursor: pointer; transition: transform 0.1s ease; }
+.heatmapClickable:hover { transform: scale(1.25); }
+.heatmapSelected { outline: 2px solid #d97706; outline-offset: 1px; }
 .quizCombo {
   text-align: center;
   font-weight: 800;

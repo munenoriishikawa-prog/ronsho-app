@@ -1,4 +1,4 @@
-// --- ランダム出題モード ---
+// --- 問題演習モード ---
 function shuffleArray(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -42,11 +42,12 @@ function buildQuizPool() {
   } else {
     pool = pool.filter(e => !isSkippedEntry(e));
   }
+  quizSequentialMode = quizOrderSequentialRadio.checked;
   quizOverdueMode = quizOverdueOnlyChk.checked;
   if (quizOverdueMode) {
     pool = pool.filter(isOverdueEntry);
     quizMinCount = 0;
-    return shuffleArray(pool);
+    return quizSequentialMode ? pool : shuffleArray(pool);
   }
   if (!quizIncludeMemorizedChk.checked) {
     pool = pool.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
@@ -54,6 +55,10 @@ function buildQuizPool() {
   if (pool.length === 0) {
     quizMinCount = 0;
     return [];
+  }
+  if (quizSequentialMode) {
+    quizMinCount = 0;
+    return pool;
   }
   const minCount = Math.min(...pool.map(getStudyCountFor));
   quizMinCount = minCount;
@@ -75,7 +80,7 @@ function renderQuizPage() {
   }
   if (!quizStarted) {
     quizPriorityNote.textContent = '';
-    quizArea.innerHTML = '<div class="quizEmpty">「スタート／シャッフルし直す」を押すと出題が始まります。</div>';
+    quizArea.innerHTML = '<div class="quizEmpty">「スタート／やり直す」を押すと出題が始まります。</div>';
     return;
   }
   const extraNotes = [];
@@ -94,9 +99,11 @@ function renderQuizPage() {
   }
   quizPriorityNote.innerHTML = quizOverdueMode
     ? '⏰ 復習推奨日を過ぎている論点 <strong>' + quizPool.length + '件</strong>' + extraNote + ' のみを出題しています。'
-    : '📌 学習回数が最も少ない（<strong>' + quizMinCount + '回</strong>）論点 <strong>' + quizPool.length + '件</strong>' + extraNote + ' のみを出題しています。この回数のものを一通り学習すると、次回はより多く学習した論点が対象から外れ、新しい最少回数のグループが出題されます。';
+    : (quizSequentialMode
+      ? '📖 論証の順番通り <strong>' + quizPool.length + '件</strong>' + extraNote + ' を出題しています。'
+      : '📌 学習回数が最も少ない（<strong>' + quizMinCount + '回</strong>）論点 <strong>' + quizPool.length + '件</strong>' + extraNote + ' のみを出題しています。この回数のものを一通り学習すると、次回はより多く学習した論点が対象から外れ、新しい最少回数のグループが出題されます。');
   if (quizIndex >= quizPool.length) {
-    quizArea.innerHTML = '<div class="quizCard"><div class="quizFinished">🎉 全' + quizPool.length + '問終了しました！お疲れさまでした。もう一度「スタート／シャッフルし直す」を押すと、更新された学習回数に基づいて次の優先グループが出題されます。</div></div>';
+    quizArea.innerHTML = '<div class="quizCard"><div class="quizFinished">🎉 全' + quizPool.length + '問終了しました！お疲れさまでした。もう一度「スタート／やり直す」を押すと出題を最初からやり直せます。</div></div>';
     return;
   }
   const e = quizPool[quizIndex];
@@ -109,7 +116,7 @@ function renderQuizPage() {
   html += '<div class="quizCardTools">'
     + '<span class="quizMemoBtn' + (quizMemo ? ' active' : '') + '" id="quizMemoBtn" title="' + escapeHtml(quizMemo ? ('メモ：' + quizMemo) : 'メモを追加') + '">🗒️</span>'
     + '<span class="quizBookmarkBtn' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="内容修正が必要な論証としてブックマーク">🔖</span>'
-    + '<span class="quizSkipBtn' + (isSkipped ? ' active' : '') + '" id="quizSkipBtn" title="スキップ（ランダム出題から除外）">⏭️</span>'
+    + '<span class="quizSkipBtn' + (isSkipped ? ' active' : '') + '" id="quizSkipBtn" title="スキップ（問題演習から除外）">⏭️</span>'
     + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
     + '</div>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';

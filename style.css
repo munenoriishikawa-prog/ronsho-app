@@ -766,7 +766,7 @@ input[type=file] { display:none; }
 .manualForm input { margin: 6px 6px 6px 0; padding: 5px 8px; font-size: 12px; border: 1px solid #ccc; border-radius: 6px; }
 .legendNote { font-size: 12px; color: #4a6a90; margin: -10px 0 16px 0; }
 .legendSwatch { display: inline-block; width: 12px; height: 12px; background: #fff0f0; border: 1px solid #f0c2c2; vertical-align: middle; margin-right: 4px; }
-/* --- ランダム出題モード --- */
+/* --- 問題演習モード --- */
 .quizControls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
 .quizControls label { font-size: 12px; color: #2c4a70; display: flex; align-items: center; gap: 4px; }
 .quizPriorityNote { font-size: 12px; color: #4a6a90; margin-bottom: 16px; }

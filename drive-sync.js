@@ -83,13 +83,26 @@
     if (!sameSet(mergedEntries, local.entries)) lastChanged.push('論証データ');
     write(ENTRY_KEY, mergedEntries);
 
+    const mergedDupResolvedEarly = [...new Set([...(remote.dupResolved || []), ...(local.dupResolved || [])])];
+    const mergedDupResolvedSet = new Set(mergedDupResolvedEarly);
+    const isTitleGroupFullyResolved = (title) => {
+      if (typeof dupPairSignature !== 'function') return false;
+      const group = mergedEntries.filter(e => e.title === title);
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          if (!mergedDupResolvedSet.has(dupPairSignature(group[i], group[j]))) return false;
+        }
+      }
+      return true;
+    };
     const titleCount = list => { const m = {}; (list || []).forEach(x => { m[x.title] = (m[x.title] || 0) + 1 }); return m };
     const localTitleCounts = titleCount(local.entries);
     const mergedTitleCounts = titleCount(mergedEntries);
     const stillDuplicated = new Set(Object.keys(mergedTitleCounts).filter(t => mergedTitleCounts[t] > 1));
     const newlyConflicted = Object.keys(mergedTitleCounts).filter(t => mergedTitleCounts[t] > (localTitleCounts[t] || 0) && mergedTitleCounts[t] > 1);
     const prevConflicts = read(CONFLICT_KEY, []);
-    const conflictTitles = [...new Set([...prevConflicts.filter(t => stillDuplicated.has(t)), ...newlyConflicted])];
+    const conflictTitles = [...new Set([...prevConflicts.filter(t => stillDuplicated.has(t)), ...newlyConflicted])]
+      .filter(t => !isTitleGroupFullyResolved(t));
     if (conflictTitles.length) lastChanged.push('⚠️編集競合(' + conflictTitles.length + '件)');
     write(CONFLICT_KEY, conflictTitles);
     try { entries = mergedEntries } catch (_) {}
@@ -117,7 +130,7 @@
     write(DUPARCHIVE_KEY, mergedDupArchive);
     try { dupArchiveList = mergedDupArchive } catch (_) {}
 
-    const mergedDupResolved = [...new Set([...(remote.dupResolved || []), ...(local.dupResolved || [])])];
+    const mergedDupResolved = mergedDupResolvedEarly;
     if (!sameSet(mergedDupResolved, local.dupResolved)) lastChanged.push('重複チェック履歴');
     write(DUPRESOLVED_KEY, mergedDupResolved);
     try { dupResolvedSet = new Set(mergedDupResolved) } catch (_) {}

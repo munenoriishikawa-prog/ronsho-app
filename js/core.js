@@ -804,10 +804,12 @@ function renderSubjectTabsHtml() {
 function renderCategoryTabsHtml() {
   const categories = getUniqueCategories();
   if (categories.length <= 1) return '';
-  let html = '<button type="button" class="categoryTabBtn' + (selectedCategory === 'all' ? ' active' : '') + '" data-category="all">すべての分野</button>';
+  let html = '<select class="categoryTabSelect">';
+  html += '<option value="all"' + (selectedCategory === 'all' ? ' selected' : '') + '>📁 すべての分野</option>';
   categories.forEach(c => {
-    html += '<button type="button" class="categoryTabBtn' + (selectedCategory === c ? ' active' : '') + '" data-category="' + escapeHtml(c) + '">' + escapeHtml(c) + '</button>';
+    html += '<option value="' + escapeHtml(c) + '"' + (selectedCategory === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>';
   });
+  html += '</select>';
   return html;
 }
 function renderStarTabsHtml() {

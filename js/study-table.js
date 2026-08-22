@@ -622,22 +622,22 @@ document.addEventListener('change', (e) => {
     renderQuizPage();
     return;
   }
+  const categoryTabSelect = e.target.closest('.categoryTabSelect');
+  if (categoryTabSelect) {
+    selectedCategory = categoryTabSelect.value;
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    renderMemorizedTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
 });
 document.addEventListener('click', (e) => {
   const trendToggleBtn = e.target.closest('.trendToggleBtn');
   if (trendToggleBtn) {
     trendMode = trendToggleBtn.dataset.trend;
     renderTrendChart();
-    return;
-  }
-  const categoryTabBtn = e.target.closest('.categoryTabBtn');
-  if (categoryTabBtn) {
-    selectedCategory = categoryTabBtn.dataset.category;
-    renderSubjectTabs();
-    renderStudyTable(entries);
-    renderMemorizedTable(entries);
-    quizStarted = false;
-    renderQuizPage();
     return;
   }
   const starTabBtn = e.target.closest('.starFilterBtn[data-star]');

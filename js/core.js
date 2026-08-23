@@ -540,7 +540,7 @@ function extractEntries(paraRuns) {
     if (combinedMatch) {
       const maybeSubject = combinedMatch[1].replace(/[\s\u3000]/g, '').trim();
       const maybeCategory = combinedMatch[2].replace(/[\s\u3000]/g, '').trim();
-      if (isSubjectLine(maybeSubject)) currentSubject = maybeSubject;
+      if (isSubjectLine(maybeSubject)) currentSubject = normalizeSubjectName(maybeSubject);
       if (maybeCategory) currentCategory = maybeCategory;
       i++;
       continue;
@@ -557,7 +557,7 @@ function extractEntries(paraRuns) {
       continue;
     }
     if (isSubjectLine(lineText.replace(/[\s\u3000]/g, '').trim())) {
-      currentSubject = lineText.replace(/[\s\u3000]/g, '').trim();
+      currentSubject = normalizeSubjectName(lineText.replace(/[\s\u3000]/g, '').trim());
       i++;
       continue;
     }
@@ -589,9 +589,28 @@ function extractEntries(paraRuns) {
   }
   return out;
 }
+const SUBJECT_LINE_ALIASES = {
+  '民法': '民法',
+  '刑法': '刑法',
+  '憲法': '憲法',
+  '商法': '商法',
+  '民事訴訟法': '民事訴訟法',
+  '民訴法': '民事訴訟法',
+  '民訴': '民事訴訟法',
+  '刑事訴訟法': '刑事訴訟法',
+  '刑訴法': '刑事訴訟法',
+  '刑訴': '刑事訴訟法',
+  '行政法': '行政法',
+  '労働法': '労働法',
+  '実務基礎民事': '実務基礎民事',
+  '実務基礎刑事': '実務基礎刑事'
+};
 function isSubjectLine(text) {
   if (!text || /[。、]/.test(text) || text.length > 10) return false;
-  return ['民法','刑法','憲法','商法','民事訴訟法','刑事訴訟法','行政法','労働法','実務基礎民事','実務基礎刑事'].includes(text);
+  return Object.prototype.hasOwnProperty.call(SUBJECT_LINE_ALIASES, text);
+}
+function normalizeSubjectName(text) {
+  return SUBJECT_LINE_ALIASES[text] || text;
 }
 function isPlainCategoryLine(text) {
   if (!text) return false;

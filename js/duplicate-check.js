@@ -1,5 +1,5 @@
 /* ▼▼▼ 新規追加：重複チェック機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼ */
-const DUP_FUZZY_THRESHOLD = 0.8;
+const DUP_FUZZY_THRESHOLD = 0.7;
 const DUP_SUBJECT_BUCKET_LIMIT = 1000;
 const DUP_RESOLVED_KEY = 'ronshoDupResolvedV1';
 const DUP_DIFF_MAX_CELLS = 4000000;

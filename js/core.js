@@ -735,6 +735,9 @@ async function handleFiles(files) {
   calendarWrap.innerHTML = '';
   downloadBtn.style.display = 'none';
   downloadLogBtn.style.display = 'none';
+  // 読み込み中に自動同期が走ると、確定前のデータで上書きされる恐れがあるため一時停止する
+  const resumeSync = () => { if (typeof window.ronshoSuspendSync === 'function') window.ronshoSuspendSync(false); };
+  if (typeof window.ronshoSuspendSync === 'function') window.ronshoSuspendSync(true);
   try {
     let newEntries = [];
     for (const file of files) {
@@ -774,11 +777,15 @@ async function handleFiles(files) {
         if (dupCheckPairs.length > 0) {
           status.textContent += '／⚠️重複候補 ' + dupCheckPairs.length + '件（「データ読込み・出力」タブでご確認ください）';
         }
+        resumeSync();
       }, 30);
+    } else {
+      resumeSync();
     }
   } catch (err) {
     status.textContent = 'エラーが発生しました: ' + err.message;
     console.error(err);
+    resumeSync();
   }
 }
 const SUBJECT_ORDER = ['憲法', '民法', '刑法', '行政法', '商法', '民事訴訟法', '刑事訴訟法'];

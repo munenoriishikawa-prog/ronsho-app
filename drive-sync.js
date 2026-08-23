@@ -45,6 +45,77 @@
     return (e && e.length > 0) || Object.keys(sl).length > 0;
   };
 
+  // --- 端末間の学習記録・論証データを安全に統合するためのマージ処理 ---
+  // 「1人が同時に1台だけ使う」前提でも、複数端末を日をまたいで使い分けると
+  // 各端末が独自に学習記録を積み上げる期間が生まれる。単純に新しい方で
+  // 丸ごと上書きすると、片方の端末の学習成果が消えてしまうため、
+  // 論証データ・学習記録は端末間で統合（マージ）してから保存する。
+  const entryKeyOf = e => [e && e.title, e && e.body].filter(Boolean).join('|') || JSON.stringify(e);
+  function unionEntries(a, b) {
+    const m = new Map();
+    (a || []).forEach(e => m.set(entryKeyOf(e), e));
+    (b || []).forEach(e => m.set(entryKeyOf(e), e));
+    return [...m.values()];
+  }
+  function mergeHistory(a, b) {
+    const count = x => (x || []).reduce((m, d) => (m[d] = (m[d] || 0) + 1, m), {});
+    const ca = count(a), cb = count(b);
+    const days = [...new Set([...Object.keys(ca), ...Object.keys(cb)])].sort();
+    return days.flatMap(d => Array(Math.max(ca[d] || 0, cb[d] || 0)).fill(d));
+  }
+  function mergeStudyLog(a, b) {
+    const out = { ...(a || {}) };
+    for (const [title, v] of Object.entries(b || {})) {
+      const o = out[title] || {};
+      out[title] = {
+        ...o, ...v,
+        history: mergeHistory(o.history, v.history),
+        memorized: !!(o.memorized || v.memorized),
+        starred: !!(o.starred || v.starred),
+        weak: !!(o.weak || v.weak),
+        skipped: !!(o.skipped || v.skipped),
+        bookmarked: !!(o.bookmarked || v.bookmarked),
+        confidence: v.confidence || o.confidence || null,
+        memo: v.memo || o.memo || '',
+        category: v.category || o.category || '',
+        subject: v.subject || o.subject || ''
+      };
+    }
+    return out;
+  }
+  function mergeDailyStats(a, b) {
+    const out = { ...(a || {}) };
+    for (const [d, c] of Object.entries(b || {})) out[d] = Math.max(out[d] || 0, c);
+    return out;
+  }
+  function mergeManualLog(a, b) {
+    const out = { ...(a || {}) };
+    for (const [d, v] of Object.entries(b || {})) out[d] = [...new Set([...(out[d] || []), ...(v || [])])];
+    return out;
+  }
+  function mergeByKey(a, b, keyFn) {
+    const m = new Map();
+    (a || []).forEach(x => m.set(keyFn(x), x));
+    (b || []).forEach(x => m.set(keyFn(x), x));
+    return [...m.values()];
+  }
+  function reconcile(remoteData) {
+    remoteData = remoteData || {};
+    return {
+      schemaVersion: 4,
+      entries: unionEntries(remoteData.entries, getEntries()),
+      studyLog: mergeStudyLog(remoteData.studyLog, read(STUDYLOG_KEY, {})),
+      manualLog: mergeManualLog(remoteData.manualLog, read(MANUALLOG_KEY, {})),
+      pastExamLogs: mergeByKey(remoteData.pastExamLogs, read(PASTEXAM_KEY, []), x => x.key || JSON.stringify(x)),
+      countdowns: mergeByKey(remoteData.countdowns, read(COUNTDOWN_KEY, []), x => x.id || JSON.stringify(x)),
+      dupArchive: mergeByKey(remoteData.dupArchive, read(DUPARCHIVE_KEY, []), x => [x && x.entry && x.entry.title, x && x.entry && x.entry.body].join('|')),
+      dupResolved: [...new Set([...(remoteData.dupResolved || []), ...read(DUPRESOLVED_KEY, [])])],
+      speechDict: mergeByKey(remoteData.speechDict, read(SPEECHDICT_KEY, []), x => x.word),
+      dailyStats: mergeDailyStats(remoteData.dailyStats, read(DAILYSTATS_KEY, {})),
+      dailyGoal: remoteData.dailyGoal != null ? remoteData.dailyGoal : read(DAILYGOAL_KEY, null)
+    };
+  }
+
   function applyRemoteData(data) {
     data = data || {};
     write(ENTRY_KEY, data.entries || []);
@@ -70,14 +141,8 @@
     if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
   }
 
-  // 同期によって論証データが今より少ない状態へ静かに置き換わることがないようにする安全策。
-  // 通常は「1人が同時に1台だけ使う」前提でrevision不一致＝そのまま最新採用でよいが、
-  // 複数端末に元々ズレたデータがある移行期などは、件数が少ない側を機械的に信用すると
-  // データが消えたように見える事故になるため、件数が多い側を優先して送り直す。
-  const entryCountOf = (data) => (data && data.entries) ? data.entries.length : 0;
-
-  async function pushToCloud(retriesLeft = 2) {
-    const data = snapshot();
+  async function pushToCloud(retriesLeft = 2, overrideData = null) {
+    const data = overrideData || snapshot();
     const r = await fetch(SYNC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -88,20 +153,22 @@
     if (!result.ok && result.reason === 'conflict') {
       const remoteData = result.latest.data;
       const remoteRevision = result.latest.revision || 0;
-      if (retriesLeft > 0 && entryCountOf(data) > 0 && entryCountOf(remoteData) < entryCountOf(data)) {
+      if (retriesLeft > 0) {
+        const reconciled = reconcile(remoteData);
         revision = remoteRevision;
-        return pushToCloud(retriesLeft - 1);
+        return pushToCloud(retriesLeft - 1, reconciled);
       }
       revision = remoteRevision;
       localStorage.setItem(REVISION_KEY, String(revision));
       applyRemoteData(remoteData);
       last = JSON.stringify(snapshot());
-      state('⚠️別端末の更新を検知したため最新データを読み込みました。もう一度操作をお試しください（' + new Date().toLocaleTimeString() + '）');
+      state('⚠️同期が競合したため最新データを読み込みました。もう一度操作をお試しください（' + new Date().toLocaleTimeString() + '）');
       return;
     }
     if (!result.ok) throw new Error('保存に失敗しました');
     revision = result.result.revision;
     localStorage.setItem(REVISION_KEY, String(revision));
+    applyRemoteData(data);
     last = JSON.stringify(snapshot());
     state('同期しました（' + new Date().toLocaleTimeString() + '）');
   }
@@ -116,18 +183,19 @@
       await syncNow();
       return;
     }
-    const localCount = getEntries().length;
-    if (localCount > 0 && entryCountOf(remote.data) < localCount) {
-      // クラウド側の論証数がこの端末より少ない → 少ない方で上書きせず、この端末のデータを送り直す
+    if (!hasLocalData()) {
+      // この端末にまだ何もない場合はマージ不要でそのまま採用
       revision = remoteRevision;
-      await syncNow();
+      localStorage.setItem(REVISION_KEY, String(revision));
+      applyRemoteData(remote.data);
+      last = JSON.stringify(snapshot());
+      state('同期済み（' + new Date().toLocaleTimeString() + '）');
       return;
     }
+    // 端末側とクラウド側の両方にデータがある場合は統合してから保存する
+    const reconciled = reconcile(remote.data);
     revision = remoteRevision;
-    localStorage.setItem(REVISION_KEY, String(revision));
-    applyRemoteData(remote.data);
-    last = JSON.stringify(snapshot());
-    state('同期済み（' + new Date().toLocaleTimeString() + '）');
+    await pushToCloud(2, reconciled);
   }
 
   async function syncNow() {

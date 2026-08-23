@@ -12,6 +12,7 @@
   const DUPRESOLVED_KEY = 'ronshoDupResolvedV1';
   const SPEECHDICT_KEY = 'ronshoSpeechDictV1';
   const DAILYSTATS_KEY = 'ronshoDailyStatsV1';
+  const DAILYGOAL_KEY = 'ronshoDailyGoalV1';
   const CONFLICT_KEY = 'ronshoSyncConflictsV1';
   let token = '', timer, last = '';
 
@@ -50,7 +51,8 @@
     dupArchive: read(DUPARCHIVE_KEY, []),
     dupResolved: read(DUPRESOLVED_KEY, []),
     speechDict: read(SPEECHDICT_KEY, []),
-    dailyStats: read(DAILYSTATS_KEY, {})
+    dailyStats: read(DAILYSTATS_KEY, {}),
+    dailyGoal: read(DAILYGOAL_KEY, null)
   });
 
   const mergeHistory = (a, b) => {
@@ -150,6 +152,10 @@
     for (const [d, c] of Object.entries(local.dailyStats || {})) dailyStats[d] = Math.max(dailyStats[d] || 0, c);
     if (stableStringify(dailyStats) !== stableStringify(local.dailyStats || {})) lastChanged.push('今日の伸びしろ記録');
     write(DAILYSTATS_KEY, dailyStats);
+
+    const dailyGoal = (local.dailyGoal == null && remote.dailyGoal != null) ? remote.dailyGoal : local.dailyGoal;
+    if (dailyGoal != null && dailyGoal !== local.dailyGoal) lastChanged.push('今日の目標');
+    if (dailyGoal != null) write(DAILYGOAL_KEY, dailyGoal);
 
     if (typeof saveEntries === 'function') saveEntries();
     if (typeof renderAll === 'function') renderAll(true);

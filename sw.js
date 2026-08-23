@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ronsho-app-cache-v23';
+const CACHE_NAME = 'ronsho-app-cache-v24';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -37,7 +37,7 @@ self.addEventListener('activate', (event) => {
 });
 
 function isSyncOrAuthRequest(url) {
-  return /googleapis\.com|accounts\.google\.com|google\.com\/gsi/.test(url);
+  return /googleapis\.com|accounts\.google\.com|google\.com\/gsi|script\.google\.com/.test(url);
 }
 
 self.addEventListener('fetch', (event) => {

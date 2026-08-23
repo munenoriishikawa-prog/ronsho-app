@@ -49,7 +49,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     + '<td>' + reviewCell + '</td>'
     + '</tr>';
 }
-const TABLE_PAGE_SIZE = 100;
+const TABLE_PAGE_SIZE = 50;
 let studyTableVisibleCount = TABLE_PAGE_SIZE;
 let studyTableFilterKey = '';
 let memorizedTableVisibleCount = TABLE_PAGE_SIZE;

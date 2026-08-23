@@ -49,44 +49,77 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     + '<td>' + reviewCell + '</td>'
     + '</tr>';
 }
+const TABLE_PAGE_SIZE = 50;
+let studyTableVisibleCount = TABLE_PAGE_SIZE;
+let studyTableFilterKey = '';
+let memorizedTableVisibleCount = TABLE_PAGE_SIZE;
+let memorizedTableFilterKey = '';
+function currentFilterKey(searchQuery) {
+  return [selectedSubject, selectedCategory, selectedTag, starOnlyFilter, selectedImportance, minYearFrequency, sortByFrequency, searchQuery].join('|');
+}
+// 論証数が多い端末（特にiPad等の非力な端末）で描画が重くならないよう、
+// 一度に描画する行数を制限し「もっと見る」で追加表示する。
+// フィルタ条件が変わったときだけ表示件数をリセットする。
 function renderStudyTable(data) {
   const filtered = filterEntries(data, searchQueryStudy);
-  let html = '<table>' + ENTRY_TABLE_COLGROUP + '<thead><tr><th>暗記度</th><th>科目</th><th>分野</th><th>タイトル</th><th>本文</th><th>出題年</th><th>学習回数</th><th>最終学習日</th><th>復習推奨日</th></tr></thead><tbody>';
-  let count = 0;
+  const unmemorized = [];
   filtered.forEach((e) => {
-    const idx = entries.indexOf(e);
     const log = studyLog[e.title] || {};
-    if (log.memorized) return;
+    if (!log.memorized) unmemorized.push(e);
+  });
+  const filterKey = currentFilterKey(searchQueryStudy);
+  if (filterKey !== studyTableFilterKey) {
+    studyTableFilterKey = filterKey;
+    studyTableVisibleCount = TABLE_PAGE_SIZE;
+  }
+  const total = unmemorized.length;
+  const visible = unmemorized.slice(0, studyTableVisibleCount);
+  let html = '<table>' + ENTRY_TABLE_COLGROUP + '<thead><tr><th>暗記度</th><th>科目</th><th>分野</th><th>タイトル</th><th>本文</th><th>出題年</th><th>学習回数</th><th>最終学習日</th><th>復習推奨日</th></tr></thead><tbody>';
+  visible.forEach((e) => {
+    const idx = entries.indexOf(e);
     html += buildRowHtml(e, idx, false, true, searchQueryStudy);
-    count++;
   });
   html += '</tbody></table>';
-  if (count === 0 && filtered.length > 0) {
+  if (total > studyTableVisibleCount) {
+    html += '<div class="loadMoreRow"><button type="button" id="studyLoadMoreBtn">もっと見る（残り' + (total - studyTableVisibleCount) + '件）</button></div>';
+  }
+  if (total === 0 && filtered.length > 0) {
     html = '<div class="reviewList"><div class="reviewItem">🎉 未暗記の論証はありません。すべて暗記済み一覧に移動済みです。</div></div>';
   } else if (filtered.length === 0) {
     html = '<div class="reviewList"><div class="reviewItem">該当する論証がありません。</div></div>';
   }
   tableWrap.innerHTML = html;
-  searchCountStudy.textContent = searchQueryStudy ? count + '件見つかりました' : '';
+  searchCountStudy.textContent = searchQueryStudy ? total + '件見つかりました' : '';
   renderProgressSummary();
 }
 function renderMemorizedTable(data) {
   const filtered = filterEntries(data, searchQueryMemorized);
-  let html = '<table>' + ENTRY_TABLE_COLGROUP + '<thead><tr><th>暗記度</th><th>科目</th><th>分野</th><th>タイトル</th><th>本文</th><th>出題年</th><th>学習回数</th><th>最終学習日</th><th>復習推奨日</th></tr></thead><tbody>';
-  let count = 0;
+  const memorized = [];
   filtered.forEach((e) => {
-    const idx = entries.indexOf(e);
     const log = studyLog[e.title] || {};
-    if (!log.memorized) return;
+    if (log.memorized) memorized.push(e);
+  });
+  const filterKey = currentFilterKey(searchQueryMemorized);
+  if (filterKey !== memorizedTableFilterKey) {
+    memorizedTableFilterKey = filterKey;
+    memorizedTableVisibleCount = TABLE_PAGE_SIZE;
+  }
+  const total = memorized.length;
+  const visible = memorized.slice(0, memorizedTableVisibleCount);
+  let html = '<table>' + ENTRY_TABLE_COLGROUP + '<thead><tr><th>暗記度</th><th>科目</th><th>分野</th><th>タイトル</th><th>本文</th><th>出題年</th><th>学習回数</th><th>最終学習日</th><th>復習推奨日</th></tr></thead><tbody>';
+  visible.forEach((e) => {
+    const idx = entries.indexOf(e);
     html += buildRowHtml(e, idx, true, false, searchQueryMemorized);
-    count++;
   });
   html += '</tbody></table>';
-  if (count === 0) {
+  if (total > memorizedTableVisibleCount) {
+    html += '<div class="loadMoreRow"><button type="button" id="memorizedLoadMoreBtn">もっと見る（残り' + (total - memorizedTableVisibleCount) + '件）</button></div>';
+  }
+  if (total === 0) {
     html = '<div class="reviewList"><div class="reviewItem">暗記済みの論証はまだありません。◎完璧または○できたを押すとここに移動します。</div></div>';
   }
   memorizedTableWrap.innerHTML = html;
-  searchCountMemorized.textContent = searchQueryMemorized ? count + '件見つかりました' : '';
+  searchCountMemorized.textContent = searchQueryMemorized ? total + '件見つかりました' : '';
   renderProgressSummary();
 }
 function getCsvFilteredEntries() {
@@ -616,6 +649,18 @@ document.addEventListener('change', (e) => {
   }
 });
 document.addEventListener('click', (e) => {
+  const studyLoadMoreBtn = e.target.closest('#studyLoadMoreBtn');
+  if (studyLoadMoreBtn) {
+    studyTableVisibleCount += TABLE_PAGE_SIZE;
+    renderStudyTable(entries);
+    return;
+  }
+  const memorizedLoadMoreBtn = e.target.closest('#memorizedLoadMoreBtn');
+  if (memorizedLoadMoreBtn) {
+    memorizedTableVisibleCount += TABLE_PAGE_SIZE;
+    renderMemorizedTable(entries);
+    return;
+  }
   const trendToggleBtn = e.target.closest('.trendToggleBtn');
   if (trendToggleBtn) {
     trendMode = trendToggleBtn.dataset.trend;

@@ -756,6 +756,17 @@ async function handleFiles(files) {
     status.textContent = '✨ ' + newEntries.length + '件の論証を抽出しました（' + touchedLabel + 'を更新）。読み込みファイル数: ' + files.length + '件／全体 ' + entries.length + '件（次回起動時も自動で復元されます）';
     downloadBtn.style.display = 'inline-block';
     downloadLogBtn.style.display = 'inline-block';
+    if (typeof findDuplicatePairs === 'function') {
+      const dupWrap = document.getElementById('duplicateResultsWrap');
+      if (dupWrap) dupWrap.innerHTML = '<div class="dupCheckEmpty">🔍 自動で重複チェック中…</div>';
+      setTimeout(() => {
+        dupCheckPairs = findDuplicatePairs();
+        if (typeof renderDuplicateResults === 'function') renderDuplicateResults();
+        if (dupCheckPairs.length > 0) {
+          status.textContent += '／⚠️重複候補 ' + dupCheckPairs.length + '件（「データ読込み・出力」タブでご確認ください）';
+        }
+      }, 30);
+    }
   } catch (err) {
     status.textContent = 'エラーが発生しました: ' + err.message;
     console.error(err);

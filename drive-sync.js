@@ -15,6 +15,9 @@
   const DAILYGOAL_KEY = 'ronshoDailyGoalV1';
   const CONFLICT_KEY = 'ronshoSyncConflictsV1';
   let token = '', timer, last = '';
+  let syncInFlight = false;
+  let syncSuspended = false;
+  window.ronshoSuspendSync = (v) => { syncSuspended = !!v; };
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -192,17 +195,29 @@
   }
 
   async function syncMerged() {
-    lastChanged = [];
-    const i = await fileId();
-    let data = snapshot();
-    if (i) {
-      const x = await fetch('https://www.googleapis.com/drive/v3/files/' + i + '?alt=media', { headers: { Authorization: 'Bearer ' + token } });
-      if (x.ok) data = merge(await x.json());
+    if (syncInFlight) return;
+    syncInFlight = true;
+    try {
+      lastChanged = [];
+      const i = await fileId();
+      let data = snapshot();
+      if (i) {
+        const x = await fetch('https://www.googleapis.com/drive/v3/files/' + i + '?alt=media', { headers: { Authorization: 'Bearer ' + token } });
+        if (x.ok) data = merge(await x.json());
+      }
+      await push(data);
+    } finally {
+      syncInFlight = false;
     }
-    await push(data);
   }
 
-  const queue = () => { clearTimeout(timer); timer = setTimeout(() => syncMerged().catch(e => state(e.message)), 1200) };
+  // インポート処理などデータ変更中は自動同期を一時停止し、
+  // 変更が確定する前の状態で上書き保存されるのを防ぐ（syncSuspendedはwindow.ronshoSuspendSyncで制御）
+  const queue = () => {
+    if (syncSuspended) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => syncMerged().catch(e => state(e.message)), 1200);
+  };
 
   async function connect(prompt = 'consent') {
     if (prompt) state('Googleログインを開いています…');
@@ -226,7 +241,7 @@
   let lastSyncAttempt = 0;
 
   function periodicSync() {
-    if (!isAuthorized()) return;
+    if (!isAuthorized() || syncSuspended) return;
     const now = Date.now();
     if (now - lastSyncAttempt < MIN_SYNC_GAP_MS) return;
     lastSyncAttempt = now;

@@ -616,7 +616,9 @@ function isPlainCategoryLine(text) {
   if (!text) return false;
   const t = text.replace(/[\s　]/g, '').trim();
   if (!t || /[。、]/.test(t) || t.length > 20) return false;
-  const known = ['総則','物権','担保物権','債権総論','債権各論','親族','相続','人権','統治','総論','各論','財産犯','生命身体に対する罪','文書罪'];
+  const known = ['総則','物権','担保物権','債権総論','債権各論','親族','相続','人権','統治','総論','各論','財産犯','生命身体に対する罪','文書罪',
+    '第一審','複雑訴訟','上訴','再審','民事執行','民事保全','当事者','訴訟要件','既判力','多数当事者訴訟',
+    '会社法','商行為','手形小切手法','設立','株式','機関','計算','組織再編'];
   return known.includes(t);
 }
 function parseTitleLineRuns(runList) {

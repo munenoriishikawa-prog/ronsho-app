@@ -1,8 +1,6 @@
 (() => {
-  const CLIENT_ID = '1008108195377-3i95ujevlk1keuf02tcitnuikniie9al.apps.googleusercontent.com';
-  const SCOPE = 'https://www.googleapis.com/auth/drive.file';
-  const NAME = 'ronsho-app-sync-v1.json';
-  const DRIVE_ID = 'ronshoDriveSyncFileIdV1';
+  const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyB-3irASAEN6amf2QIN74WQNhF4winF8LwO_gfYDFkW4JLw0cTHTUyOHfoPis7Sof5/exec';
+  const REVISION_KEY = 'ronshoSyncRevisionV1';
   const ENTRY_KEY = 'ronshoEntries';
   const STUDYLOG_KEY = 'ronshoStudyLog';
   const MANUALLOG_KEY = 'ronshoManualLog';
@@ -13,39 +11,22 @@
   const SPEECHDICT_KEY = 'ronshoSpeechDictV1';
   const DAILYSTATS_KEY = 'ronshoDailyStatsV1';
   const DAILYGOAL_KEY = 'ronshoDailyGoalV1';
-  const CONFLICT_KEY = 'ronshoSyncConflictsV1';
-  let token = '', timer, last = '';
+
+  let revision = Number(localStorage.getItem(REVISION_KEY) || 0);
+  let last = '';
+  let timer;
   let syncInFlight = false;
   let syncSuspended = false;
+  let lastPullAttempt = 0;
   window.ronshoSuspendSync = (v) => { syncSuspended = !!v; };
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   const getEntries = () => read(ENTRY_KEY, []);
-  const entryKey = x => x?.id || [x?.title, x?.body].filter(Boolean).join('|') || JSON.stringify(x);
-  const unique = a => { const m = new Map(); for (const x of a || []) m.set(entryKey(x), x); return [...m.values()] };
   const state = t => { const e = document.getElementById('driveSyncState'); if (e) e.textContent = t };
-  const updateSyncBtnLabel = () => { const b = document.getElementById('driveSyncBtn'); if (b) b.textContent = token ? '🔄 今すぐ同期' : '☁️ Google Driveに接続'; };
-
-  const stableStringify = v => {
-    if (v === null || typeof v !== 'object') return JSON.stringify(v);
-    if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
-    return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
-  };
-  const sameSet = (a, b) => {
-    const sa = (a || []).map(stableStringify).sort();
-    const sb = (b || []).map(stableStringify).sort();
-    return sa.length === sb.length && sa.every((v, i) => v === sb[i]);
-  };
-  const manualLogChanged = (merged, local) => {
-    const mk = Object.keys(merged || {}), lk = Object.keys(local || {});
-    if (mk.length !== lk.length) return true;
-    return mk.some(k => !(k in local) || !sameSet(merged[k], local[k]));
-  };
 
   const snapshot = () => ({
-    schemaVersion: 3,
-    updatedAt: new Date().toISOString(),
+    schemaVersion: 4,
     entries: getEntries(),
     studyLog: read(STUDYLOG_KEY, {}),
     manualLog: read(MANUALLOG_KEY, {}),
@@ -58,154 +39,84 @@
     dailyGoal: read(DAILYGOAL_KEY, null)
   });
 
-  const mergeHistory = (a, b) => {
-    const count = x => (x || []).reduce((m, d) => (m[d] = (m[d] || 0) + 1, m), {});
-    const ca = count(a), cb = count(b);
-    const days = [...new Set([...Object.keys(ca), ...Object.keys(cb)])].sort();
-    return days.flatMap(d => Array(Math.max(ca[d] || 0, cb[d] || 0)).fill(d));
-  };
-  const mergeLog = (a, b) => {
-    const out = { ...a };
-    for (const [k, v] of Object.entries(b || {})) {
-      const o = out[k] || {};
-      out[k] = { ...o, ...v, history: mergeHistory(o.history, v.history), memorized: !!(o.memorized || v.memorized), starred: !!(o.starred || v.starred), weak: !!(o.weak || v.weak), bookmarked: !!(o.bookmarked || v.bookmarked), confidence: v.confidence || o.confidence || null, memo: v.memo || o.memo || '' };
-    }
-    return out;
+  const hasLocalData = () => {
+    const e = getEntries();
+    const sl = read(STUDYLOG_KEY, {});
+    return (e && e.length > 0) || Object.keys(sl).length > 0;
   };
 
-  let lastChanged = [];
-
-  const merge = remote => {
-    const local = snapshot();
-    lastChanged = [];
-
-    const archiveKey = x => [x?.entry?.title, x?.entry?.body].filter(Boolean).join('|') || JSON.stringify(x);
-    const dupArchive = new Map([...(remote.dupArchive || []), ...(local.dupArchive || [])].map(x => [archiveKey(x), x]));
-    const mergedDupArchive = [...dupArchive.values()];
-    const deletedTitleBodySet = new Set(mergedDupArchive.map(x => [x?.entry?.title, x?.entry?.body].join('|')));
-
-    const remoteEntries = remote.entries || Object.values(remote.fileBuckets || {}).flat();
-    const mergedEntries = unique([...(remoteEntries || []), ...local.entries])
-      .filter(e => !deletedTitleBodySet.has([e.title, e.body].join('|')));
-    if (!sameSet(mergedEntries, local.entries)) lastChanged.push('論証データ');
-    write(ENTRY_KEY, mergedEntries);
-
-    const mergedDupResolvedEarly = [...new Set([...(remote.dupResolved || []), ...(local.dupResolved || [])])];
-    const mergedDupResolvedSet = new Set(mergedDupResolvedEarly);
-    const isTitleGroupFullyResolved = (title) => {
-      if (typeof dupPairSignature !== 'function') return false;
-      const group = mergedEntries.filter(e => e.title === title);
-      for (let i = 0; i < group.length; i++) {
-        for (let j = i + 1; j < group.length; j++) {
-          if (!mergedDupResolvedSet.has(dupPairSignature(group[i], group[j]))) return false;
-        }
-      }
-      return true;
-    };
-    const titleCount = list => { const m = {}; (list || []).forEach(x => { m[x.title] = (m[x.title] || 0) + 1 }); return m };
-    const localTitleCounts = titleCount(local.entries);
-    const mergedTitleCounts = titleCount(mergedEntries);
-    const stillDuplicated = new Set(Object.keys(mergedTitleCounts).filter(t => mergedTitleCounts[t] > 1));
-    const newlyConflicted = Object.keys(mergedTitleCounts).filter(t => mergedTitleCounts[t] > (localTitleCounts[t] || 0) && mergedTitleCounts[t] > 1);
-    const prevConflicts = read(CONFLICT_KEY, []);
-    const conflictTitles = [...new Set([...prevConflicts.filter(t => stillDuplicated.has(t)), ...newlyConflicted])]
-      .filter(t => !isTitleGroupFullyResolved(t));
-    if (conflictTitles.length) lastChanged.push('⚠️編集競合(' + conflictTitles.length + '件)');
-    write(CONFLICT_KEY, conflictTitles);
-    try { entries = mergedEntries } catch (_) {}
-
-    const study = mergeLog(remote.studyLog || {}, local.studyLog || {});
-    if (stableStringify(study) !== stableStringify(local.studyLog || {})) lastChanged.push('学習記録');
-    write(STUDYLOG_KEY, study);
-    try { studyLog = study } catch (_) {}
-
-    const manual = { ...(remote.manualLog || {}) };
-    for (const [d, v] of Object.entries(local.manualLog || {})) manual[d] = unique([...(manual[d] || []), ...v]);
-    if (manualLogChanged(manual, local.manualLog || {})) lastChanged.push('学習カレンダー記録');
-    write(MANUALLOG_KEY, manual);
-    try { manualLog = manual } catch (_) {}
-
-    const exams = new Map([...(remote.pastExamLogs || []), ...(local.pastExamLogs || [])].map(x => [x.key || JSON.stringify(x), x]));
-    const mergedExams = [...exams.values()];
-    if (!sameSet(mergedExams, local.pastExamLogs)) lastChanged.push('過去問ログ');
-    write(PASTEXAM_KEY, mergedExams);
-
-    const countdowns = new Map([...(remote.countdowns || []), ...(local.countdowns || [])].map(x => [x.id || JSON.stringify(x), x]));
-    const mergedCountdowns = [...countdowns.values()];
-    if (!sameSet(mergedCountdowns, local.countdowns)) lastChanged.push('カウントダウン');
-    write(COUNTDOWN_KEY, mergedCountdowns);
-
-    if (!sameSet(mergedDupArchive, local.dupArchive)) lastChanged.push('重複チェックアーカイブ');
-    write(DUPARCHIVE_KEY, mergedDupArchive);
-    try { dupArchiveList = mergedDupArchive } catch (_) {}
-
-    const mergedDupResolved = mergedDupResolvedEarly;
-    if (!sameSet(mergedDupResolved, local.dupResolved)) lastChanged.push('重複チェック履歴');
-    write(DUPRESOLVED_KEY, mergedDupResolved);
-    try { dupResolvedSet = new Set(mergedDupResolved) } catch (_) {}
-
-    const dictKey = x => x?.word;
-    const speechDict = new Map([...(remote.speechDict || []), ...(local.speechDict || [])].map(x => [dictKey(x), x]));
-    const mergedSpeechDict = [...speechDict.values()];
-    if (!sameSet(mergedSpeechDict, local.speechDict)) lastChanged.push('読み方辞書');
-    write(SPEECHDICT_KEY, mergedSpeechDict);
-    try { speechDict = mergedSpeechDict } catch (_) {}
-
-    const dailyStats = { ...(remote.dailyStats || {}) };
-    for (const [d, c] of Object.entries(local.dailyStats || {})) dailyStats[d] = Math.max(dailyStats[d] || 0, c);
-    if (stableStringify(dailyStats) !== stableStringify(local.dailyStats || {})) lastChanged.push('今日の伸びしろ記録');
-    write(DAILYSTATS_KEY, dailyStats);
-
-    const dailyGoal = (local.dailyGoal == null && remote.dailyGoal != null) ? remote.dailyGoal : local.dailyGoal;
-    if (dailyGoal != null && dailyGoal !== local.dailyGoal) lastChanged.push('今日の目標');
-    if (dailyGoal != null) write(DAILYGOAL_KEY, dailyGoal);
-
+  function applyRemoteData(data) {
+    data = data || {};
+    write(ENTRY_KEY, data.entries || []);
+    write(STUDYLOG_KEY, data.studyLog || {});
+    write(MANUALLOG_KEY, data.manualLog || {});
+    write(PASTEXAM_KEY, data.pastExamLogs || []);
+    write(COUNTDOWN_KEY, data.countdowns || []);
+    write(DUPARCHIVE_KEY, data.dupArchive || []);
+    write(DUPRESOLVED_KEY, data.dupResolved || []);
+    write(SPEECHDICT_KEY, data.speechDict || []);
+    write(DAILYSTATS_KEY, data.dailyStats || {});
+    if (data.dailyGoal != null) write(DAILYGOAL_KEY, data.dailyGoal);
+    try { entries = data.entries || [] } catch (_) {}
+    try { studyLog = data.studyLog || {} } catch (_) {}
+    try { manualLog = data.manualLog || {} } catch (_) {}
+    try { dupArchiveList = data.dupArchive || [] } catch (_) {}
+    try { dupResolvedSet = new Set(data.dupResolved || []) } catch (_) {}
+    try { speechDict = data.speechDict || [] } catch (_) {}
     if (typeof saveEntries === 'function') saveEntries();
     if (typeof renderAll === 'function') renderAll(true);
     if (typeof renderCountdownCard === 'function') renderCountdownCard();
     if (typeof renderDupArchive === 'function') renderDupArchive();
     if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
-    return snapshot();
-  };
-
-  async function fileId() {
-    let i = localStorage.getItem(DRIVE_ID);
-    if (i) return i;
-    const q = encodeURIComponent("name = '" + NAME + "' and trashed = false");
-    const r = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id)', { headers: { Authorization: 'Bearer ' + token } });
-    const files = (await r.json()).files || [];
-    i = files[0]?.id;
-    if (i) localStorage.setItem(DRIVE_ID, i);
-    return i;
   }
 
-  async function push(data = snapshot()) {
-    if (!token) return;
-    const i = await fileId(), b = 'ronsho';
-    const meta = JSON.stringify(i ? { name: NAME } : { name: NAME, mimeType: 'application/json' });
-    const body = '--' + b + '\r\nContent-Type: application/json\r\n\r\n' + meta + '\r\n--' + b + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(data) + '\r\n--' + b + '--';
-    const url = i ? 'https://www.googleapis.com/upload/drive/v3/files/' + i + '?uploadType=multipart' : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-    const r = await fetch(url, { method: i ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/related; boundary=' + b }, body });
-    if (!r.ok) throw Error('Driveへの保存に失敗しました');
-    const out = await r.json();
-    localStorage.setItem(DRIVE_ID, out.id || i);
+  async function pushToCloud() {
+    const data = snapshot();
+    const r = await fetch(SYNC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ revision, data })
+    });
+    if (!r.ok) throw new Error('保存に失敗しました');
+    const result = await r.json();
+    if (!result.ok && result.reason === 'conflict') {
+      revision = result.latest.revision || 0;
+      localStorage.setItem(REVISION_KEY, String(revision));
+      applyRemoteData(result.latest.data);
+      last = JSON.stringify(snapshot());
+      state('⚠️別端末の更新を検知したため最新データを読み込みました。もう一度操作をお試しください（' + new Date().toLocaleTimeString() + '）');
+      return;
+    }
+    if (!result.ok) throw new Error('保存に失敗しました');
+    revision = result.result.revision;
+    localStorage.setItem(REVISION_KEY, String(revision));
     last = JSON.stringify(snapshot());
-    const time = new Date().toLocaleTimeString();
-    state(lastChanged.length ? '同期しました：' + lastChanged.join('・') + '（' + time + '）' : '同期済み（' + time + '）');
+    state('同期しました（' + new Date().toLocaleTimeString() + '）');
   }
 
-  async function syncMerged() {
+  async function pullFromCloud(isInitial) {
+    const r = await fetch(SYNC_URL, { cache: 'no-store' });
+    if (!r.ok) throw new Error('クラウドからの取得に失敗しました');
+    const remote = await r.json();
+    const remoteRevision = remote.revision || 0;
+    if (isInitial && remoteRevision === 0 && hasLocalData()) {
+      // クラウドが未使用（初回）かつ端末側にデータがある場合は、こちらのデータを送る
+      await syncNow();
+      return;
+    }
+    revision = remoteRevision;
+    localStorage.setItem(REVISION_KEY, String(revision));
+    applyRemoteData(remote.data);
+    last = JSON.stringify(snapshot());
+    state('同期済み（' + new Date().toLocaleTimeString() + '）');
+  }
+
+  async function syncNow() {
     if (syncInFlight) return;
     syncInFlight = true;
+    state('同期中…');
     try {
-      lastChanged = [];
-      const i = await fileId();
-      let data = snapshot();
-      if (i) {
-        const x = await fetch('https://www.googleapis.com/drive/v3/files/' + i + '?alt=media', { headers: { Authorization: 'Bearer ' + token } });
-        if (x.ok) data = merge(await x.json());
-      }
-      await push(data);
+      await pushToCloud();
     } finally {
       syncInFlight = false;
     }
@@ -216,40 +127,18 @@
   const queue = () => {
     if (syncSuspended) return;
     clearTimeout(timer);
-    timer = setTimeout(() => syncMerged().catch(e => state(e.message)), 1200);
+    timer = setTimeout(() => syncNow().catch(e => state(e.message)), 1200);
   };
 
-  async function connect(prompt = 'consent') {
-    if (prompt) state('Googleログインを開いています…');
-    if (!window.google) {
-      await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = ok; s.onerror = no; document.head.appendChild(s) });
-    }
-    google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID, scope: SCOPE, callback: async r => {
-        if (r.error) { if (!prompt) state('未接続'); else state('認証に失敗しました'); return }
-        token = r.access_token;
-        localStorage.setItem('ronshoDriveSyncAuthorizedV1', '1');
-        updateSyncBtnLabel();
-        try { await syncMerged() } catch (e) { state(e.message) }
-      }
-    }).requestAccessToken({ prompt });
-  }
-
-  const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
-  const MIN_SYNC_GAP_MS = 20 * 1000;
-  const isAuthorized = () => localStorage.getItem('ronshoDriveSyncAuthorizedV1') === '1';
-  let lastSyncAttempt = 0;
-
-  function periodicSync() {
-    if (!isAuthorized() || syncSuspended) return;
+  const AUTO_PULL_INTERVAL_MS = 5 * 60 * 1000;
+  const MIN_PULL_GAP_MS = 20 * 1000;
+  function maybePullIfIdle() {
+    if (syncSuspended || syncInFlight) return;
+    if (JSON.stringify(snapshot()) !== last) return; // 未同期のローカル変更があれば取得しない
     const now = Date.now();
-    if (now - lastSyncAttempt < MIN_SYNC_GAP_MS) return;
-    lastSyncAttempt = now;
-    if (token) {
-      syncMerged().catch(e => state(e.message));
-    } else {
-      connect('').catch(() => {});
-    }
+    if (now - lastPullAttempt < MIN_PULL_GAP_MS) return;
+    lastPullAttempt = now;
+    pullFromCloud(false).catch(() => {});
   }
 
   window.addEventListener('load', () => {
@@ -258,40 +147,38 @@
     const p = document.createElement('div');
     p.id = 'driveSyncPanel';
     p.className = 'driveSyncPanel';
-    p.innerHTML = '<button id="driveSyncBtn" type="button">☁️ Google Driveに接続</button> <span id="driveSyncState">未接続</span>'
+    p.innerHTML = '<button id="driveSyncBtn" type="button">🔄 今すぐ同期</button> <span id="driveSyncState">起動時に自動で同期します</span>'
       + '<button id="pageReloadBtn" type="button" title="このページを最新の状態に読み込み直します">🔄 ページ読込</button>';
     const slot = document.getElementById('driveSyncPanelSlot');
     const row = document.getElementById('topStatusRow');
     if (slot) slot.appendChild(p);
     else if (row) row.appendChild(p);
     else status.after(p);
-    document.getElementById('driveSyncBtn').onclick = async () => {
-      try {
-        if (token) await syncMerged();
-        else await connect('consent');
-      } catch (e) { state(e.message) }
+    document.getElementById('driveSyncBtn').onclick = () => {
+      syncNow().catch(e => state(e.message));
     };
     document.getElementById('pageReloadBtn').onclick = () => {
       if (confirm('ページを読み込み直します。保存していない編集内容は失われますが、よろしいですか？')) location.reload();
     };
-    if (isAuthorized()) connect('').catch(() => {});
+
+    pullFromCloud(true).catch(e => state('オフラインで動作中（' + e.message + '）'));
 
     // ローカル変更を検知したら短い遅延で自動アップロード
     // （タブが非表示の間はスキップし、iPad等での不要なCPU消費を抑える）
     setInterval(() => {
-      if (token && document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible') {
         const n = JSON.stringify(snapshot());
         if (n !== last) queue();
       }
     }, 6000);
 
-    // 変更の有無に関わらず、数分おきに他端末の更新も取り込む安全策の自動同期
-    setInterval(periodicSync, AUTO_SYNC_INTERVAL_MS);
+    // 変更が無いときに限り、数分おきに他端末の更新を取り込む安全策
+    setInterval(maybePullIfIdle, AUTO_PULL_INTERVAL_MS);
 
-    // タブを再度開いた／フォーカスした直後にも最新状態を取り込む
+    // タブを再度開いた／フォーカスした直後にも、変更が無ければ最新状態を取り込む
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') periodicSync();
+      if (document.visibilityState === 'visible') maybePullIfIdle();
     });
-    window.addEventListener('focus', periodicSync);
+    window.addEventListener('focus', maybePullIfIdle);
   });
 })();

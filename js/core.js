@@ -446,13 +446,22 @@ drop.addEventListener('drop', e => {
 fileInput.addEventListener('change', e => {
   if (e.target.files.length) handleFiles(Array.from(e.target.files));
 });
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+const debouncedRenderStudyTable = debounce(() => renderStudyTable(entries), 200);
+const debouncedRenderMemorizedTable = debounce(() => renderMemorizedTable(entries), 200);
 searchInputStudy.addEventListener('input', () => {
   searchQueryStudy = searchInputStudy.value.trim();
-  renderStudyTable(entries);
+  debouncedRenderStudyTable();
 });
 searchInputMemorized.addEventListener('input', () => {
   searchQueryMemorized = searchInputMemorized.value.trim();
-  renderMemorizedTable(entries);
+  debouncedRenderMemorizedTable();
 });
 document.getElementById('searchClearStudy').addEventListener('click', () => {
   searchInputStudy.value = '';

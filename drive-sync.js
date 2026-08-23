@@ -262,12 +262,13 @@
     if (isAuthorized()) connect('').catch(() => {});
 
     // ローカル変更を検知したら短い遅延で自動アップロード
+    // （タブが非表示の間はスキップし、iPad等での不要なCPU消費を抑える）
     setInterval(() => {
-      if (token) {
+      if (token && document.visibilityState === 'visible') {
         const n = JSON.stringify(snapshot());
         if (n !== last) queue();
       }
-    }, 3000);
+    }, 6000);
 
     // 変更の有無に関わらず、数分おきに他端末の更新も取り込む安全策の自動同期
     setInterval(periodicSync, AUTO_SYNC_INTERVAL_MS);

@@ -158,12 +158,24 @@ function findDuplicatePairs() {
     if (!bySubject.has(s)) bySubject.set(s, []);
     bySubject.get(s).push(e);
   });
+  const DUP_TITLE_PREFIX_MIN_LEN = 6;
   bySubject.forEach(list => {
     if (list.length > DUP_SUBJECT_BUCKET_LIMIT) return;
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
         const score = dupCombinedScore(list[i], list[j]);
         if (score >= DUP_FUZZY_THRESHOLD) addPair(list[i], list[j], 'fuzzy', score);
+        // 過去の不完全なインポート等で片方のタイトルが途中で
+        // 切れてしまった場合、文章として全く似ていなくても
+        // 本文の類似度だけでは検出できないことがあるため、
+        // タイトルの前方一致（一定の長さ以上）も重複候補として拾う
+        const ta = norm(list[i].title), tb = norm(list[j].title);
+        if (ta && tb && ta !== tb && (ta.startsWith(tb) || tb.startsWith(ta))) {
+          const shorter = ta.length < tb.length ? ta : tb;
+          if (shorter.length >= DUP_TITLE_PREFIX_MIN_LEN) {
+            addPair(list[i], list[j], 'title-prefix', Math.max(score, DUP_FUZZY_THRESHOLD));
+          }
+        }
       }
     }
   });
@@ -218,6 +230,7 @@ function dupReasonLabel(pair) {
   if (pair.reasons.has('title')) labels.push('🏷️ タイトル完全一致');
   if (pair.reasons.has('body')) labels.push('📄 本文完全一致');
   if (pair.reasons.has('fuzzy')) labels.push('🔍 類似度' + Math.round(pair.score * 100) + '%');
+  if (pair.reasons.has('title-prefix')) labels.push('✂️ タイトルの前方一致（片方が途中で切れている可能性）');
   return labels.join('・');
 }
 function formatImportedAt(iso) {

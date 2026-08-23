@@ -961,6 +961,7 @@ function getNextReviewInfo(title) {
   else if (count === 4) intervalDays = 14;
   else if (count === 5) intervalDays = 30;
   else intervalDays = 60;
+  if (log.confidence === 'perfect') intervalDays = Math.round(intervalDays * 1.5);
   if (log.confidence === 'unsure') intervalDays = Math.max(1, Math.round(intervalDays / 2));
   if (log.confidence === 'bad') intervalDays = 1;
   const d = new Date(lastDateStr + 'T00:00:00');
@@ -975,7 +976,8 @@ function buildImportanceStarsHtml(importance) {
 }
 function buildConfidenceGroupHtml(idx, confidence) {
   return '<div class="confidenceGroup" data-idx="' + idx + '">'
-    + '<span class="confBtn confGood' + (confidence === 'good' ? ' active' : '') + '" data-level="good" data-idx="' + idx + '" title="バッチリ">○</span>'
+    + '<span class="confBtn confPerfect' + (confidence === 'perfect' ? ' active' : '') + '" data-level="perfect" data-idx="' + idx + '" title="完璧">◎</span>'
+    + '<span class="confBtn confGood' + (confidence === 'good' ? ' active' : '') + '" data-level="good" data-idx="' + idx + '" title="できた">○</span>'
     + '<span class="confBtn confUnsure' + (confidence === 'unsure' ? ' active' : '') + '" data-level="unsure" data-idx="' + idx + '" title="あやしい">△</span>'
     + '<span class="confBtn confBad' + (confidence === 'bad' ? ' active' : '') + '" data-level="bad" data-idx="' + idx + '" title="ダメ">✕</span>'
     + '</div>';

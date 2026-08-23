@@ -122,7 +122,7 @@ function renderQuizPage() {
     + '</div>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
   if (quizComboCount >= 2) {
-    html += '<div class="quizCombo">🔥 ' + quizComboCount + '連続バッチリ！</div>';
+    html += '<div class="quizCombo">🔥 ' + quizComboCount + '連続できた！</div>';
   }
   html += '<div class="quizNavRow">'
     + '<button type="button" class="quizNavBtn" id="quizPrevBtn"' + (quizIndex === 0 ? ' disabled' : '') + '>◀ 前の問題</button>'
@@ -144,7 +144,8 @@ function renderQuizPage() {
       + ' <span class="quizSourceEditBtn" id="quizSourceEditBtn" title="出典を編集">✏️</span></div>';
     const isWeak = !!(studyLog[e.title] && studyLog[e.title].starred);
     html += '<div class="quizJudgeRow">'
-      + '<button type="button" class="quizGoodBtn" id="quizGoodBtn"><span class="quizJudgeIcon">○</span>バッチリ</button>'
+      + '<button type="button" class="quizPerfectBtn" id="quizPerfectBtn"><span class="quizJudgeIcon">◎</span>完璧</button>'
+      + '<button type="button" class="quizGoodBtn" id="quizGoodBtn"><span class="quizJudgeIcon">○</span>できた</button>'
       + '<button type="button" class="quizUnsureBtn" id="quizUnsureBtn"><span class="quizJudgeIcon">△</span>あやしい</button>'
       + '<button type="button" class="quizBadBtn" id="quizBadBtn"><span class="quizJudgeIcon">✕</span>ダメ</button>'
       + '<button type="button" class="quizWeakBtn' + (isWeak ? ' active' : '') + '" id="quizWeakBtn"><span class="quizJudgeIcon">😰</span>苦手</button>'
@@ -177,11 +178,13 @@ function renderQuizPage() {
   function advanceQuiz(level, sourceEl) {
     const idx = entries.indexOf(e);
     if (idx !== -1) setConfidence(idx, level, sourceEl);
-    quizComboCount = (level === 'good') ? quizComboCount + 1 : 0;
+    quizComboCount = (level === 'good' || level === 'perfect') ? quizComboCount + 1 : 0;
     quizIndex++;
     quizRevealed = false;
     renderQuizPage();
   }
+  const perfectBtn = document.getElementById('quizPerfectBtn');
+  if (perfectBtn) perfectBtn.addEventListener('click', () => advanceQuiz('perfect', perfectBtn));
   const goodBtn = document.getElementById('quizGoodBtn');
   if (goodBtn) goodBtn.addEventListener('click', () => advanceQuiz('good', goodBtn));
   const unsureBtn = document.getElementById('quizUnsureBtn');

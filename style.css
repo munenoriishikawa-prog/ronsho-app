@@ -577,6 +577,8 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 }
 .confBtn:hover { opacity: 0.85; transform: scale(1.12); }
 .confBtn.active { opacity: 1; transform: scale(1.15); box-shadow: 0 2px 6px rgba(0,0,0,0.18); }
+.confBtn.confPerfect { background: #ddd6fe; color: #6d28d9; }
+.confBtn.confPerfect.active { background: #7c3aed; color: #fff; }
 .confBtn.confGood { background: #bbf7d0; color: #15803d; }
 .confBtn.confGood.active { background: #22c55e; color: #fff; }
 .confBtn.confUnsure { background: #fde68a; color: #b45309; }
@@ -1032,6 +1034,8 @@ input[type=file] { display:none; }
 .speechDictDeleteBtn { margin-left: auto; cursor: pointer; opacity: 0.5; }
 .speechDictDeleteBtn:hover { opacity: 1; }
 .quizJudgeIcon { font-size: 15px; font-weight: 800; width:24px; height:24px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; }
+.quizPerfectBtn { background: linear-gradient(135deg, #7c3aed, #a78bfa); color: #fff; border: none; }
+.quizPerfectBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color:#fff; }
 .quizGoodBtn { background: linear-gradient(135deg, #22c55e, #0ea5e9); color: #fff; border: none; }
 .quizGoodBtn .quizJudgeIcon { background: rgba(255,255,255,0.35); color: transparent; font-size: 0; position: relative; }
 .quizGoodBtn .quizJudgeIcon::after { content: ''; width: 13px; height: 13px; border: 3px solid #fff; border-radius: 50%; display: block; box-sizing: border-box; }
@@ -1042,6 +1046,7 @@ input[type=file] { display:none; }
 .quizWeakBtn { background: #fff; color: #78350f; border: 2px solid #ff9f1c; }
 .quizWeakBtn .quizJudgeIcon { background: transparent; font-size: 15px; }
 .quizWeakBtn.active { background: linear-gradient(135deg, #ffb74d, #ff7043); color: #fff; border-color: transparent; }
+.quizPerfectBtn:hover { background: linear-gradient(135deg, #8b5cf6, #c4b5fd); color: #fff; transform: translateY(-1px) scale(1.03); }
 .quizGoodBtn:hover { background: linear-gradient(135deg, #4ade80, #38bdf8); color: #fff; transform: translateY(-1px) scale(1.03); }
 .quizUnsureBtn:hover { background: linear-gradient(135deg, #ffe066, #ffb14d); color: #78350f; transform: translateY(-1px) scale(1.03); }
 .quizBadBtn:hover { background: linear-gradient(135deg, #ff8a8a, #e05555); color: #fff; transform: translateY(-1px) scale(1.03); }

@@ -85,7 +85,7 @@ function renderMemorizedTable(data) {
   });
   html += '</tbody></table>';
   if (count === 0) {
-    html = '<div class="reviewList"><div class="reviewItem">暗記済みの論証はまだありません。○バッチリを押すとここに移動します。</div></div>';
+    html = '<div class="reviewList"><div class="reviewItem">暗記済みの論証はまだありません。◎完璧または○できたを押すとここに移動します。</div></div>';
   }
   memorizedTableWrap.innerHTML = html;
   searchCountMemorized.textContent = searchQueryMemorized ? count + '件見つかりました' : '';
@@ -397,11 +397,14 @@ function setConfidence(idx, level, sourceEl) {
     if (hist[hist.length - 1] !== today) hist.push(today);
   }
   studyLog[title].confidence = level;
-  studyLog[title].memorized = (level === 'good');
+  studyLog[title].memorized = (level === 'good' || level === 'perfect');
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
   saveStudyLog();
-  if (level === 'good') {
+  if (level === 'perfect') {
+    if (sourceEl) triggerFireworkLevelUp(sourceEl);
+    status.textContent = '🎉 「' + title + '」を暗記済み一覧に移動しました！（完璧！）';
+  } else if (level === 'good') {
     if (sourceEl) triggerFireworkLevelUp(sourceEl);
     status.textContent = '🎉 「' + title + '」を暗記済み一覧に移動しました！';
   } else if (level === 'unsure') {
@@ -874,7 +877,7 @@ downloadLogBtn.addEventListener('click', () => {
     const history = log.history || [];
     const lastDate = history.length ? history[history.length - 1] : '';
     const info = getNextReviewInfo(e.title);
-    const confLabel = log.confidence === 'good' ? 'バッチリ' : (log.confidence === 'unsure' ? 'あやしい' : (log.confidence === 'bad' ? 'ダメ' : ''));
+    const confLabel = log.confidence === 'perfect' ? '完璧' : (log.confidence === 'good' ? 'できた' : (log.confidence === 'unsure' ? 'あやしい' : (log.confidence === 'bad' ? 'ダメ' : '')));
     return [e.subject || '', e.category || '', e.title, history.length, lastDate, info ? info.nextDateStr : '', confLabel, log.starred ? '😰' : ''];
   });
   const escapeCsv = v => {

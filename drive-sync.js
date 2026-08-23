@@ -70,7 +70,13 @@
     if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
   }
 
-  async function pushToCloud() {
+  // 同期によって論証データが今より少ない状態へ静かに置き換わることがないようにする安全策。
+  // 通常は「1人が同時に1台だけ使う」前提でrevision不一致＝そのまま最新採用でよいが、
+  // 複数端末に元々ズレたデータがある移行期などは、件数が少ない側を機械的に信用すると
+  // データが消えたように見える事故になるため、件数が多い側を優先して送り直す。
+  const entryCountOf = (data) => (data && data.entries) ? data.entries.length : 0;
+
+  async function pushToCloud(retriesLeft = 2) {
     const data = snapshot();
     const r = await fetch(SYNC_URL, {
       method: 'POST',
@@ -80,9 +86,15 @@
     if (!r.ok) throw new Error('保存に失敗しました');
     const result = await r.json();
     if (!result.ok && result.reason === 'conflict') {
-      revision = result.latest.revision || 0;
+      const remoteData = result.latest.data;
+      const remoteRevision = result.latest.revision || 0;
+      if (retriesLeft > 0 && entryCountOf(data) > 0 && entryCountOf(remoteData) < entryCountOf(data)) {
+        revision = remoteRevision;
+        return pushToCloud(retriesLeft - 1);
+      }
+      revision = remoteRevision;
       localStorage.setItem(REVISION_KEY, String(revision));
-      applyRemoteData(result.latest.data);
+      applyRemoteData(remoteData);
       last = JSON.stringify(snapshot());
       state('⚠️別端末の更新を検知したため最新データを読み込みました。もう一度操作をお試しください（' + new Date().toLocaleTimeString() + '）');
       return;
@@ -101,6 +113,13 @@
     const remoteRevision = remote.revision || 0;
     if (isInitial && remoteRevision === 0 && hasLocalData()) {
       // クラウドが未使用（初回）かつ端末側にデータがある場合は、こちらのデータを送る
+      await syncNow();
+      return;
+    }
+    const localCount = getEntries().length;
+    if (localCount > 0 && entryCountOf(remote.data) < localCount) {
+      // クラウド側の論証数がこの端末より少ない → 少ない方で上書きせず、この端末のデータを送り直す
+      revision = remoteRevision;
       await syncNow();
       return;
     }

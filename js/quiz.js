@@ -110,13 +110,11 @@ function renderQuizPage() {
   const e = quizPool[quizIndex];
   const idx = entries.indexOf(e);
   const isEditingThis = idx !== -1 && editingEntryIdx === idx;
-  const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
   const isSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
   const quizMemo = (studyLog[e.title] && studyLog[e.title].memo) || '';
   let html = '<div class="quizCard">';
   html += '<div class="quizCardTools">'
     + '<span class="quizMemoBtn' + (quizMemo ? ' active' : '') + '" id="quizMemoBtn" title="' + escapeHtml(quizMemo ? ('メモ：' + quizMemo) : 'メモを追加') + '">🗒️</span>'
-    + '<span class="quizBookmarkBtn' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="内容修正が必要な論証としてブックマーク">🔖</span>'
     + '<span class="quizSkipBtn' + (isSkipped ? ' active' : '') + '" id="quizSkipBtn" title="スキップ（問題演習から除外）">⏭️</span>'
     + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
     + '</div>';
@@ -195,13 +193,6 @@ function renderQuizPage() {
   if (weakBtn) weakBtn.addEventListener('click', () => {
     const idx = entries.indexOf(e);
     if (idx !== -1) toggleStar(idx);
-    renderQuizPage();
-  });
-  const bookmarkBtn = document.getElementById('quizBookmarkBtn');
-  if (bookmarkBtn) bookmarkBtn.addEventListener('click', (evt) => {
-    evt.stopPropagation();
-    const idx = entries.indexOf(e);
-    if (idx !== -1) toggleBookmark(idx);
     renderQuizPage();
   });
   const memoBtn = document.getElementById('quizMemoBtn');

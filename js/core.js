@@ -59,7 +59,6 @@ let selectedCsvSubject = 'all';
 let selectedCategory = 'all';
 let selectedTag = 'all';
 let starOnlyFilter = false;
-let bookmarkOnlyFilter = false;
 let minYearFrequency = 0;
 let sortByFrequency = false;
 let selectedImportance = 'all';
@@ -320,7 +319,6 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   selectedCsvSubject = 'all';
   selectedCategory = 'all';
   starOnlyFilter = false;
-  bookmarkOnlyFilter = false;
   minYearFrequency = 0;
   sortByFrequency = false;
   selectedImportance = 'all';
@@ -743,7 +741,6 @@ async function handleFiles(files) {
     selectedSubject = 'all';
     selectedCategory = 'all';
     starOnlyFilter = false;
-    bookmarkOnlyFilter = false;
     minYearFrequency = 0;
     sortByFrequency = false;
     selectedImportance = 'all';
@@ -813,9 +810,8 @@ function renderCategoryTabsHtml() {
   return html;
 }
 function renderStarTabsHtml() {
-  let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter && !bookmarkOnlyFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
+  let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
   html += '<button type="button" class="starFilterBtn' + (starOnlyFilter ? ' active' : '') + '" data-star="only">😰 苦手のみ</button>';
-  html += '<button type="button" class="starFilterBtn' + (bookmarkOnlyFilter ? ' active' : '') + '" data-star="bookmark">🔖 要修正のみ</button>';
   return html;
 }
 function renderImportanceTabsHtml() {
@@ -900,9 +896,6 @@ function filterEntries(data, searchQuery) {
   }
   if (starOnlyFilter) {
     result = result.filter(e => studyLog[e.title] && studyLog[e.title].starred);
-  }
-  if (bookmarkOnlyFilter) {
-    result = result.filter(e => studyLog[e.title] && studyLog[e.title].bookmarked);
   }
   if (selectedImportance !== 'all') {
     result = result.filter(e => (e.importance || 0) === selectedImportance);

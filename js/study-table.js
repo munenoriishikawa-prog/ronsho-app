@@ -4,7 +4,6 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const savedDate = history.length ? history[history.length - 1] : '';
   const memorizedSaved = log.memorized || false;
   const starred = log.starred || false;
-  const bookmarked = log.bookmarked || false;
   const memo = log.memo || '';
   const reviewInfo = getNextReviewInfo(e.title);
   const today = todayStr();
@@ -19,7 +18,6 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     : '';
   const titleHtml = buildImportanceStarsHtml(e.importance) + highlightSearch(escapeHtml(e.title), searchQuery);
   const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">😰</span>';
-  const bookmarkHtml = '<span class="bookmarkToggle' + (bookmarked ? ' active' : '') + '" data-idx="' + idx + '" title="要修正ブックマーク">🔖</span>';
   const memoTitle = memo ? ('メモ：' + memo) : 'メモを追加';
   const memoHtml = '<span class="memoToggle' + (memo ? ' active' : '') + '" data-idx="' + idx + '" title="' + escapeHtml(memoTitle) + '">🗒️</span>';
   const isEditing = editingEntryIdx === idx;
@@ -28,7 +26,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const compareToggleHtml = '<span class="compareToggle' + (isCompareSelected ? ' active' : '') + '" data-title="' + escapeHtml(e.title) + '" title="比較に追加／解除">⚖️</span>';
   const titleCellContent = isEditing
     ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
-    : '<div class="titleCellWrap">' + starHtml + bookmarkHtml + memoHtml + compareToggleHtml + editToggleHtml + '<div class="titleText">' + titleHtml + '</div></div>';
+    : '<div class="titleCellWrap">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + '<div class="titleText">' + titleHtml + '</div></div>';
   let bodyCellContent;
   if (isEditing) {
     bodyCellContent = buildBodyEditorHtml(e, idx);
@@ -39,7 +37,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   } else {
     bodyCellContent = highlightSearch(e.bodyHtml, searchQuery) + buildEntryTagsBlockHtml(e);
   }
-  return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + (bookmarked ? ' bookmarkedRow' : '') + '" data-idx="' + idx + '">'
+  return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + '" data-idx="' + idx + '">'
     + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'
     + '<td class="verticalCol subjectCell" data-idx="' + idx + '" title="タップして科目を編集">' + escapeHtml(e.subject || '未設定') + '</td>'
     + '<td class="verticalCol">' + escapeHtml(e.category || (studyLog[e.title] && studyLog[e.title].category) || '') + '</td>'
@@ -430,19 +428,6 @@ function toggleStar(idx) {
   renderStudyTable(entries);
   renderMemorizedTable(entries);
 }
-function toggleBookmark(idx) {
-  const ent = entries[idx];
-  if (!ent) return;
-  const title = ent.title;
-  if (!studyLog[title]) studyLog[title] = { history: [] };
-  studyLog[title].bookmarked = !studyLog[title].bookmarked;
-  studyLog[title].category = ent.category || studyLog[title].category || '';
-  studyLog[title].subject = ent.subject || studyLog[title].subject || '';
-  saveStudyLog();
-  status.textContent = studyLog[title].bookmarked ? '🔖 「' + title + '」を要修正としてブックマークしました。' : '「' + title + '」のブックマークを外しました。';
-  renderStudyTable(entries);
-  renderMemorizedTable(entries);
-}
 function toggleSkip(idx) {
   const ent = entries[idx];
   if (!ent) return;
@@ -572,12 +557,6 @@ function attachTableClickHandler(wrapEl) {
       toggleStar(Number(starToggle.dataset.idx));
       return;
     }
-    const bookmarkToggle = e.target.closest('.bookmarkToggle');
-    if (bookmarkToggle) {
-      e.stopPropagation();
-      toggleBookmark(Number(bookmarkToggle.dataset.idx));
-      return;
-    }
     const memoToggle = e.target.closest('.memoToggle');
     if (memoToggle) {
       e.stopPropagation();
@@ -646,7 +625,6 @@ document.addEventListener('click', (e) => {
   const starTabBtn = e.target.closest('.starFilterBtn[data-star]');
   if (starTabBtn) {
     starOnlyFilter = (starTabBtn.dataset.star === 'only');
-    bookmarkOnlyFilter = (starTabBtn.dataset.star === 'bookmark');
     renderSubjectTabs();
     renderStudyTable(entries);
     renderMemorizedTable(entries);

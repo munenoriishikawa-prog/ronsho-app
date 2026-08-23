@@ -132,6 +132,7 @@
 
   const AUTO_PULL_INTERVAL_MS = 5 * 60 * 1000;
   const MIN_PULL_GAP_MS = 20 * 1000;
+  const LOCAL_CHANGE_CHECK_INTERVAL_MS = 10 * 60 * 1000;
   function maybePullIfIdle() {
     if (syncSuspended || syncInFlight) return;
     if (JSON.stringify(snapshot()) !== last) return; // 未同期のローカル変更があれば取得しない
@@ -170,7 +171,7 @@
         const n = JSON.stringify(snapshot());
         if (n !== last) queue();
       }
-    }, 6000);
+    }, LOCAL_CHANGE_CHECK_INTERVAL_MS);
 
     // 変更が無いときに限り、数分おきに他端末の更新を取り込む安全策
     setInterval(maybePullIfIdle, AUTO_PULL_INTERVAL_MS);

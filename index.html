@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.48（同期をGoogle Apps Script方式に変更）＋過去問ログ</title>
+<title>論証集アプリ v21.49（同期ボタンをデータタブへ移動・検知間隔を緩和）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>📚 論証集アプリ v21.48</h1>
+<h1>📚 論証集アプリ v21.49</h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="quoteCard" class="quoteCard"></div>
@@ -140,7 +140,8 @@
 <div id="csvPage" class="page">
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">☁️ Google Drive同期</div>
-<div class="dupCheckIntro">同期ボタンは画面右上に移動しました。数分おきに自動でも同期されます（他端末の更新分も自動で取り込みます）。</div>
+<div class="dupCheckIntro">変更があると自動的に同期されます（他端末の更新分も自動で取り込みます）。すぐに反映させたい場合は下のボタンを押してください。</div>
+<div id="driveSyncPanelSlot"></div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📥 Wordファイルの読み込み</div>

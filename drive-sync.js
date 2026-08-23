@@ -51,10 +51,13 @@
   // 丸ごと上書きすると、片方の端末の学習成果が消えてしまうため、
   // 論証データ・学習記録は端末間で統合（マージ）してから保存する。
   const entryKeyOf = e => [e && e.title, e && e.body].filter(Boolean).join('|') || JSON.stringify(e);
-  function unionEntries(a, b) {
+  function unionEntries(a, b, deletedKeySet) {
     const m = new Map();
     (a || []).forEach(e => m.set(entryKeyOf(e), e));
     (b || []).forEach(e => m.set(entryKeyOf(e), e));
+    if (deletedKeySet && deletedKeySet.size) {
+      deletedKeySet.forEach(k => m.delete(k));
+    }
     return [...m.values()];
   }
   function mergeHistory(a, b) {
@@ -101,14 +104,18 @@
   }
   function reconcile(remoteData) {
     remoteData = remoteData || {};
+    const mergedDupArchive = mergeByKey(remoteData.dupArchive, read(DUPARCHIVE_KEY, []), x => [x && x.entry && x.entry.title, x && x.entry && x.entry.body].join('|'));
+    // 重複チェックで削除された論証は、どちらかの端末・クラウド側に古いコピーが
+    // 残っていても復活しないよう、dupArchive（削除記録）と一致するものを和集合から除外する
+    const deletedKeySet = new Set(mergedDupArchive.map(x => [x && x.entry && x.entry.title, x && x.entry && x.entry.body].join('|')));
     return {
       schemaVersion: 4,
-      entries: unionEntries(remoteData.entries, getEntries()),
+      entries: unionEntries(remoteData.entries, getEntries(), deletedKeySet),
       studyLog: mergeStudyLog(remoteData.studyLog, read(STUDYLOG_KEY, {})),
       manualLog: mergeManualLog(remoteData.manualLog, read(MANUALLOG_KEY, {})),
       pastExamLogs: mergeByKey(remoteData.pastExamLogs, read(PASTEXAM_KEY, []), x => x.key || JSON.stringify(x)),
       countdowns: mergeByKey(remoteData.countdowns, read(COUNTDOWN_KEY, []), x => x.id || JSON.stringify(x)),
-      dupArchive: mergeByKey(remoteData.dupArchive, read(DUPARCHIVE_KEY, []), x => [x && x.entry && x.entry.title, x && x.entry && x.entry.body].join('|')),
+      dupArchive: mergedDupArchive,
       dupResolved: [...new Set([...(remoteData.dupResolved || []), ...read(DUPRESOLVED_KEY, [])])],
       speechDict: mergeByKey(remoteData.speechDict, read(SPEECHDICT_KEY, []), x => x.word),
       dailyStats: mergeDailyStats(remoteData.dailyStats, read(DAILYSTATS_KEY, {})),

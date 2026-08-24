@@ -26,7 +26,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const compareToggleHtml = '<span class="compareToggle' + (isCompareSelected ? ' active' : '') + '" data-title="' + escapeHtml(e.title) + '" title="比較に追加／解除">⚖️</span>';
   const titleCellContent = isEditing
     ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
-    : '<div class="titleCellWrap">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + '<div class="titleText">' + titleHtml + '</div></div>';
+    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
   let bodyCellContent;
   if (isEditing) {
     bodyCellContent = buildBodyEditorHtml(e, idx);

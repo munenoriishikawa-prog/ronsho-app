@@ -616,7 +616,8 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .confBtn.confBad.active { background: #ef4444; color: #fff; }
 
 /* --- 苦手フラグ --- */
-.titleCellWrap { display: flex; align-items: flex-start; gap: 6px; }
+.titleCellWrap { display: flex; flex-direction: column; gap: 4px; }
+.titleIconsRow { display: flex; align-items: center; gap: 6px; }
 .starToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .starToggle:hover { opacity: 0.7; transform: scale(1.2); }
 .starToggle.active { opacity: 1; }

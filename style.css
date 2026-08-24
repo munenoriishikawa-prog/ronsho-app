@@ -214,9 +214,22 @@ th {
 .bodyCellArea.collapsedState:hover { background: #fdf2a3; }
 mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; padding: 0 1px; }
 #status { margin: 10px 0; color: #0c2340; font-weight: 600; min-height: 20px; }
+.homeStatsCard {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 87, 231, 0.1);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
 .topStatusRow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; }
 #overallProgressCardWrap { flex: 1; min-width: 260px; }
 #overallProgressCardWrap .progressCard { margin-bottom: 0; height: 100%; box-sizing: border-box; }
+.homeStatsCard .topStatusRow { padding: 14px 20px; }
+.homeStatsCard #overallProgressCardWrap .progressCard {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
 .driveSyncPanel {
   display: flex;
   align-items: center;
@@ -291,6 +304,18 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   flex: 1;
   min-width: 160px;
 }
+.homeStatsCard .gamificationRow {
+  margin-bottom: 0;
+  gap: 0;
+  border-top: 1px solid #e6edf7;
+}
+.homeStatsCard .gamiCard {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border-left: 1px solid #e6edf7;
+}
+.homeStatsCard .gamiCard:first-child { border-left: none; }
 .gamiCardTitle { font-weight: 800; font-size: 14px; color: #0c2340; }
 .gamiCardSub { font-size: 11px; color: #4a6a90; }
 .gamiBarOuter { width: 100%; height: 8px; background: #e6edf7; border-radius: 999px; overflow: hidden; }

@@ -47,22 +47,31 @@ function dupArchiveEntry(target, reasonLabel) {
   dupArchiveList.unshift({ entry: target, deletedAt: new Date().toISOString(), reason: reasonLabel || '' });
   saveDupArchive();
 }
+function dupTimeOf(s) { const t = Date.parse(s || ''); return isNaN(t) ? 0 : t; }
+// 取り消し済み(復元済み・不活性)の削除記録は一覧に表示しない
+function dupIsVisibleArchiveItem(item) { return dupTimeOf(item && item.deletedAt) > dupTimeOf(item && item.revokedAt); }
+function dupVisibleArchiveItems() {
+  const out = [];
+  dupArchiveList.forEach((item, idx) => { if (dupIsVisibleArchiveItem(item)) out.push({ item, idx }); });
+  return out;
+}
 let dupArchiveListVisible = false;
 function renderDupArchiveToggle() {
   const btn = document.getElementById('dupArchiveToggleBtn');
   if (!btn) return;
-  btn.textContent = (dupArchiveListVisible ? '▼ アーカイブ一覧を隠す' : '▶ アーカイブ一覧を表示する') + '（' + dupArchiveList.length + '件）';
+  btn.textContent = (dupArchiveListVisible ? '▼ アーカイブ一覧を隠す' : '▶ アーカイブ一覧を表示する') + '（' + dupVisibleArchiveItems().length + '件）';
 }
 function renderDupArchive() {
   const wrap = document.getElementById('dupArchiveWrap');
   if (!wrap) return;
   wrap.style.display = dupArchiveListVisible ? '' : 'none';
   renderDupArchiveToggle();
-  if (dupArchiveList.length === 0) {
+  const visibleItems = dupVisibleArchiveItems();
+  if (visibleItems.length === 0) {
     wrap.innerHTML = '<div class="dupCheckEmpty">アーカイブされた論証はありません。</div>';
     return;
   }
-  const html = dupArchiveList.map((item, idx) => {
+  const html = visibleItems.map(({ item, idx }) => {
     const e = item.entry;
     return '<div class="dupArchiveRow" data-archive-idx="' + idx + '">'
       + '<div class="dupArchiveInfo">'
@@ -75,13 +84,18 @@ function renderDupArchive() {
       + '</div>'
       + '</div>';
   }).join('');
-  wrap.innerHTML = '<div class="dupCheckSummary">' + dupArchiveList.length + '件のアーカイブがあります。</div>' + html;
+  wrap.innerHTML = '<div class="dupCheckSummary">' + visibleItems.length + '件のアーカイブがあります。</div>' + html;
 }
 function dupRestoreArchivedEntry(idx) {
   const item = dupArchiveList[idx];
   if (!item) return;
-  entries.push(item.entry);
-  dupArchiveList.splice(idx, 1);
+  const now = new Date().toISOString();
+  // 記録を splice で消すのではなく「取り消し済み」の印を付けて残す。
+  // 消してしまうと、他端末やクラウドに残った同じ削除記録が同期で戻ってきて、
+  // 復元した論証がまた削除されてしまう。restoredAt は同期時に削除記録より
+  // 復元の方が新しいことを示す証拠になる
+  item.revokedAt = now;
+  entries.push({ ...item.entry, restoredAt: now });
   saveEntries();
   saveDupArchive();
   renderDupArchive();
@@ -322,6 +336,24 @@ function dupMergeStudyLogInto(keepEntry, dropEntry) {
 function dupRemovePairsReferencing(target) {
   dupCheckPairs = dupCheckPairs.filter(p => p.a !== target && p.b !== target);
 }
+// 「これだけ削除」の本体。残す側と同期キー([タイトル, 本文])が同一の場合は削除記録を作らない。
+// 同一キーの削除記録は、同期時に残した側まで道連れで消すうえ、過去に同じキーで行った
+// 意図的な削除の記録まで(取り消し扱いで)打ち消してしまう。完全一致のコピーは
+// 同期の統合が自動的に1件へ畳むため、復活防止の記録自体が不要
+function dupDeleteOneFromPair(pair, target, kept) {
+  const isExactMatch = pair.reasons.has('title') || pair.reasons.has('body');
+  const sameKey = [target.title, target.body].join('|') === [kept.title, kept.body].join('|');
+  const carried = dupMergeStudyLogInto(kept, target);
+  if (!sameKey) dupArchiveEntry(target, dupReasonLabel(pair));
+  dupDeleteEntry(target);
+  saveEntries();
+  if (isExactMatch) {
+    dupResolvedSet.add(dupPairSignature(pair.a, pair.b));
+    saveDupResolved();
+  }
+  dupRemovePairsReferencing(target);
+  return { carried, sameKey };
+}
 document.getElementById('checkDuplicatesBtn').addEventListener('click', () => {
   const wrap = document.getElementById('duplicateResultsWrap');
   if (entries.length === 0) {
@@ -352,22 +384,15 @@ document.getElementById('duplicateResultsWrap').addEventListener('click', (e) =>
     const confirmMsg = '「' + target.title + '」を削除しますか？'
       + (willCarryOver ? '（学習記録は「' + kept.title + '」に引き継がれます）' : '（学習記録は削除されません）');
     if (!confirm(confirmMsg)) return;
-    const isExactMatch = pair.reasons.has('title') || pair.reasons.has('body');
-    const carried = dupMergeStudyLogInto(kept, target);
-    dupArchiveEntry(target, dupReasonLabel(pair));
-    dupDeleteEntry(target);
-    saveEntries();
-    if (isExactMatch) {
-      dupResolvedSet.add(dupPairSignature(pair.a, pair.b));
-      saveDupResolved();
-    }
-    dupRemovePairsReferencing(target);
+    const { carried, sameKey } = dupDeleteOneFromPair(pair, target, kept);
     renderDuplicateResults();
     renderDupArchive();
     renderAll();
     status.textContent = carried
       ? '🗑 「' + target.title + '」を削除し、学習記録を「' + kept.title + '」に引き継ぎました（アーカイブに保管済み）。'
-      : '🗑 「' + target.title + '」を削除しました（アーカイブに保管済み）。';
+      : sameKey
+        ? '🗑 「' + target.title + '」を削除しました（同じ内容のもう1件はそのまま残ります）。'
+        : '🗑 「' + target.title + '」を削除しました（アーカイブに保管済み）。';
     return;
   }
   const deleteBothBtn = e.target.closest('.dupDeleteBothBtn');

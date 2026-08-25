@@ -768,8 +768,31 @@ async function handleFiles(files) {
     const importedAt = new Date().toISOString();
     newEntries.forEach(e => { e.importedAt = importedAt; });
     const touchedSubjects = new Set(newEntries.map(e => e.subject || 'その他'));
-    const keptEntries = entries.filter(e => !touchedSubjects.has(e.subject || 'その他'));
-    entries = keptEntries.concat(newEntries);
+    const newBySubject = new Map();
+    newEntries.forEach(e => {
+      const s = e.subject || 'その他';
+      if (!newBySubject.has(s)) newBySubject.set(s, []);
+      newBySubject.get(s).push(e);
+    });
+    // 科目を再読み込みした際、その科目のブロックを配列の末尾に移動させず、
+    // 元々その科目が出現していた位置に差し込むことで、科目の並び順を維持する
+    const insertedSubjects = new Set();
+    const merged = [];
+    entries.forEach(e => {
+      const s = e.subject || 'その他';
+      if (touchedSubjects.has(s)) {
+        if (!insertedSubjects.has(s)) {
+          merged.push(...newBySubject.get(s));
+          insertedSubjects.add(s);
+        }
+      } else {
+        merged.push(e);
+      }
+    });
+    newBySubject.forEach((list, s) => {
+      if (!insertedSubjects.has(s)) merged.push(...list);
+    });
+    entries = merged;
     saveEntries();
     selectedSubject = 'all';
     selectedCategory = 'all';

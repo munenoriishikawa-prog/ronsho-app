@@ -1,5 +1,7 @@
 /* ▼▼▼ 新規追加：重複チェック機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼ */
 const DUP_FUZZY_THRESHOLD = 0.7;
+const DUP_TITLE_SIM_THRESHOLD = 0.4;
+const DUP_TITLE_SIM_BODY_FLOOR = 0.3;
 const DUP_SUBJECT_BUCKET_LIMIT = 1000;
 const DUP_RESOLVED_KEY = 'ronshoDupResolvedV1';
 const DUP_DIFF_MAX_CELLS = 4000000;
@@ -176,6 +178,17 @@ function findDuplicatePairs() {
             addPair(list[i], list[j], 'title-prefix', Math.max(score, DUP_FUZZY_THRESHOLD));
           }
         }
+        // タイトルを修正・言い換えていて完全一致にはならないケースも拾う。
+        // ただしタイトルだけで判定すると、無関係な論証同士が短い法律用語を
+        // 共有しているだけで誤検出しやすいため、本文にも一定の類似性がある
+        // ことを条件にする（本文が全く違う場合は別の論証とみなす）。
+        if (ta && tb && ta !== tb) {
+          const titleSim = dupJaccard(ta, tb);
+          const bodySimForTitle = dupJaccard(list[i].body, list[j].body);
+          if (titleSim >= DUP_TITLE_SIM_THRESHOLD && bodySimForTitle >= DUP_TITLE_SIM_BODY_FLOOR) {
+            addPair(list[i], list[j], 'title-similar', Math.max(score, titleSim));
+          }
+        }
       }
     }
   });
@@ -231,6 +244,7 @@ function dupReasonLabel(pair) {
   if (pair.reasons.has('body')) labels.push('📄 本文完全一致');
   if (pair.reasons.has('fuzzy')) labels.push('🔍 類似度' + Math.round(pair.score * 100) + '%');
   if (pair.reasons.has('title-prefix')) labels.push('✂️ タイトルの前方一致（片方が途中で切れている可能性）');
+  if (pair.reasons.has('title-similar')) labels.push('🏷️ タイトルの部分一致（' + Math.round(pair.score * 100) + '%）');
   return labels.join('・');
 }
 function formatImportedAt(iso) {

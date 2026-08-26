@@ -51,13 +51,24 @@
   // 丸ごと上書きすると、片方の端末の学習成果が消えてしまうため、
   // 論証データ・学習記録は端末間で統合（マージ）してから保存する。
   const entryKeyOf = e => [e && e.title, e && e.body].filter(Boolean).join('|') || JSON.stringify(e);
-  function unionEntries(a, b, deletedKeySet) {
+  // 削除記録(dupArchive)との照合に使うキー。アーカイブ側が作るキーと形式を完全に一致させる
+  const tombKeyOf = e => [e && e.title, e && e.body].join('|');
+  const archiveKeyOf = x => tombKeyOf(x && x.entry);
+  const timeOf = s => { const t = Date.parse(s || ''); return isNaN(t) ? 0 : t; };
+  // その論証をユーザーが最後に「生かした」時刻(Word取込み または アーカイブからの復元)
+  const revivedAtOf = e => Math.max(timeOf(e && e.importedAt), timeOf(e && e.restoredAt));
+  function unionEntries(a, b) {
+    // 同じ論証(キー)が両側にある場合は、取込み・復元が新しい方を採用する(同時はローカル側)。
+    // 削除前の古いコピーを持ったまま同期が止まっていた端末が復帰したとき、
+    // そのコピーが再取込みされた最新版を上書きしてしまうのを防ぐ
     const m = new Map();
-    (a || []).forEach(e => m.set(entryKeyOf(e), e));
-    (b || []).forEach(e => m.set(entryKeyOf(e), e));
-    if (deletedKeySet && deletedKeySet.size) {
-      deletedKeySet.forEach(k => m.delete(k));
-    }
+    const put = e => {
+      const k = entryKeyOf(e);
+      const prev = m.get(k);
+      if (!prev || revivedAtOf(e) >= revivedAtOf(prev)) m.set(k, e);
+    };
+    (a || []).forEach(put);
+    (b || []).forEach(put);
     return [...m.values()];
   }
   function mergeHistory(a, b) {
@@ -102,15 +113,37 @@
     (b || []).forEach(x => m.set(keyFn(x), x));
     return [...m.values()];
   }
+  // 削除記録(トゥームストーン)の統合。deletedAt(削除)と revokedAt(取り消し)は
+  // キーごとにそれぞれ新しい方を採る。「新しい時刻が常に勝つ」ので同期の順番や回数に
+  // 左右されず、休眠していた端末から古い記録が何度流入しても状態が巻き戻らない
+  function mergeDupArchive(a, b) {
+    const m = new Map();
+    [...(a || []), ...(b || [])].forEach(x => {
+      const k = archiveKeyOf(x);
+      const prev = m.get(k);
+      if (!prev) { m.set(k, { ...x }); return; }
+      if (timeOf(x.deletedAt) > timeOf(prev.deletedAt)) {
+        prev.deletedAt = x.deletedAt;
+        if (x.reason) prev.reason = x.reason;
+      }
+      if (timeOf(x.revokedAt) > timeOf(prev.revokedAt)) prev.revokedAt = x.revokedAt;
+      // 復元に必要な本文は、内容が揃っている側の記録を保持する
+      if ((!prev.entry || !prev.entry.body) && x.entry && x.entry.body) prev.entry = x.entry;
+    });
+    return [...m.values()];
+  }
+  // 取り消されていない削除記録だけが「削除済み」として効力を持つ
+  const isActiveTombstone = x => timeOf(x && x.deletedAt) > timeOf(x && x.revokedAt);
   function reconcile(remoteData) {
     remoteData = remoteData || {};
-    const mergedDupArchive = mergeByKey(remoteData.dupArchive, read(DUPARCHIVE_KEY, []), x => [x && x.entry && x.entry.title, x && x.entry && x.entry.body].join('|'));
+    const mergedDupArchive = mergeDupArchive(remoteData.dupArchive, read(DUPARCHIVE_KEY, []));
     // 重複チェックで削除された論証は、どちらかの端末・クラウド側に古いコピーが
-    // 残っていても復活しないよう、dupArchive（削除記録）と一致するものを和集合から除外する
-    const deletedKeySet = new Set(mergedDupArchive.map(x => [x && x.entry && x.entry.title, x && x.entry && x.entry.body].join('|')));
+    // 残っていても復活しないよう、有効な削除記録と一致するものを和集合から除外する。
+    // 復元などで取り消された記録(revokedAt が deletedAt 以上のもの)は削除として扱わない
+    const deletedKeySet = new Set(mergedDupArchive.filter(isActiveTombstone).map(archiveKeyOf));
     return {
       schemaVersion: 4,
-      entries: unionEntries(remoteData.entries, getEntries(), deletedKeySet),
+      entries: unionEntries(remoteData.entries, getEntries()).filter(e => !deletedKeySet.has(tombKeyOf(e))),
       studyLog: mergeStudyLog(remoteData.studyLog, read(STUDYLOG_KEY, {})),
       manualLog: mergeManualLog(remoteData.manualLog, read(MANUALLOG_KEY, {})),
       pastExamLogs: mergeByKey(remoteData.pastExamLogs, read(PASTEXAM_KEY, []), x => x.key || JSON.stringify(x)),
@@ -148,26 +181,30 @@
     if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
   }
 
-  async function pushToCloud(retriesLeft = 2, overrideData = null) {
+  async function pushToCloud(retriesLeft = 2, overrideData = null, baseRevision = null) {
     const data = overrideData || snapshot();
+    const sendRevision = baseRevision != null ? baseRevision : revision;
     const r = await fetch(SYNC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ revision, data })
+      body: JSON.stringify({ revision: sendRevision, data })
     });
     if (!r.ok) throw new Error('保存に失敗しました');
     const result = await r.json();
-    if (!result.ok && result.reason === 'conflict') {
+    if (!result.ok && result.reason === 'conflict' && result.latest) {
       const remoteData = result.latest.data;
       const remoteRevision = result.latest.revision || 0;
       if (retriesLeft > 0) {
         const reconciled = reconcile(remoteData);
-        revision = remoteRevision;
-        return pushToCloud(retriesLeft - 1, reconciled);
+        // revision はまだ確定させない(push が失敗した状態で revision だけ進めると、
+        // 次の編集の push が競合検知をすり抜けてクラウドを丸ごと上書きしてしまう)
+        return pushToCloud(retriesLeft - 1, reconciled, remoteRevision);
       }
       revision = remoteRevision;
       localStorage.setItem(REVISION_KEY, String(revision));
-      applyRemoteData(remoteData);
+      // リトライを使い切った場合も、リモートをそのまま適用せず統合してから適用する。
+      // そのまま適用すると、ローカルにしかない復元・取り消し(revokedAt)や編集が失われる
+      applyRemoteData(reconcile(remoteData));
       last = JSON.stringify(snapshot());
       state('⚠️同期が競合したため最新データを読み込みました。もう一度操作をお試しください（' + new Date().toLocaleTimeString() + '）');
       return;
@@ -199,10 +236,10 @@
       state('同期済み（' + new Date().toLocaleTimeString() + '）');
       return;
     }
-    // 端末側とクラウド側の両方にデータがある場合は統合してから保存する
+    // 端末側とクラウド側の両方にデータがある場合は統合してから保存する。
+    // revision は push 成功時に確定する(先に進めると push 失敗後の編集が競合検知をすり抜ける)
     const reconciled = reconcile(remote.data);
-    revision = remoteRevision;
-    await pushToCloud(2, reconciled);
+    await pushToCloud(2, reconciled, remoteRevision);
   }
 
   async function syncNow() {
@@ -235,6 +272,15 @@
     lastPullAttempt = now;
     pullFromCloud(false).catch(() => {});
   }
+
+  // 同期ロジックの自動テスト(tools/sync-test)から直接検証するための公開。アプリの動作には影響しない
+  window.__ronshoSyncTest = {
+    reconcile, unionEntries, mergeDupArchive, isActiveTombstone,
+    pushToCloud, pullFromCloud, snapshot, applyRemoteData,
+    getRevision: () => revision,
+    setRevision: (v) => { revision = v; localStorage.setItem(REVISION_KEY, String(v)); },
+    getLast: () => last
+  };
 
   window.addEventListener('load', () => {
     const old = document.getElementById('driveSyncPanel');

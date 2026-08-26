@@ -54,6 +54,7 @@ function loadSpeechDict() {
 }
 function saveSpeechDict() {
   localStorage.setItem(SPEECH_DICT_KEY, JSON.stringify(speechDict));
+  if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 loadSpeechDict();
 function applySpeechDict(text) {

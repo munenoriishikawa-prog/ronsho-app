@@ -26,6 +26,7 @@ function loadPastExamLogs() {
 function savePastExamLogs(logs) {
   try {
     localStorage.setItem(PAST_EXAM_LOG_KEY, JSON.stringify(logs));
+    if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
   } catch (e) {
     console.error('過去問ログの保存に失敗しました:', e);
   }

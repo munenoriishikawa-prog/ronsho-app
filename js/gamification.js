@@ -59,6 +59,7 @@ function loadDailyGoal() {
 }
 function saveDailyGoal(n) {
   localStorage.setItem(DAILY_GOAL_KEY, String(n));
+  if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 
 function computeTotalStudyCount() {

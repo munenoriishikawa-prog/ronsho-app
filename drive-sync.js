@@ -22,6 +22,10 @@
   let syncSuspended = false;
   let lastPullAttempt = 0;
   window.ronshoSuspendSync = (v) => { syncSuspended = !!v; };
+  // 各画面の保存処理（save*関数）から、変更のたびに直接呼んでもらうためのフック。
+  // ボタン操作の直後に同期がキューされるようにし、変更検知のポーリングだけに
+  // 頼らないようにする（ポーリングは、このフックが呼ばれない場合の保険として残す）
+  window.ronshoSyncNotifyChange = () => queue();
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -327,6 +331,14 @@
     if (isInitial && remoteRevision === 0 && hasLocalData()) {
       // クラウドが未使用（初回）かつ端末側にデータがある場合は、こちらのデータを送る
       await syncNow();
+      return;
+    }
+    if (!hasLocalData()) {
+      // この端末にまだ何もない（真っさらな状態）場合は、統合の余地が無いのでそのまま採用する。
+      // hasUnsyncedLocalChanges()は「何も無い」状態でも空でないJSONと比較されて
+      // trueになりうるため、ここで先に判定して不要な競合ポップアップを防ぐ
+      adoptRemoteWholesale(remote.data, remoteRevision);
+      state('☁️ クラウドのデータを取り込みました（' + new Date().toLocaleTimeString() + '）');
       return;
     }
     if (remoteRevision === revision) {

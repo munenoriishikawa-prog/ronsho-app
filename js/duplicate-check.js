@@ -19,6 +19,7 @@ function loadDupResolved() {
 }
 function saveDupResolved() {
   localStorage.setItem(DUP_RESOLVED_KEY, JSON.stringify([...dupResolvedSet]));
+  if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 function dupEntrySignature(e) {
   return (e.title || '') + DUP_SIG_SEP + (e.body || '');
@@ -41,6 +42,7 @@ function loadDupArchive() {
 }
 function saveDupArchive() {
   localStorage.setItem(DUP_ARCHIVE_KEY, JSON.stringify(dupArchiveList));
+  if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 loadDupArchive();
 function dupArchiveEntry(target, reasonLabel) {

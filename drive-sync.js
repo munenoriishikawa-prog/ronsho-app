@@ -158,8 +158,23 @@
       if ((a.history || []).length !== (b.history || []).length) historyDiffTitles.push(t);
     });
 
+    // 論証・学習記録以外の項目（カウントダウン・重複チェックのアーカイブなど）も、
+    // 「違いが無い」と誤解させないよう、変わっている項目名だけ拾っておく
+    const OTHER_FIELD_LABELS = {
+      manualLog: '📝 手動学習ログ',
+      pastExamLogs: '📄 過去問ログ',
+      countdowns: '⏳ カウントダウン',
+      dupArchive: '🗑 重複チェックのアーカイブ',
+      dupResolved: '✅ 重複チェックの「両方残す」記録',
+      speechDict: '🗣 読み方辞書',
+      dailyGoal: '🎯 今日の目標値'
+    };
+    const otherFieldLabels = Object.keys(OTHER_FIELD_LABELS).filter(k => {
+      return JSON.stringify((localData || {})[k]) !== JSON.stringify((remoteData || {})[k]);
+    }).map(k => OTHER_FIELD_LABELS[k]);
+
     return {
-      localByTitle, remoteByTitle, localLog, remoteLog,
+      localByTitle, remoteByTitle, localLog, remoteLog, otherFieldLabels,
       groups: [
         { kind: 'onlyLocal', icon: '📱', label: 'この端末にしかない論証', titles: onlyLocalTitles },
         { kind: 'onlyRemote', icon: '☁️', label: 'クラウドにしかない論証', titles: onlyRemoteTitles },
@@ -172,7 +187,11 @@
   const DIFF_ROWS_SHOWN_MAX = 20;
   function diffSummaryHtml(diff) {
     if (diff.groups.length === 0) {
-      return '<div class="driveSyncConflictDiffEmpty">論証の内容に違いは見つかりませんでした（学習記録以外の項目で差がある可能性があります）。</div>';
+      if (diff.otherFieldLabels.length === 0) {
+        return '<div class="driveSyncConflictDiffEmpty">論証・学習記録に違いは見つかりませんでした。</div>';
+      }
+      return '<div class="driveSyncConflictDiffEmpty">論証・学習記録に違いはありませんが、次の項目に差があります: '
+        + diff.otherFieldLabels.map(l => escHtml(l)).join('、') + '</div>';
     }
     return diff.groups.map(g => {
       const shown = g.titles.slice(0, DIFF_ROWS_SHOWN_MAX);
@@ -184,7 +203,9 @@
         + '<div class="driveSyncConflictDiffGroupTitle">' + g.icon + ' ' + g.label + ': <strong>' + g.titles.length + '件</strong>（クリックで内容を表示）</div>'
         + rows + more
         + '</div>';
-    }).join('');
+    }).join('') + (diff.otherFieldLabels.length
+      ? '<div class="driveSyncConflictDiffEmpty">ほかに次の項目にも差があります: ' + diff.otherFieldLabels.map(l => escHtml(l)).join('、') + '</div>'
+      : '');
   }
   function entryDetailHtml(label, entry) {
     if (!entry) return '<div class="driveSyncDiffDetailSide"><div class="driveSyncDiffDetailLabel">' + label + '</div><div class="driveSyncDiffDetailNone">論証なし</div></div>';
@@ -406,7 +427,7 @@
   // 同期ロジックの自動テスト(tools/sync-test)から直接検証するための公開。アプリの動作には影響しない
   window.__ronshoSyncTest = {
     pushToCloud, pullFromCloud, snapshot, applyRemoteData, adoptRemoteWholesale,
-    hasUnsyncedLocalChanges,
+    hasUnsyncedLocalChanges, computeSyncDiff,
     getRevision: () => revision,
     setRevision: (v) => { revision = v; localStorage.setItem(REVISION_KEY, String(v)); },
     getLast: () => last,

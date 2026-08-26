@@ -129,7 +129,7 @@ function renderQuizPage() {
   }
   const e = quizPool[quizIndex];
   const idx = entries.findIndex(x => x.title === e.title);
-  const isEditingThis = idx !== -1 && editingEntryIdx === idx;
+  const isEditingThis = idx !== -1 && editingEntryTitle === e.title;
   const isSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
   const quizMemo = (studyLog[e.title] && studyLog[e.title].memo) || '';
   let html = '<div class="quizCard">';
@@ -247,7 +247,7 @@ function renderQuizPage() {
     evt.stopPropagation();
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx === -1) return;
-    editingEntryIdx = editingEntryIdx === idx ? null : idx;
+    editingEntryTitle = editingEntryTitle === e.title ? null : e.title;
     renderQuizPage();
   });
   if (isEditingThis) {
@@ -282,7 +282,7 @@ function renderQuizPage() {
     const editCancelBtn = quizArea.querySelector('.editCancelBtn');
     if (editCancelBtn) editCancelBtn.addEventListener('click', (evt) => {
       evt.stopPropagation();
-      editingEntryIdx = null;
+      editingEntryTitle = null;
       renderQuizPage();
     });
   }

@@ -20,7 +20,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">😰</span>';
   const memoTitle = memo ? ('メモ：' + memo) : 'メモを追加';
   const memoHtml = '<span class="memoToggle' + (memo ? ' active' : '') + '" data-idx="' + idx + '" title="' + escapeHtml(memoTitle) + '">🗒️</span>';
-  const isEditing = editingEntryIdx === idx;
+  const isEditing = editingEntryTitle === e.title;
   const editToggleHtml = '<span class="editToggle' + (isEditing ? ' active' : '') + '" data-idx="' + idx + '" title="内容を編集">✏️</span>';
   const isCompareSelected = compareList.includes(e.title);
   const compareToggleHtml = '<span class="compareToggle' + (isCompareSelected ? ' active' : '') + '" data-title="' + escapeHtml(e.title) + '" title="比較に追加／解除">⚖️</span>';
@@ -546,7 +546,9 @@ function attachTableClickHandler(wrapEl) {
     if (editToggle) {
       e.stopPropagation();
       const idx = Number(editToggle.dataset.idx);
-      editingEntryIdx = editingEntryIdx === idx ? null : idx;
+      const ent = entries[idx];
+      if (!ent) return;
+      editingEntryTitle = editingEntryTitle === ent.title ? null : ent.title;
       renderStudyTable(entries);
       renderMemorizedTable(entries);
       return;
@@ -578,7 +580,7 @@ function attachTableClickHandler(wrapEl) {
     const editCancelBtn = e.target.closest('.editCancelBtn');
     if (editCancelBtn) {
       e.stopPropagation();
-      editingEntryIdx = null;
+      editingEntryTitle = null;
       renderStudyTable(entries);
       renderMemorizedTable(entries);
       return;

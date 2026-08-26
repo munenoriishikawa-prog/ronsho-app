@@ -74,7 +74,9 @@ let quizOverdueMode = false;
 let quizSequentialMode = true;
 let quizComboCount = 0;
 let trendMode = 'week';
-let editingEntryIdx = null;
+// 位置(idx)ではなくタイトルで編集対象を保持する。同期でentries配列が
+// 丸ごと入れ替わっても（applyRemoteData）、編集中の論証を見失わないため。
+let editingEntryTitle = null;
 let compareList = [];
 let compareModalOpen = false;
 function formatLocalDate(d) {

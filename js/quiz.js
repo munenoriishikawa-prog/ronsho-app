@@ -42,7 +42,7 @@ function buildQuizPool() {
   } else {
     pool = pool.filter(e => !isSkippedEntry(e));
   }
-  quizSequentialMode = quizOrderSequentialRadio.checked;
+  quizSequentialMode = !quizRandomChk.checked;
   quizOverdueMode = quizOverdueOnlyChk.checked;
   if (quizOverdueMode) {
     pool = pool.filter(isOverdueEntry);

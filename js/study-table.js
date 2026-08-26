@@ -447,6 +447,11 @@ function setConfidence(idx, level, sourceEl) {
   renderMemorizedTable(entries);
   renderCalendar();
   renderTrendChart();
+  // ホーム上部の全体カード・科目別学習回数・レベル/今日の目標は、問題演習からの
+  // 回答も含めてここで更新しないと、答えても学習回数が増えていないように見えてしまう
+  renderProgressSummary();
+  if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
+  if (typeof renderSummarySection === 'function') renderSummarySection();
 }
 function toggleStar(idx) {
   const ent = entries[idx];

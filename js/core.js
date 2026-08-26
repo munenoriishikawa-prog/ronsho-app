@@ -317,7 +317,7 @@ function saveEntries() {
 document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   if (!confirm('読み込んだWordデータを削除しますか？（学習記録・暗記度・苦手フラグなどは削除されません）')) return;
   entries = [];
-  localStorage.removeItem(ENTRIES_STORAGE_KEY);
+  saveEntries();
   selectedSubject = 'all';
   selectedCsvSubject = 'all';
   selectedCategory = 'all';

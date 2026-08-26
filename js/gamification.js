@@ -86,10 +86,10 @@ function getLevelInfo(xp) {
 }
 function getTodayStudiedCount() {
   const today = todayStr();
-  return entries.filter(e => {
-    const log = studyLog[e.title];
-    return !!(log && log.history && log.history.includes(today));
-  }).length;
+  // カレンダーの学習件数（getAllStudyDates）と同じくstudyLog全体を数える。
+  // entriesだけでフィルタすると、重複整理などで論証本体を削除した後に
+  // 学習記録だけが残っているケースがカウントされず、カレンダーとずれてしまう
+  return Object.values(studyLog).filter(log => log && log.history && log.history.includes(today)).length;
 }
 
 const DAILY_STATS_KEY = 'ronshoDailyStatsV1';

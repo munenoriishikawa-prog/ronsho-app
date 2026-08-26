@@ -21,11 +21,14 @@
   let syncInFlight = false;
   let syncSuspended = false;
   let lastPullAttempt = 0;
+  let applyingRemoteData = false;
   window.ronshoSuspendSync = (v) => { syncSuspended = !!v; };
   // 各画面の保存処理（save*関数）から、変更のたびに直接呼んでもらうためのフック。
   // ボタン操作の直後に同期がキューされるようにし、変更検知のポーリングだけに
-  // 頼らないようにする（ポーリングは、このフックが呼ばれない場合の保険として残す）
-  window.ronshoSyncNotifyChange = () => queue();
+  // 頼らないようにする（ポーリングは、このフックが呼ばれない場合の保険として残す）。
+  // ただし、クラウドから受け取ったデータを適用している最中は、受け取ったばかりの
+  // 内容をそのまま送り返す無駄なpushを避けるため無効にする
+  window.ronshoSyncNotifyChange = () => { if (!applyingRemoteData) queue(); };
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -65,27 +68,35 @@
 
   function applyRemoteData(data) {
     data = data || {};
-    write(ENTRY_KEY, data.entries || []);
-    write(STUDYLOG_KEY, data.studyLog || {});
-    write(MANUALLOG_KEY, data.manualLog || {});
-    write(PASTEXAM_KEY, data.pastExamLogs || []);
-    write(COUNTDOWN_KEY, data.countdowns || []);
-    write(DUPARCHIVE_KEY, data.dupArchive || []);
-    write(DUPRESOLVED_KEY, data.dupResolved || []);
-    write(SPEECHDICT_KEY, data.speechDict || []);
-    write(DAILYSTATS_KEY, data.dailyStats || {});
-    if (data.dailyGoal != null) write(DAILYGOAL_KEY, data.dailyGoal);
-    try { entries = data.entries || [] } catch (_) {}
-    try { studyLog = data.studyLog || {} } catch (_) {}
-    try { manualLog = data.manualLog || {} } catch (_) {}
-    try { dupArchiveList = data.dupArchive || [] } catch (_) {}
-    try { dupResolvedSet = new Set(data.dupResolved || []) } catch (_) {}
-    try { speechDict = data.speechDict || [] } catch (_) {}
-    if (typeof saveEntries === 'function') saveEntries();
-    if (typeof renderAll === 'function') renderAll(true);
-    if (typeof renderCountdownCard === 'function') renderCountdownCard();
-    if (typeof renderDupArchive === 'function') renderDupArchive();
-    if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
+    // saveEntries()等をこの中から呼ぶため、都度同期フックが反応して
+    // 受け取ったばかりのデータをそのまま送り返してしまわないよう、
+    // 適用中はフックを一時的に無効にする
+    applyingRemoteData = true;
+    try {
+      write(ENTRY_KEY, data.entries || []);
+      write(STUDYLOG_KEY, data.studyLog || {});
+      write(MANUALLOG_KEY, data.manualLog || {});
+      write(PASTEXAM_KEY, data.pastExamLogs || []);
+      write(COUNTDOWN_KEY, data.countdowns || []);
+      write(DUPARCHIVE_KEY, data.dupArchive || []);
+      write(DUPRESOLVED_KEY, data.dupResolved || []);
+      write(SPEECHDICT_KEY, data.speechDict || []);
+      write(DAILYSTATS_KEY, data.dailyStats || {});
+      if (data.dailyGoal != null) write(DAILYGOAL_KEY, data.dailyGoal);
+      try { entries = data.entries || [] } catch (_) {}
+      try { studyLog = data.studyLog || {} } catch (_) {}
+      try { manualLog = data.manualLog || {} } catch (_) {}
+      try { dupArchiveList = data.dupArchive || [] } catch (_) {}
+      try { dupResolvedSet = new Set(data.dupResolved || []) } catch (_) {}
+      try { speechDict = data.speechDict || [] } catch (_) {}
+      if (typeof saveEntries === 'function') saveEntries();
+      if (typeof renderAll === 'function') renderAll(true);
+      if (typeof renderCountdownCard === 'function') renderCountdownCard();
+      if (typeof renderDupArchive === 'function') renderDupArchive();
+      if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
+    } finally {
+      applyingRemoteData = false;
+    }
   }
 
   // クラウド側のデータをそのまま採用する（この端末に未同期の変更が無いときのみ安全）

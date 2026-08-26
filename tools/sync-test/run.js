@@ -64,12 +64,14 @@ function makeMockGas(initial) {
   const gas = {
     store: initial ? deepCopy(initial) : { revision: 0, updatedAt: '2026-08-25T00:00:00.000Z', data: {} },
     failNextPost: 0,
-    conflictWithoutLatestOnce: false
+    conflictWithoutLatestOnce: false,
+    postCount: 0
   };
   gas.fetchImpl = async (url, opts) => {
     if (!opts || opts.method !== 'POST') {
       return { ok: true, json: async () => deepCopy(gas.store) };
     }
+    gas.postCount++;
     if (gas.failNextPost > 0) { gas.failNextPost--; return { ok: false, json: async () => ({}) }; }
     const req = JSON.parse(opts.body);
     if (gas.conflictWithoutLatestOnce) {
@@ -101,6 +103,9 @@ function loadDevice(gas, opts) {
     },
     status: { after: () => {} },
     confirm: (msg) => { sandbox.__lastConfirmMsg = msg; return confirmReturn; },
+    // 実アプリのjs/core.jsのsaveEntries()を模したスタブ。applyRemoteData()内から
+    // 呼ばれた際に、都度同期フックが誤って反応しないかを検証するために使う
+    saveEntries: () => { if (typeof sandbox.window.ronshoSyncNotifyChange === 'function') sandbox.window.ronshoSyncNotifyChange(); },
     fetch: gas ? gas.fetchImpl : (async () => { throw new Error('fetch未設定'); }),
     setInterval: () => 0,
     setTimeout: () => 0,

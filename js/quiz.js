@@ -128,7 +128,7 @@ function renderQuizPage() {
     return;
   }
   const e = quizPool[quizIndex];
-  const idx = entries.indexOf(e);
+  const idx = entries.findIndex(x => x.title === e.title);
   const isEditingThis = idx !== -1 && editingEntryIdx === idx;
   const isSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
   const quizMemo = (studyLog[e.title] && studyLog[e.title].memo) || '';
@@ -195,7 +195,7 @@ function renderQuizPage() {
     renderQuizPage();
   });
   function advanceQuiz(level, sourceEl) {
-    const idx = entries.indexOf(e);
+    const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) setConfidence(idx, level, sourceEl);
     quizComboCount = (level === 'good' || level === 'perfect') ? quizComboCount + 1 : 0;
     quizIndex++;
@@ -212,14 +212,14 @@ function renderQuizPage() {
   if (badBtn) badBtn.addEventListener('click', () => advanceQuiz('bad', badBtn));
   const weakBtn = document.getElementById('quizWeakBtn');
   if (weakBtn) weakBtn.addEventListener('click', () => {
-    const idx = entries.indexOf(e);
+    const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) toggleStar(idx);
     renderQuizPage();
   });
   const memoBtn = document.getElementById('quizMemoBtn');
   if (memoBtn) memoBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
-    const idx = entries.indexOf(e);
+    const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) editMemo(idx);
     renderQuizPage();
   });
@@ -227,7 +227,7 @@ function renderQuizPage() {
   if (skipBtn) skipBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
     const wasSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
-    const idx = entries.indexOf(e);
+    const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) toggleSkip(idx);
     if (!wasSkipped) {
       quizIndex++;
@@ -238,14 +238,14 @@ function renderQuizPage() {
   const sourceEditBtn = document.getElementById('quizSourceEditBtn');
   if (sourceEditBtn) sourceEditBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
-    const idx = entries.indexOf(e);
+    const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) editSource(idx);
     renderQuizPage();
   });
   const quizEditBtn = document.getElementById('quizEditBtn');
   if (quizEditBtn) quizEditBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
-    const idx = entries.indexOf(e);
+    const idx = entries.findIndex(x => x.title === e.title);
     if (idx === -1) return;
     editingEntryIdx = editingEntryIdx === idx ? null : idx;
     renderQuizPage();

@@ -1,6 +1,6 @@
 /* ▼▼▼ 新規追加：重複チェック機能（既存の変数・関数名と一切重複しない名前空間で実装） ▼▼▼ */
 const DUP_FUZZY_THRESHOLD = 0.7;
-const DUP_TITLE_SIM_THRESHOLD = 0.4;
+const DUP_TITLE_SIM_THRESHOLD = 0.7;
 const DUP_TITLE_SIM_BODY_FLOOR = 0.3;
 const DUP_SUBJECT_BUCKET_LIMIT = 1000;
 const DUP_RESOLVED_KEY = 'ronshoDupResolvedV1';

@@ -212,6 +212,18 @@ async function e2e() {
     check('クラウドが端末側の内容になる', gas.store.data.entries.some(e => e.title === '端末側の新規') && !gas.store.data.entries.some(e => e.title === 'クラウド側の新規'));
   }
 
+  console.log('\n■ E4b: 論証・学習記録は同じでも、他の項目（カウントダウン等）が違う場合はそれを案内する（「違いなし」と誤解させない）');
+  {
+    const dev = loadDevice(null);
+    const sameEntries = [mkEntry('民法A', '本文A', '民法')];
+    const sameLog = { '民法A': { memorized: true, history: ['2026-08-20'] } };
+    const local = { entries: sameEntries, studyLog: sameLog, countdowns: [{ id: 'c1', label: '予備試験', date: '2027-05-01' }], manualLog: {}, pastExamLogs: [], dupArchive: [], dupResolved: [], speechDict: [], dailyGoal: null };
+    const remote = { entries: sameEntries, studyLog: sameLog, countdowns: [], manualLog: {}, pastExamLogs: [], dupArchive: [], dupResolved: [], speechDict: [], dailyGoal: null };
+    const diff = dev.api.computeSyncDiff(local, remote);
+    check('論証・学習記録のグループは無い', diff.groups.length === 0);
+    check('カウントダウンの差は検出される', diff.otherFieldLabels.some(l => l.includes('カウントダウン')));
+  }
+
   console.log('\n■ E5: 競合ポップアップで「クラウドのデータを使う」を選ぶ → 端末側がクラウドの内容で上書きされる');
   {
     const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法'), mkEntry('クラウド側の新規', '本文cloud', '民法')], 11);

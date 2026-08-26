@@ -1067,6 +1067,16 @@ input[type=file] { display:none; }
 .quizNavBtn:hover:not(:disabled) { background: #dbe8ff; }
 .quizNavBtn:disabled { opacity: 0.35; cursor: default; }
 .quizMeta { font-size: 12px; color: #4a6a90; margin-bottom: 6px; }
+.quizLastStudy {
+  font-size: 12px;
+  color: #2c4a70;
+  background: #f2f6fc;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+.quizLastStudy.quizLastStudyNew { color: #0057e7; font-weight: 700; background: #e6f0fc; }
 .quizTitle { font-size: 20px; font-weight: 800; color: #0c2340; margin: 12px 0 20px; line-height: 1.5; }
 .quizShowBtn {
   background: linear-gradient(135deg, #0057e7, #00c2ff);

@@ -29,6 +29,26 @@ function isWeakEntry(e) {
 function isSkippedEntry(e) {
   return !!(studyLog[e.title] && studyLog[e.title].skipped);
 }
+const QUIZ_CONFIDENCE_LABELS = { perfect: '◎ 完璧', good: '○ できた', unsure: '△ あやしい', bad: '✕ ダメ' };
+function daysAgoLabel(dateStr) {
+  const diff = Math.round((new Date(todayStr() + 'T00:00:00') - new Date(dateStr + 'T00:00:00')) / 86400000);
+  if (diff === 0) return '本日';
+  if (diff === 1) return '昨日';
+  if (diff > 0) return diff + '日前';
+  return dateStr;
+}
+function buildQuizLastStudyHtml(e) {
+  const log = studyLog[e.title];
+  const history = log && log.history;
+  if (!history || history.length === 0) {
+    return '<div class="quizLastStudy quizLastStudyNew">🆕 まだ学習していません</div>';
+  }
+  const lastDate = history[history.length - 1];
+  const confLabel = QUIZ_CONFIDENCE_LABELS[log.confidence] || '';
+  return '<div class="quizLastStudy">🕒 前回学習：' + escapeHtml(lastDate) + '（' + daysAgoLabel(lastDate) + '）'
+    + (confLabel ? ' ／ 前回の暗記度：<strong>' + confLabel + '</strong>' : '')
+    + ' ／ 通算' + history.length + '回</div>';
+}
 function buildQuizPool() {
   let pool = filterEntries(entries, '');
   if (quizExcludeTodayChk.checked) {
@@ -127,6 +147,7 @@ function renderQuizPage() {
     + '<button type="button" class="quizNavBtn" id="quizNextBtn"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>次の問題 ▶</button>'
     + '</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
+  html += buildQuizLastStudyHtml(e);
   if (isEditingThis) {
     html += '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">';
     html += buildBodyEditorHtml(e, idx);

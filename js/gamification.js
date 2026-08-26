@@ -86,10 +86,18 @@ function getLevelInfo(xp) {
 }
 function getTodayStudiedCount() {
   const today = todayStr();
-  // カレンダーの学習件数（getAllStudyDates）と同じくstudyLog全体を数える。
+  // カレンダーの学習件数（getAllStudyDates）と同じ数え方にする。
   // entriesだけでフィルタすると、重複整理などで論証本体を削除した後に
-  // 学習記録だけが残っているケースがカウントされず、カレンダーとずれてしまう
-  return Object.values(studyLog).filter(log => log && log.history && log.history.includes(today)).length;
+  // 学習記録だけが残っているケースがカウントされず、カレンダーとずれてしまう。
+  // また、重複統合(dupMergeHistoryArrays)により同じ日付がhistoryに複数回
+  // 含まれることがあるため、件数ではなく「その日付の出現回数の合計」を数える
+  // （1件=distinctなタイトルではなく、getAllStudyDatesと同じ「延べ件数」）
+  let count = 0;
+  Object.values(studyLog).forEach(log => {
+    if (!log || !log.history) return;
+    count += log.history.filter(d => d === today).length;
+  });
+  return count;
 }
 
 const DAILY_STATS_KEY = 'ronshoDailyStatsV1';

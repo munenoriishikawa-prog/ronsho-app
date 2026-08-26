@@ -114,14 +114,14 @@
   // 「この端末」と「クラウド」の何がどう違うのかを具体的に洗い出す。
   // 件数が同じでも中身が違うケース（タイトルの入れ替わり・暗記フラグの違いなど）を
   // 見落とさないよう、論証の追加/削除と学習記録の差分を個別に数える
-  function diffSummaryHtml(localData, remoteData) {
+  function computeSyncDiff(localData, remoteData) {
     const localEntries = (localData && localData.entries) || [];
     const remoteEntries = (remoteData && remoteData.entries) || [];
+    const localByTitle = new Map(localEntries.map(e => [e.title, e]));
+    const remoteByTitle = new Map(remoteEntries.map(e => [e.title, e]));
 
     // 同じタイトルで本文だけが違う論証は「編集された1件」として扱い、
     // 「片方にしかない論証」の集計からは除外する（二重に数えて分かりにくくなるのを防ぐ）
-    const localByTitle = new Map(localEntries.map(e => [e.title, e]));
-    const remoteByTitle = new Map(remoteEntries.map(e => [e.title, e]));
     const editedTitles = new Set();
     localByTitle.forEach((le, title) => {
       const re = remoteByTitle.get(title);
@@ -130,35 +130,81 @@
 
     const localMap = new Map(localEntries.filter(e => !editedTitles.has(e.title)).map(e => [entryKeyOf(e), e]));
     const remoteMap = new Map(remoteEntries.filter(e => !editedTitles.has(e.title)).map(e => [entryKeyOf(e), e]));
-    const onlyLocal = [...localMap.keys()].filter(k => !remoteMap.has(k)).map(k => localMap.get(k));
-    const onlyRemote = [...remoteMap.keys()].filter(k => !localMap.has(k)).map(k => remoteMap.get(k));
-    const editedBodyCount = editedTitles.size;
+    const onlyLocalTitles = [...localMap.keys()].filter(k => !remoteMap.has(k)).map(k => localMap.get(k).title);
+    const onlyRemoteTitles = [...remoteMap.keys()].filter(k => !localMap.has(k)).map(k => remoteMap.get(k).title);
 
     const localLog = (localData && localData.studyLog) || {};
     const remoteLog = (remoteData && remoteData.studyLog) || {};
-    const allTitles = new Set([...Object.keys(localLog), ...Object.keys(remoteLog)]);
-    let memorizedDiff = 0, historyDiff = 0;
-    allTitles.forEach(t => {
+    const allLogTitles = new Set([...Object.keys(localLog), ...Object.keys(remoteLog)]);
+    const memorizedDiffTitles = [], historyDiffTitles = [];
+    allLogTitles.forEach(t => {
       const a = localLog[t] || {}, b = remoteLog[t] || {};
-      if (!!a.memorized !== !!b.memorized) memorizedDiff++;
-      if ((a.history || []).length !== (b.history || []).length) historyDiff++;
+      if (!!a.memorized !== !!b.memorized) memorizedDiffTitles.push(t);
+      if ((a.history || []).length !== (b.history || []).length) historyDiffTitles.push(t);
     });
 
-    const items = [];
-    if (onlyLocal.length) items.push('📱 この端末にしかない論証: <strong>' + onlyLocal.length + '件</strong>' + exampleTitlesHtml(onlyLocal));
-    if (onlyRemote.length) items.push('☁️ クラウドにしかない論証: <strong>' + onlyRemote.length + '件</strong>' + exampleTitlesHtml(onlyRemote));
-    if (editedBodyCount) items.push('✏️ 同じタイトルで本文の内容が違う論証: <strong>' + editedBodyCount + '件</strong>');
-    if (memorizedDiff) items.push('✅ 暗記済みフラグが違う論証: <strong>' + memorizedDiff + '件</strong>');
-    if (historyDiff) items.push('📊 学習回数が違う論証: <strong>' + historyDiff + '件</strong>');
-    if (items.length === 0) {
+    return {
+      localByTitle, remoteByTitle, localLog, remoteLog,
+      groups: [
+        { kind: 'onlyLocal', icon: '📱', label: 'この端末にしかない論証', titles: onlyLocalTitles },
+        { kind: 'onlyRemote', icon: '☁️', label: 'クラウドにしかない論証', titles: onlyRemoteTitles },
+        { kind: 'edited', icon: '✏️', label: '同じタイトルで本文の内容が違う論証', titles: [...editedTitles] },
+        { kind: 'memorized', icon: '✅', label: '暗記済みフラグが違う論証', titles: memorizedDiffTitles },
+        { kind: 'history', icon: '📊', label: '学習回数が違う論証', titles: historyDiffTitles }
+      ].filter(g => g.titles.length > 0)
+    };
+  }
+  const DIFF_ROWS_SHOWN_MAX = 20;
+  function diffSummaryHtml(diff) {
+    if (diff.groups.length === 0) {
       return '<div class="driveSyncConflictDiffEmpty">論証の内容に違いは見つかりませんでした（学習記録以外の項目で差がある可能性があります）。</div>';
     }
-    return '<ul class="driveSyncConflictDiffList"><li>' + items.join('</li><li>') + '</li></ul>';
+    return diff.groups.map(g => {
+      const shown = g.titles.slice(0, DIFF_ROWS_SHOWN_MAX);
+      const rows = shown.map(t => '<div class="driveSyncDiffRow" data-diff-kind="' + g.kind + '" data-diff-title="' + escHtml(t) + '">'
+        + '<span class="driveSyncDiffCaret">▶</span> ' + escHtml(t || '(タイトルなし)')
+        + '</div><div class="driveSyncDiffDetail" hidden></div>').join('');
+      const more = g.titles.length > shown.length ? '<div class="driveSyncDiffMoreNote">他' + (g.titles.length - shown.length) + '件</div>' : '';
+      return '<div class="driveSyncConflictDiffGroup">'
+        + '<div class="driveSyncConflictDiffGroupTitle">' + g.icon + ' ' + g.label + ': <strong>' + g.titles.length + '件</strong>（クリックで内容を表示）</div>'
+        + rows + more
+        + '</div>';
+    }).join('');
   }
-  function exampleTitlesHtml(list) {
-    const shown = list.slice(0, 3).map(e => escHtml(e.title || '(タイトルなし)'));
-    const more = list.length > 3 ? ' 他' + (list.length - 3) + '件' : '';
-    return '<div class="driveSyncConflictDiffExamples">例：' + shown.join('／') + more + '</div>';
+  function entryDetailHtml(label, entry) {
+    if (!entry) return '<div class="driveSyncDiffDetailSide"><div class="driveSyncDiffDetailLabel">' + label + '</div><div class="driveSyncDiffDetailNone">論証なし</div></div>';
+    return '<div class="driveSyncDiffDetailSide">'
+      + '<div class="driveSyncDiffDetailLabel">' + label + '</div>'
+      + '<div class="driveSyncDiffDetailMeta">' + escHtml(entry.subject || '未設定') + ' ／ ' + escHtml(entry.category || '') + '</div>'
+      + '<div class="driveSyncDiffDetailText">' + escHtml(entry.body || '(本文なし)') + '</div>'
+      + '</div>';
+  }
+  function logDetailHtml(label, log) {
+    const l = log || {};
+    return '<div class="driveSyncDiffDetailSide">'
+      + '<div class="driveSyncDiffDetailLabel">' + label + '</div>'
+      + '<div class="driveSyncDiffDetailMeta">暗記済み: ' + (l.memorized ? '○' : '×') + ' ／ 学習回数: ' + ((l.history || []).length) + '回'
+      + (l.history && l.history.length ? '（直近: ' + l.history[l.history.length - 1] + '）' : '') + '</div>'
+      + '</div>';
+  }
+  function renderDiffDetail(diff, kind, title) {
+    if (kind === 'onlyLocal') {
+      return '<div class="driveSyncDiffDetailCols">' + entryDetailHtml('📱 この端末', diff.localByTitle.get(title)) + '</div>';
+    }
+    if (kind === 'onlyRemote') {
+      return '<div class="driveSyncDiffDetailCols">' + entryDetailHtml('☁️ クラウド', diff.remoteByTitle.get(title)) + '</div>';
+    }
+    if (kind === 'edited') {
+      return '<div class="driveSyncDiffDetailCols">'
+        + entryDetailHtml('📱 この端末', diff.localByTitle.get(title))
+        + entryDetailHtml('☁️ クラウド', diff.remoteByTitle.get(title))
+        + '</div>';
+    }
+    // memorized / history
+    return '<div class="driveSyncDiffDetailCols">'
+      + logDetailHtml('📱 この端末', diff.localLog[title])
+      + logDetailHtml('☁️ クラウド', diff.remoteLog[title])
+      + '</div>';
   }
   function hideSyncConflictModal() {
     const root = document.getElementById('driveSyncConflictModal');
@@ -174,13 +220,14 @@
       return;
     }
     const localData = snapshot();
+    const diff = computeSyncDiff(localData, remoteData);
     root.innerHTML = '<div class="driveSyncConflictOverlay">'
       + '<div class="driveSyncConflictBox">'
       + '<div class="driveSyncConflictHeader">⚠️ 同期の競合</div>'
       + '<div class="driveSyncConflictBody">'
       + '<p>この端末とクラウドの両方でデータが更新されているため、自動では統合できません。どちらのデータを使うか選んでください。</p>'
       + '<div class="driveSyncConflictDiffTitle">🔍 主な違い</div>'
-      + diffSummaryHtml(localData, remoteData)
+      + diffSummaryHtml(diff)
       + '<div class="driveSyncConflictCols">'
       + '<div class="driveSyncConflictCol">'
       + '<div class="driveSyncConflictColTitle">📱 この端末</div>'
@@ -203,6 +250,22 @@
     document.getElementById('driveSyncKeepLocalBtn').onclick = () => resolveConflictKeepLocal();
     document.getElementById('driveSyncKeepCloudBtn').onclick = () => resolveConflictKeepCloud(remoteData, remoteRevision);
     document.getElementById('driveSyncConflictLaterBtn').onclick = () => hideSyncConflictModal();
+    // 差分の各行をクリックすると、その論証・学習記録の中身を開閉できるようにする
+    root.onclick = (e) => {
+      const row = e.target.closest ? e.target.closest('.driveSyncDiffRow') : null;
+      if (!row) return;
+      const detail = row.nextElementSibling;
+      if (!detail) return;
+      const opening = detail.hasAttribute('hidden');
+      if (opening) {
+        detail.innerHTML = renderDiffDetail(diff, row.getAttribute('data-diff-kind'), row.getAttribute('data-diff-title'));
+        detail.removeAttribute('hidden');
+      } else {
+        detail.setAttribute('hidden', '');
+      }
+      const caret = row.querySelector('.driveSyncDiffCaret');
+      if (caret) caret.textContent = opening ? '▼' : '▶';
+    };
   }
   async function resolveConflictKeepCloud(remoteData, remoteRevision) {
     adoptRemoteWholesale(remoteData, remoteRevision);

@@ -364,9 +364,13 @@
     timer = setTimeout(() => syncNow().catch(e => state(e.message)), 1200);
   };
 
-  const AUTO_PULL_INTERVAL_MS = 5 * 60 * 1000;
-  const MIN_PULL_GAP_MS = 20 * 1000;
-  const LOCAL_CHANGE_CHECK_INTERVAL_MS = 10 * 60 * 1000;
+  // 「都度同期」のため、変更検知・他端末更新の取り込みは短い間隔で行う
+  // （localStorageには変更イベントが無く、同一タブ内での変更を検知する標準的な
+  // 仕組みが無いため、短い間隔でのポーリングによって「変更のたびに同期される」
+  // 状態に近づけている）
+  const AUTO_PULL_INTERVAL_MS = 30 * 1000;
+  const MIN_PULL_GAP_MS = 10 * 1000;
+  const LOCAL_CHANGE_CHECK_INTERVAL_MS = 3 * 1000;
   function maybePullIfIdle() {
     if (syncSuspended || syncInFlight) return;
     if (hasUnsyncedLocalChanges()) return; // 未同期のローカル変更があれば、こちらからは取得しない

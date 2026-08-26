@@ -15,6 +15,7 @@ function loadCountdowns() {
 function saveCountdowns(list) {
   try {
     localStorage.setItem(COUNTDOWN_KEY, JSON.stringify(list));
+    if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
   } catch (e) {
     console.error('カウントダウンの保存に失敗しました:', e);
   }

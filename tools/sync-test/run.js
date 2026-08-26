@@ -134,6 +134,18 @@ function makeCloudStore(entries, revision) {
 console.log('=== 同期フロー(E2E)試験: マージせず「片方だけ変更なら採用／両方変更なら確認」方式 ===');
 
 async function e2e() {
+  console.log('\n■ E0: 真っさらな端末が既にデータのあるクラウドに初めて繋いだ場合、競合ポップアップを出さずそのまま採用する');
+  {
+    const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法'), mkEntry('民法B', '本文B', '民法')], 10);
+    const gas = makeMockGas(cloud);
+    const dev = loadDevice(gas);
+    // setLocalを一切呼ばない＝この端末は本当に何も持っていない（revision=0, last=''）
+    await dev.api.pullFromCloud(true);
+    check('確認ポップアップは表示されない', dev.getEl('driveSyncConflictModal').innerHTML === '');
+    check('クラウドの内容がそのまま反映される', dev.getLocal(K.entries, []).length === 2);
+    check('revisionがクラウドに追従する', dev.api.getRevision() === 10);
+  }
+
   console.log('\n■ E1: 通常のpush（誰とも競合していない）で revision が進み、クラウドが端末の内容で上書きされる');
   {
     const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法')], 10);

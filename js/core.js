@@ -269,6 +269,7 @@ function loadStudyLog() {
 }
 function saveStudyLog() {
   localStorage.setItem('ronshoStudyLog', JSON.stringify(studyLog));
+  if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 function loadManualLog() {
   try {
@@ -280,6 +281,7 @@ function loadManualLog() {
 }
 function saveManualLog() {
   localStorage.setItem('ronshoManualLog', JSON.stringify(manualLog));
+  if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 function loadEntries() {
   try {
@@ -307,6 +309,7 @@ function loadEntries() {
 function saveEntries() {
   try {
     localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries));
+    if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
   } catch (e) {
     console.error('読み込みデータの保存に失敗しました:', e);
   }

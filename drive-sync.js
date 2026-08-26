@@ -22,6 +22,10 @@
   let syncSuspended = false;
   let lastPullAttempt = 0;
   window.ronshoSuspendSync = (v) => { syncSuspended = !!v; };
+  // 各画面の保存処理（save*関数）から、変更のたびに直接呼んでもらうためのフック。
+  // ボタン操作の直後に同期がキューされるようにし、変更検知のポーリングだけに
+  // 頼らないようにする（ポーリングは、このフックが呼ばれない場合の保険として残す）
+  window.ronshoSyncNotifyChange = () => queue();
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
@@ -329,6 +333,14 @@
       await syncNow();
       return;
     }
+    if (!hasLocalData()) {
+      // この端末にまだ何もない（真っさらな状態）場合は、統合の余地が無いのでそのまま採用する。
+      // hasUnsyncedLocalChanges()は「何も無い」状態でも空でないJSONと比較されて
+      // trueになりうるため、ここで先に判定して不要な競合ポップアップを防ぐ
+      adoptRemoteWholesale(remote.data, remoteRevision);
+      state('☁️ クラウドのデータを取り込みました（' + new Date().toLocaleTimeString() + '）');
+      return;
+    }
     if (remoteRevision === revision) {
       // クラウド側は変わっていない。この端末の変更があれば送る
       if (hasUnsyncedLocalChanges()) { await syncNow(); }
@@ -364,9 +376,13 @@
     timer = setTimeout(() => syncNow().catch(e => state(e.message)), 1200);
   };
 
-  const AUTO_PULL_INTERVAL_MS = 5 * 60 * 1000;
-  const MIN_PULL_GAP_MS = 20 * 1000;
-  const LOCAL_CHANGE_CHECK_INTERVAL_MS = 10 * 60 * 1000;
+  // 「都度同期」のため、変更検知・他端末更新の取り込みは短い間隔で行う
+  // （localStorageには変更イベントが無く、同一タブ内での変更を検知する標準的な
+  // 仕組みが無いため、短い間隔でのポーリングによって「変更のたびに同期される」
+  // 状態に近づけている）
+  const AUTO_PULL_INTERVAL_MS = 30 * 1000;
+  const MIN_PULL_GAP_MS = 10 * 1000;
+  const LOCAL_CHANGE_CHECK_INTERVAL_MS = 3 * 1000;
   function maybePullIfIdle() {
     if (syncSuspended || syncInFlight) return;
     if (hasUnsyncedLocalChanges()) return; // 未同期のローカル変更があれば、こちらからは取得しない

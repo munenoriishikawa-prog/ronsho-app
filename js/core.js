@@ -182,9 +182,9 @@ function renderProgressSummary() {
     if (overallEl) overallEl.innerHTML = '';
     return;
   }
-  const filtered = filterEntries(entries, '');
-  const total = filtered.length;
-  const memorizedCount = filtered.filter(e => studyLog[e.title] && studyLog[e.title].memorized).length;
+  // ホーム上部の全体カードは、科目タブなどの絞り込みに関わらず常に全体の値を表示する
+  const total = entries.length;
+  const memorizedCount = entries.filter(e => studyLog[e.title] && studyLog[e.title].memorized).length;
   const pct = total > 0 ? Math.round((memorizedCount / total) * 100) : 0;
 
   const subjectStats = {};
@@ -213,7 +213,7 @@ function renderProgressSummary() {
       + '<div class="progressBigPct">' + pct + '%</div>'
       + '<div class="progressBarSection">'
       + '<div class="progressLabel">合計' + total + '件 ／ 暗記済み' + memorizedCount + '件</div>'
-      + buildStudyCountBarHtml(filtered)
+      + buildStudyCountBarHtml(entries)
       + '</div>'
       + '</div>';
   }

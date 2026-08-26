@@ -1,6 +1,7 @@
 (() => {
   const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyB-3irASAEN6amf2QIN74WQNhF4winF8LwO_gfYDFkW4JLw0cTHTUyOHfoPis7Sof5/exec';
   const REVISION_KEY = 'ronshoSyncRevisionV1';
+  const LAST_SYNCED_KEY = 'ronshoSyncLastSnapshotV1';
   const ENTRY_KEY = 'ronshoEntries';
   const STUDYLOG_KEY = 'ronshoStudyLog';
   const MANUALLOG_KEY = 'ronshoManualLog';
@@ -13,7 +14,9 @@
   const DAILYGOAL_KEY = 'ronshoDailyGoalV1';
 
   let revision = Number(localStorage.getItem(REVISION_KEY) || 0);
-  let last = '';
+  // 「最後に同期が完了した時点のローカルの状態」。ページを再読み込みしても
+  // 正しく「未同期の変更があるか」を判定できるよう、localStorageに永続化する
+  let last = localStorage.getItem(LAST_SYNCED_KEY) || '';
   let timer;
   let syncInFlight = false;
   let syncSuspended = false;
@@ -44,117 +47,17 @@
     const sl = read(STUDYLOG_KEY, {});
     return (e && e.length > 0) || Object.keys(sl).length > 0;
   };
-
-  // --- 端末間の学習記録・論証データを安全に統合するためのマージ処理 ---
-  // 「1人が同時に1台だけ使う」前提でも、複数端末を日をまたいで使い分けると
-  // 各端末が独自に学習記録を積み上げる期間が生まれる。単純に新しい方で
-  // 丸ごと上書きすると、片方の端末の学習成果が消えてしまうため、
-  // 論証データ・学習記録は端末間で統合（マージ）してから保存する。
-  const entryKeyOf = e => [e && e.title, e && e.body].filter(Boolean).join('|') || JSON.stringify(e);
-  // 削除記録(dupArchive)との照合に使うキー。アーカイブ側が作るキーと形式を完全に一致させる
-  const tombKeyOf = e => [e && e.title, e && e.body].join('|');
-  const archiveKeyOf = x => tombKeyOf(x && x.entry);
-  const timeOf = s => { const t = Date.parse(s || ''); return isNaN(t) ? 0 : t; };
-  // その論証をユーザーが最後に「生かした」時刻(Word取込み または アーカイブからの復元)
-  const revivedAtOf = e => Math.max(timeOf(e && e.importedAt), timeOf(e && e.restoredAt));
-  function unionEntries(a, b) {
-    // 同じ論証(キー)が両側にある場合は、取込み・復元が新しい方を採用する(同時はローカル側)。
-    // 削除前の古いコピーを持ったまま同期が止まっていた端末が復帰したとき、
-    // そのコピーが再取込みされた最新版を上書きしてしまうのを防ぐ
-    const m = new Map();
-    const put = e => {
-      const k = entryKeyOf(e);
-      const prev = m.get(k);
-      if (!prev || revivedAtOf(e) >= revivedAtOf(prev)) m.set(k, e);
-    };
-    (a || []).forEach(put);
-    (b || []).forEach(put);
-    return [...m.values()];
-  }
-  function mergeHistory(a, b) {
-    const count = x => (x || []).reduce((m, d) => (m[d] = (m[d] || 0) + 1, m), {});
-    const ca = count(a), cb = count(b);
-    const days = [...new Set([...Object.keys(ca), ...Object.keys(cb)])].sort();
-    return days.flatMap(d => Array(Math.max(ca[d] || 0, cb[d] || 0)).fill(d));
-  }
-  function mergeStudyLog(a, b) {
-    const out = { ...(a || {}) };
-    for (const [title, v] of Object.entries(b || {})) {
-      const o = out[title] || {};
-      out[title] = {
-        ...o, ...v,
-        history: mergeHistory(o.history, v.history),
-        memorized: !!(o.memorized || v.memorized),
-        starred: !!(o.starred || v.starred),
-        weak: !!(o.weak || v.weak),
-        skipped: !!(o.skipped || v.skipped),
-        bookmarked: !!(o.bookmarked || v.bookmarked),
-        confidence: v.confidence || o.confidence || null,
-        memo: v.memo || o.memo || '',
-        category: v.category || o.category || '',
-        subject: v.subject || o.subject || ''
-      };
-    }
-    return out;
-  }
-  function mergeDailyStats(a, b) {
-    const out = { ...(a || {}) };
-    for (const [d, c] of Object.entries(b || {})) out[d] = Math.max(out[d] || 0, c);
-    return out;
-  }
-  function mergeManualLog(a, b) {
-    const out = { ...(a || {}) };
-    for (const [d, v] of Object.entries(b || {})) out[d] = [...new Set([...(out[d] || []), ...(v || [])])];
-    return out;
-  }
-  function mergeByKey(a, b, keyFn) {
-    const m = new Map();
-    (a || []).forEach(x => m.set(keyFn(x), x));
-    (b || []).forEach(x => m.set(keyFn(x), x));
-    return [...m.values()];
-  }
-  // 削除記録(トゥームストーン)の統合。deletedAt(削除)と revokedAt(取り消し)は
-  // キーごとにそれぞれ新しい方を採る。「新しい時刻が常に勝つ」ので同期の順番や回数に
-  // 左右されず、休眠していた端末から古い記録が何度流入しても状態が巻き戻らない
-  function mergeDupArchive(a, b) {
-    const m = new Map();
-    [...(a || []), ...(b || [])].forEach(x => {
-      const k = archiveKeyOf(x);
-      const prev = m.get(k);
-      if (!prev) { m.set(k, { ...x }); return; }
-      if (timeOf(x.deletedAt) > timeOf(prev.deletedAt)) {
-        prev.deletedAt = x.deletedAt;
-        if (x.reason) prev.reason = x.reason;
-      }
-      if (timeOf(x.revokedAt) > timeOf(prev.revokedAt)) prev.revokedAt = x.revokedAt;
-      // 復元に必要な本文は、内容が揃っている側の記録を保持する
-      if ((!prev.entry || !prev.entry.body) && x.entry && x.entry.body) prev.entry = x.entry;
-    });
-    return [...m.values()];
-  }
-  // 取り消されていない削除記録だけが「削除済み」として効力を持つ
-  const isActiveTombstone = x => timeOf(x && x.deletedAt) > timeOf(x && x.revokedAt);
-  function reconcile(remoteData) {
-    remoteData = remoteData || {};
-    const mergedDupArchive = mergeDupArchive(remoteData.dupArchive, read(DUPARCHIVE_KEY, []));
-    // 重複チェックで削除された論証は、どちらかの端末・クラウド側に古いコピーが
-    // 残っていても復活しないよう、有効な削除記録と一致するものを和集合から除外する。
-    // 復元などで取り消された記録(revokedAt が deletedAt 以上のもの)は削除として扱わない
-    const deletedKeySet = new Set(mergedDupArchive.filter(isActiveTombstone).map(archiveKeyOf));
-    return {
-      schemaVersion: 4,
-      entries: unionEntries(remoteData.entries, getEntries()).filter(e => !deletedKeySet.has(tombKeyOf(e))),
-      studyLog: mergeStudyLog(remoteData.studyLog, read(STUDYLOG_KEY, {})),
-      manualLog: mergeManualLog(remoteData.manualLog, read(MANUALLOG_KEY, {})),
-      pastExamLogs: mergeByKey(remoteData.pastExamLogs, read(PASTEXAM_KEY, []), x => x.key || JSON.stringify(x)),
-      countdowns: mergeByKey(remoteData.countdowns, read(COUNTDOWN_KEY, []), x => x.id || JSON.stringify(x)),
-      dupArchive: mergedDupArchive,
-      dupResolved: [...new Set([...(remoteData.dupResolved || []), ...read(DUPRESOLVED_KEY, [])])],
-      speechDict: mergeByKey(remoteData.speechDict, read(SPEECHDICT_KEY, []), x => x.word),
-      dailyStats: mergeDailyStats(remoteData.dailyStats, read(DAILYSTATS_KEY, {})),
-      dailyGoal: remoteData.dailyGoal != null ? remoteData.dailyGoal : read(DAILYGOAL_KEY, null)
-    };
-  }
+  // dailyStatsは、ホーム画面を開くたびに「今日の暗記済み件数」が自動で
+  // 記録される統計で、実際の学習操作が無くても毎日変化する。これを比較に
+  // 含めると、何も編集していない端末でも常に「未同期の変更あり」と誤判定
+  // されてしまうため、競合検出の比較対象からは除外する
+  const withoutVolatileFields = (snap) => { const { dailyStats, ...rest } = snap; return rest; };
+  const markSynced = (snap) => {
+    last = JSON.stringify(withoutVolatileFields(snap));
+    localStorage.setItem(LAST_SYNCED_KEY, last);
+  };
+  // 前回の同期完了時点から、この端末でデータが変わっているか
+  const hasUnsyncedLocalChanges = () => JSON.stringify(withoutVolatileFields(snapshot())) !== last;
 
   function applyRemoteData(data) {
     data = data || {};
@@ -181,39 +84,111 @@
     if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
   }
 
-  async function pushToCloud(retriesLeft = 2, overrideData = null, baseRevision = null) {
-    const data = overrideData || snapshot();
-    const sendRevision = baseRevision != null ? baseRevision : revision;
+  // クラウド側のデータをそのまま採用する（この端末に未同期の変更が無いときのみ安全）
+  function adoptRemoteWholesale(remoteData, remoteRevision) {
+    revision = remoteRevision;
+    localStorage.setItem(REVISION_KEY, String(revision));
+    applyRemoteData(remoteData);
+    markSynced(snapshot());
+  }
+
+  // --- 競合確認ポップアップ ---
+  // 「この端末」と「クラウド」の両方でデータが変わっている場合のみ表示する。
+  // 統合(マージ)はせず、ユーザーが選んだ方をまるごと採用する単純な方式にしている。
+  function entryCountOf(data) { return (data && data.entries && data.entries.length) || 0; }
+  function memorizedCountOf(data) {
+    const sl = (data && data.studyLog) || {};
+    return Object.values(sl).filter(v => v && v.memorized).length;
+  }
+  function hideSyncConflictModal() {
+    const root = document.getElementById('driveSyncConflictModal');
+    if (root) root.innerHTML = '';
+  }
+  function showSyncConflictModal(remoteData, remoteRevision) {
+    const root = document.getElementById('driveSyncConflictModal');
+    if (!root) {
+      // モーダル用の要素が無い場合はやむを得ず確認ダイアログで代替する
+      const useCloud = confirm('この端末とクラウドの両方でデータが更新されています。\nクラウド側の内容を使いますか？\n（OK＝クラウドを優先／キャンセル＝この端末を優先）');
+      if (useCloud) resolveConflictKeepCloud(remoteData, remoteRevision);
+      else resolveConflictKeepLocal();
+      return;
+    }
+    const localData = snapshot();
+    root.innerHTML = '<div class="driveSyncConflictOverlay">'
+      + '<div class="driveSyncConflictBox">'
+      + '<div class="driveSyncConflictHeader">⚠️ 同期の競合</div>'
+      + '<div class="driveSyncConflictBody">'
+      + '<p>この端末とクラウドの両方でデータが更新されているため、自動では統合できません。どちらのデータを使うか選んでください。</p>'
+      + '<div class="driveSyncConflictCols">'
+      + '<div class="driveSyncConflictCol">'
+      + '<div class="driveSyncConflictColTitle">📱 この端末</div>'
+      + '<div class="driveSyncConflictColMeta">論証 ' + entryCountOf(localData) + '件 ／ 暗記済み ' + memorizedCountOf(localData) + '件</div>'
+      + '<button type="button" id="driveSyncKeepLocalBtn">この端末のデータを使う</button>'
+      + '</div>'
+      + '<div class="driveSyncConflictCol">'
+      + '<div class="driveSyncConflictColTitle">☁️ クラウド</div>'
+      + '<div class="driveSyncConflictColMeta">論証 ' + entryCountOf(remoteData) + '件 ／ 暗記済み ' + memorizedCountOf(remoteData) + '件</div>'
+      + '<button type="button" id="driveSyncKeepCloudBtn">クラウドのデータを使う</button>'
+      + '</div>'
+      + '</div>'
+      + '<div class="driveSyncConflictHint">選んだ方の内容で、もう片方が上書きされます（学習記録・論証データともに）。あとで「重複チェック」から個別に復元することもできます。</div>'
+      + '<span class="driveSyncConflictLaterBtn" id="driveSyncConflictLaterBtn">あとで決める</span>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
+    document.getElementById('driveSyncKeepLocalBtn').onclick = () => resolveConflictKeepLocal();
+    document.getElementById('driveSyncKeepCloudBtn').onclick = () => resolveConflictKeepCloud(remoteData, remoteRevision);
+    document.getElementById('driveSyncConflictLaterBtn').onclick = () => hideSyncConflictModal();
+  }
+  async function resolveConflictKeepCloud(remoteData, remoteRevision) {
+    adoptRemoteWholesale(remoteData, remoteRevision);
+    hideSyncConflictModal();
+    state('☁️ クラウドのデータを優先しました（' + new Date().toLocaleTimeString() + '）');
+  }
+  async function resolveConflictKeepLocal() {
+    try {
+      // 選択の間に更に更新されている可能性があるため、最新のrevisionを取り直してから上書きする
+      const r = await fetch(SYNC_URL, { cache: 'no-store' });
+      const remote = await r.json();
+      const data = snapshot();
+      const r2 = await fetch(SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ revision: remote.revision || 0, data })
+      });
+      const result = await r2.json();
+      if (result.ok) {
+        revision = result.result.revision;
+        localStorage.setItem(REVISION_KEY, String(revision));
+        markSynced(data);
+        hideSyncConflictModal();
+        state('📱 この端末のデータを優先しました（' + new Date().toLocaleTimeString() + '）');
+      } else if (result.latest) {
+        showSyncConflictModal(result.latest.data, result.latest.revision || 0);
+      }
+    } catch (e) {
+      state('保存に失敗しました: ' + e.message);
+    }
+  }
+
+  async function pushToCloud() {
+    const data = snapshot();
     const r = await fetch(SYNC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ revision: sendRevision, data })
+      body: JSON.stringify({ revision, data })
     });
     if (!r.ok) throw new Error('保存に失敗しました');
     const result = await r.json();
-    if (!result.ok && result.reason === 'conflict' && result.latest) {
-      const remoteData = result.latest.data;
-      const remoteRevision = result.latest.revision || 0;
-      if (retriesLeft > 0) {
-        const reconciled = reconcile(remoteData);
-        // revision はまだ確定させない(push が失敗した状態で revision だけ進めると、
-        // 次の編集の push が競合検知をすり抜けてクラウドを丸ごと上書きしてしまう)
-        return pushToCloud(retriesLeft - 1, reconciled, remoteRevision);
-      }
-      revision = remoteRevision;
-      localStorage.setItem(REVISION_KEY, String(revision));
-      // リトライを使い切った場合も、リモートをそのまま適用せず統合してから適用する。
-      // そのまま適用すると、ローカルにしかない復元・取り消し(revokedAt)や編集が失われる
-      applyRemoteData(reconcile(remoteData));
-      last = JSON.stringify(snapshot());
-      state('⚠️同期が競合したため最新データを読み込みました。もう一度操作をお試しください（' + new Date().toLocaleTimeString() + '）');
+    if (!result.ok && result.reason === 'conflict') {
+      if (result.latest) showSyncConflictModal(result.latest.data, result.latest.revision || 0);
+      state('⚠️クラウド側で更新があるため、確認が必要です（' + new Date().toLocaleTimeString() + '）');
       return;
     }
     if (!result.ok) throw new Error('保存に失敗しました');
     revision = result.result.revision;
     localStorage.setItem(REVISION_KEY, String(revision));
-    applyRemoteData(data);
-    last = JSON.stringify(snapshot());
+    markSynced(data);
     state('同期しました（' + new Date().toLocaleTimeString() + '）');
   }
 
@@ -227,19 +202,20 @@
       await syncNow();
       return;
     }
-    if (!hasLocalData()) {
-      // この端末にまだ何もない場合はマージ不要でそのまま採用
-      revision = remoteRevision;
-      localStorage.setItem(REVISION_KEY, String(revision));
-      applyRemoteData(remote.data);
-      last = JSON.stringify(snapshot());
-      state('同期済み（' + new Date().toLocaleTimeString() + '）');
+    if (remoteRevision === revision) {
+      // クラウド側は変わっていない。この端末の変更があれば送る
+      if (hasUnsyncedLocalChanges()) { await syncNow(); }
+      else { state('同期済み（' + new Date().toLocaleTimeString() + '）'); }
       return;
     }
-    // 端末側とクラウド側の両方にデータがある場合は統合してから保存する。
-    // revision は push 成功時に確定する(先に進めると push 失敗後の編集が競合検知をすり抜ける)
-    const reconciled = reconcile(remote.data);
-    await pushToCloud(2, reconciled, remoteRevision);
+    if (!hasUnsyncedLocalChanges()) {
+      // クラウド側だけが更新されている（この端末はまだ何も変えていない）→ そのまま採用してよい
+      adoptRemoteWholesale(remote.data, remoteRevision);
+      state('☁️ クラウドの更新を取り込みました（' + new Date().toLocaleTimeString() + '）');
+      return;
+    }
+    // 両方で変わっている＝本当の競合。自動統合はせず、ユーザーに選んでもらう
+    showSyncConflictModal(remote.data, remoteRevision);
   }
 
   async function syncNow() {
@@ -266,7 +242,7 @@
   const LOCAL_CHANGE_CHECK_INTERVAL_MS = 10 * 60 * 1000;
   function maybePullIfIdle() {
     if (syncSuspended || syncInFlight) return;
-    if (JSON.stringify(snapshot()) !== last) return; // 未同期のローカル変更があれば取得しない
+    if (hasUnsyncedLocalChanges()) return; // 未同期のローカル変更があれば、こちらからは取得しない
     const now = Date.now();
     if (now - lastPullAttempt < MIN_PULL_GAP_MS) return;
     lastPullAttempt = now;
@@ -275,11 +251,12 @@
 
   // 同期ロジックの自動テスト(tools/sync-test)から直接検証するための公開。アプリの動作には影響しない
   window.__ronshoSyncTest = {
-    reconcile, unionEntries, mergeDupArchive, isActiveTombstone,
-    pushToCloud, pullFromCloud, snapshot, applyRemoteData,
+    pushToCloud, pullFromCloud, snapshot, applyRemoteData, adoptRemoteWholesale,
+    hasUnsyncedLocalChanges,
     getRevision: () => revision,
     setRevision: (v) => { revision = v; localStorage.setItem(REVISION_KEY, String(v)); },
-    getLast: () => last
+    getLast: () => last,
+    markSynced
   };
 
   window.addEventListener('load', () => {
@@ -308,8 +285,7 @@
     // （タブが非表示の間はスキップし、iPad等での不要なCPU消費を抑える）
     setInterval(() => {
       if (document.visibilityState === 'visible') {
-        const n = JSON.stringify(snapshot());
-        if (n !== last) queue();
+        if (hasUnsyncedLocalChanges()) queue();
       }
     }, LOCAL_CHANGE_CHECK_INTERVAL_MS);
 

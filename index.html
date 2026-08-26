@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.63（問題演習のデフォルトを論証順に変更しランダムをチェック式に統一）＋過去問ログ</title>
+<title>論証集アプリ v21.64（同期をマージ方式から上書き＋競合確認ポップアップ方式に変更）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.63</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.64</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="quoteCard" class="quoteCard"></div>
@@ -141,7 +141,7 @@
 <div id="csvPage" class="page">
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">☁️ Google Drive同期</div>
-<div class="dupCheckIntro">変更があると自動的に同期されます（他端末の更新分も自動で取り込みます）。すぐに反映させたい場合は下のボタンを押してください。</div>
+<div class="dupCheckIntro">変更があると自動的に同期されます。この端末とクラウドの両方で更新があった場合のみ、どちらを使うか確認のポップアップが表示されます。すぐに反映させたい場合は下のボタンを押してください。</div>
 <div id="driveSyncPanelSlot"></div>
 </div>
 <div class="dataIoSection">
@@ -223,6 +223,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
 <div id="compareBar" class="compareBar"></div>
 <div id="compareModalRoot"></div>
+<div id="driveSyncConflictModal"></div>
 <datalist id="subjectSuggestions">
 <option value="民法"></option>
 <option value="刑法"></option>

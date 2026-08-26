@@ -1203,3 +1203,9 @@ input[type=file] { display:none; }
 .past-log-table th { background: #cfe3ff; position: static; }
 .past-log-small-note { font-size: 11px; color: #4a6a90; margin-top: 6px; }
 /* ▲▲▲ 過去問ログ タブ用 ここまで ▲▲▲ */
+/* ▼▼▼ その他タブ（ショートカットキー設定）用 ここから ▼▼▼ */
+.shortcutSettingsTable { width: 100%; max-width: 420px; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.shortcutSettingsTable th, .shortcutSettingsTable td { border: 1px solid #cfe3ff; padding: 6px 10px; text-align: left; }
+.shortcutSettingsTable th { background: #cfe3ff; }
+.shortcutKeySelect { font-size: 13px; padding: 2px 4px; }
+/* ▲▲▲ その他タブ用 ここまで ▲▲▲ */

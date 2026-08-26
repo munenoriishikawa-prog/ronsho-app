@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.76（論証編集・重複削除も同期中の入替に強くなるよう修正）＋過去問ログ</title>
+<title>論証集アプリ v21.77（タブ切り替えショートカットキー設定を追加）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.76</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.77</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="quoteCard" class="quoteCard"></div>
@@ -32,6 +32,7 @@
 <button class="tabBtn" data-page="calendarPage">📅 学習カレンダー・復習予定</button>
 <button class="tabBtn" data-page="csvPage">📥📤 データ読込み・出力</button>
 <button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
+<button class="tabBtn" data-page="settingsPage">⚙️ その他</button>
 </div>
 <div id="studyPage" class="page active">
 <div id="homeSummaryRow" class="homeSummaryRow">
@@ -221,6 +222,16 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
   </table>
 </div>
 <!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
+<!-- ▼▼▼ 新規追加：その他タブ（ショートカットキー設定） ▼▼▼ -->
+<div id="settingsPage" class="page">
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">⌨️ タブ切り替えショートカットキー</div>
+<div class="dupCheckIntro">入力欄にフォーカスしていない状態で数字キーを押すと、割り当てたタブに直接移動できます。同じ数字は1つのタブにしか割り当てられません（別のタブに割り当て直すと、元のタブは「未設定」になります）。この設定はこの端末だけに保存され、他の端末とは同期されません。</div>
+<div id="shortcutSettingsWrap"></div>
+<span class="clearEntriesLink" id="resetShortcutsBtn">↺ 初期設定に戻す</span>
+</div>
+</div>
+<!-- ▲▲▲ 新規追加：その他タブ ここまで ▲▲▲ -->
 <div id="compareBar" class="compareBar"></div>
 <div id="compareModalRoot"></div>
 <div id="driveSyncConflictModal"></div>
@@ -245,6 +256,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <script src="js/countdown.js"></script>
 <script src="js/past-exam.js"></script>
 <script src="js/gamification.js"></script>
+<script src="js/settings.js"></script>
 <script src="js/init.js"></script>
 
 

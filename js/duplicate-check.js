@@ -305,7 +305,13 @@ function renderDuplicateResults() {
   wrap.innerHTML = '<div class="dupCheckSummary">' + dupCheckPairs.length + '件の重複候補が見つかりました。</div>' + html;
 }
 function dupDeleteEntry(target) {
-  const idx = entries.indexOf(target);
+  // 重複チェック画面は開いたままになりやすく、その間に同期が走って
+  // entries配列が丸ごと入れ替わる(applyRemoteData)と、target(古いオブジェクト
+  // 参照)がindexOfで見つからず削除が無言で失敗する。タイトル＋本文一致に
+  // フォールバックして、入れ替え後でも対象を見つけられるようにする。
+  let idx = entries.indexOf(target);
+  if (idx === -1) idx = entries.findIndex(x => x.title === target.title && x.body === target.body);
+  if (idx === -1) idx = entries.findIndex(x => x.title === target.title);
   if (idx !== -1) entries.splice(idx, 1);
 }
 function dupMergeHistoryArrays(a, b) {

@@ -217,7 +217,7 @@ function saveEntryEdit(idx) {
   }
   saveEntries();
   saveStudyLog();
-  editingEntryIdx = null;
+  editingEntryTitle = null;
   status.textContent = '✏️ 「' + newTitle + '」を更新しました。';
   renderAll(true);
 }

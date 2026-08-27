@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.78（全データのバックアップ書き出し機能を追加）＋過去問ログ</title>
+<title>論証集アプリ v21.79（バックアップからの復元機能を追加）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.78</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.79</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -231,8 +231,14 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div id="backupLastInfo" class="backupLastInfo"></div>
 <button type="button" id="downloadBackupBtn">📦 今すぐバックアップをダウンロード</button>
 <div class="past-log-small-note">
-・ブラウザの制約上、確認なしで自動的にファイルを保存し続けることはできないため、最後にバックアップしてから7日以上経つと、この画面とホーム画面上部にお知らせが表示されます。<br>
-・書き出したファイルを読み込んで復元する機能は現在ありません（保管・確認用です）。
+・ブラウザの制約上、確認なしで自動的にファイルを保存し続けることはできないため、最後にバックアップしてから7日以上経つと、この画面とホーム画面上部にお知らせが表示されます。
+</div>
+<div class="backupRestoreRow">
+<button type="button" id="restoreBackupBtn" class="stackBtn">🔄 バックアップファイルから復元する</button>
+<input type="file" id="restoreBackupInput" accept=".json" style="display:none;">
+</div>
+<div class="past-log-small-note">
+・復元すると、現在この端末にあるデータ（バックアップ以降に追加・変更した内容を含む）は、選んだバックアップファイルの内容で全て上書きされます。復元前に確認のポップアップが表示されます。
 </div>
 </div>
 <div class="dataIoSection">

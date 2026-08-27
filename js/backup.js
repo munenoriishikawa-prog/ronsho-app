@@ -70,4 +70,65 @@ document.getElementById('backupReminderBanner').addEventListener('click', (e) =>
   }
 });
 document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderBackupLastInfo);
+
+// バックアップファイルからの復元（全データを上書き）。
+// 各データ種別は、既存の save*() 関数をそのまま呼ぶことで、都度同期の
+// フックも通常操作と同じように働くようにしている（復元後にクラウドとの
+// 差分があれば、通常の同期の仕組みで検知・確認される）。
+function restoreFromBackupPayload(data) {
+  entries = Array.isArray(data.entries) ? data.entries : [];
+  studyLog = (data.studyLog && typeof data.studyLog === 'object') ? data.studyLog : {};
+  manualLog = (data.manualLog && typeof data.manualLog === 'object') ? data.manualLog : {};
+  dupArchiveList = Array.isArray(data.dupArchive) ? data.dupArchive : [];
+  dupResolvedSet = new Set(Array.isArray(data.dupResolved) ? data.dupResolved : []);
+  if (Array.isArray(data.speechDict)) speechDict = data.speechDict;
+  editingEntryTitle = null;
+  compareList = [];
+  compareModalOpen = false;
+  dupCheckPairs = [];
+  expandedBodySet = new Set();
+  saveEntries();
+  saveStudyLog();
+  saveManualLog();
+  saveDupArchive();
+  saveDupResolved();
+  saveSpeechDict();
+  savePastExamLogs(Array.isArray(data.pastExamLogs) ? data.pastExamLogs : []);
+  saveCountdowns(Array.isArray(data.countdowns) ? data.countdowns : []);
+  if (data.dailyGoal) saveDailyGoal(data.dailyGoal);
+  if (data.dailyStats && typeof data.dailyStats === 'object') saveDailyStats(data.dailyStats);
+  if (entries.length > 0) {
+    downloadBtn.style.display = 'inline-block';
+    downloadLogBtn.style.display = 'inline-block';
+  }
+  renderAll();
+}
+document.getElementById('restoreBackupBtn').addEventListener('click', () => {
+  document.getElementById('restoreBackupInput').click();
+});
+document.getElementById('restoreBackupInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch (err) {
+    alert('ファイルの読み込みに失敗しました。正しいバックアップファイル（.json）を選択してください。');
+    return;
+  }
+  if (!data || !Array.isArray(data.entries)) {
+    alert('このファイルは全データバックアップの形式ではないようです（論証データが見つかりません）。');
+    return;
+  }
+  const exportedAtLabel = data.exportedAt ? new Date(data.exportedAt).toLocaleString() : '不明';
+  const confirmMsg = '⚠️ バックアップから復元します。\n\n'
+    + '書き出し日時：' + exportedAtLabel + '\n'
+    + '論証数：' + data.entries.length + '件\n\n'
+    + '現在この端末にあるデータ（このバックアップ以降に追加・変更した内容を含む）は、このバックアップの内容で全て上書きされます。この操作は元に戻せません。\n\n'
+    + '本当に復元しますか？';
+  if (!confirm(confirmMsg)) return;
+  restoreFromBackupPayload(data);
+  status.textContent = '🔄 バックアップ（' + exportedAtLabel + '時点）から復元しました。';
+});
 /* ▲▲▲ 新規追加：全データバックアップ機能 ここまで ▲▲▲ */

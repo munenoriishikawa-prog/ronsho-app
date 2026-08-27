@@ -29,6 +29,9 @@
   // ただし、クラウドから受け取ったデータを適用している最中は、受け取ったばかりの
   // 内容をそのまま送り返す無駄なpushを避けるため無効にする
   window.ronshoSyncNotifyChange = () => { if (!applyingRemoteData) queue(); };
+  // 手動バックアップ書き出し機能（js/backup.js）から、同期対象の全データを
+  // まとめて読み出すための公開。同期ロジック自体には影響しない
+  window.ronshoBuildBackupSnapshot = () => snapshot();
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));

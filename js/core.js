@@ -1011,6 +1011,7 @@ function renderAll(preserveQuiz) {
   renderPastLogs();
   renderCompareBar();
   renderSyncConflictBanner();
+  if (typeof renderBackupReminderBanner === 'function') renderBackupReminderBanner();
   if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
   if (typeof renderBadgesSection === 'function') renderBadgesSection();
   if (typeof renderSummarySection === 'function') renderSummarySection();

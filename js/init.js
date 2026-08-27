@@ -16,6 +16,8 @@ if (dupArchiveToggleBtn) dupArchiveToggleBtn.addEventListener('click', () => {
 });
 renderDupArchive();
 renderSyncConflictBanner();
+if (typeof renderBackupReminderBanner === 'function') renderBackupReminderBanner();
+if (typeof renderBackupLastInfo === 'function') renderBackupLastInfo();
 if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
 if (typeof renderBadgesSection === 'function') renderBadgesSection();
 if (typeof renderSummarySection === 'function') renderSummarySection();

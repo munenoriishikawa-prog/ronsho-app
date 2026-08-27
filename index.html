@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.79（バックアップからの復元機能を追加）＋過去問ログ</title>
+<title>論証集アプリ v21.80（バックアップのGoogle Drive自動アップロードに対応）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.79</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.80</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -227,7 +227,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div id="settingsPage" class="page">
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🗄 全データのバックアップ</div>
-<div class="dupCheckIntro">論証・学習記録・過去問ログなど、このアプリの全データを1つのファイルに書き出します。クラウド同期に問題が起きた場合や、誤って大量に削除してしまった場合の保険としてご利用ください。</div>
+<div class="dupCheckIntro">論証・学習記録・過去問ログなど、このアプリの全データを1つのファイルに書き出します。クラウド同期に問題が起きた場合や、誤って大量に削除してしまった場合の保険としてご利用ください。ダウンロードと同時に、Google Drive（同期先と同じアカウント）の「ronsho-app-backups」フォルダにも日付入りのファイルとして自動的にアップロードされます（最新30件まで保持）。</div>
 <div id="backupLastInfo" class="backupLastInfo"></div>
 <button type="button" id="downloadBackupBtn">📦 今すぐバックアップをダウンロード</button>
 <div class="past-log-small-note">

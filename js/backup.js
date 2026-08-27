@@ -13,13 +13,15 @@ function buildBackupPayload() {
     : { entries: entries, studyLog: studyLog, manualLog: manualLog };
   return Object.assign({ exportedAt: new Date().toISOString() }, snap);
 }
-function downloadFullBackup() {
-  const json = JSON.stringify(buildBackupPayload(), null, 2);
+async function downloadFullBackup() {
+  const payload = buildBackupPayload();
+  const fileName = '論証集バックアップ_' + todayStr() + '.json';
+  const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = '論証集バックアップ_' + todayStr() + '.json';
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -29,6 +31,18 @@ function downloadFullBackup() {
   renderBackupLastInfo();
   renderBackupReminderBanner();
   status.textContent = '📦 バックアップをダウンロードしました。';
+  // ローカルへのダウンロードとは別に、Google Drive（同期用GASと同じ場所）の
+  // 専用フォルダにも日付入りのバックアップファイルとして保存を試みる。
+  // 失敗してもローカルのダウンロード自体は既に成功しているので、
+  // ステータス表示だけ更新して処理は続行する
+  if (typeof window.ronshoUploadBackupToDrive === 'function') {
+    try {
+      await window.ronshoUploadBackupToDrive(payload, fileName);
+      status.textContent = '📦 バックアップをダウンロードし、Google Driveにもアップロードしました。';
+    } catch (err) {
+      status.textContent = '📦 バックアップをダウンロードしました（Google Driveへのアップロードは失敗：' + err.message + '）。';
+    }
+  }
 }
 function daysSince(dateStr) {
   return Math.round((new Date(todayStr() + 'T00:00:00') - new Date(dateStr + 'T00:00:00')) / 86400000);

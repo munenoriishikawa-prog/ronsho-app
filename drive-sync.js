@@ -32,6 +32,20 @@
   // 手動バックアップ書き出し機能（js/backup.js）から、同期対象の全データを
   // まとめて読み出すための公開。同期ロジック自体には影響しない
   window.ronshoBuildBackupSnapshot = () => snapshot();
+  // 手動バックアップをGoogle Driveにもアップロードするための公開。
+  // 通常の同期用ファイル(revisionで管理)とは別に、GAS側で日付入りの
+  // バックアップファイルとして専用フォルダに保存される。同期のrevisionには影響しない
+  window.ronshoUploadBackupToDrive = async (payload, fileName) => {
+    const r = await fetch(SYNC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'backup', data: payload, fileName: fileName })
+    });
+    if (!r.ok) throw new Error('アップロードに失敗しました（通信エラー）');
+    const result = await r.json();
+    if (!result.ok) throw new Error('アップロードに失敗しました');
+    return result;
+  };
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));

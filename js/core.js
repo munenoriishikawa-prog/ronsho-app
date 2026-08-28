@@ -773,6 +773,13 @@ async function handleFiles(files) {
     const importedAt = new Date().toISOString();
     newEntries.forEach(e => { e.importedAt = importedAt; });
     const touchedSubjects = new Set(newEntries.map(e => e.subject || 'その他'));
+    // 再読み込みでタイトルや本文が少し変わった論証も学習記録が0件に
+    // 戻らないよう、内容が近い論証を探して学習記録を引き継ぐ
+    const oldTouchedEntries = entries.filter(e => touchedSubjects.has(e.subject || 'その他'));
+    const carriedOverCount = (typeof carryOverStudyLogOnReimport === 'function')
+      ? carryOverStudyLogOnReimport(oldTouchedEntries, newEntries)
+      : 0;
+    if (carriedOverCount > 0) saveStudyLog();
     const newBySubject = new Map();
     newEntries.forEach(e => {
       const s = e.subject || 'その他';
@@ -814,7 +821,8 @@ async function handleFiles(files) {
     quizStarted = false;
     renderAll();
     const touchedLabel = Array.from(touchedSubjects).map(s => s === 'その他' ? s : s).join('・');
-    status.textContent = '✨ ' + newEntries.length + '件の論証を抽出しました（' + touchedLabel + 'を更新）。読み込みファイル数: ' + files.length + '件／全体 ' + entries.length + '件（次回起動時も自動で復元されます）';
+    status.textContent = '✨ ' + newEntries.length + '件の論証を抽出しました（' + touchedLabel + 'を更新）。読み込みファイル数: ' + files.length + '件／全体 ' + entries.length + '件（次回起動時も自動で復元されます）'
+      + (carriedOverCount > 0 ? '／内容が少し変わった' + carriedOverCount + '件の学習記録を引き継ぎました' : '');
     downloadBtn.style.display = 'inline-block';
     downloadLogBtn.style.display = 'inline-block';
     if (typeof findDuplicatePairs === 'function') {

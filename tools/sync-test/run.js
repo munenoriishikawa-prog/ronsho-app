@@ -264,6 +264,36 @@ async function e2e() {
     await dev.api.pullFromCloud(false);
     check('confirm()でクラウド優先を選ぶとクラウドの内容が反映される', dev.getLocal(K.entries, []).some(e => e.title === 'クラウド側の新規'));
   }
+
+  console.log('\n■ E8: 配列の並び順だけが違うデータは「未同期の変更あり」と誤検知しない（並び順だけの違いで競合ポップアップが出ないようにする）');
+  {
+    const dev = loadDevice(null);
+    dev.setLocal(K.entries, [mkEntry('A', '本文A', '民法'), mkEntry('B', '本文B', '民法')]);
+    dev.api.markSynced(dev.api.snapshot());
+    // 中身は同じだが、entries配列の並びだけを入れ替える（同期時の再取り込み等で起こりうる）
+    dev.setLocal(K.entries, [mkEntry('B', '本文B', '民法'), mkEntry('A', '本文A', '民法')]);
+    check('entries配列の並び順だけの違いは「変更あり」と判定しない', dev.api.hasUnsyncedLocalChanges() === false);
+  }
+
+  console.log('\n■ E8b: dupResolved（Setから復元される配列）の並び順だけの違いは「差がある項目」として案内しない');
+  {
+    const dev = loadDevice(null);
+    const base = { entries: [], studyLog: {}, countdowns: [], manualLog: {}, pastExamLogs: [], dupArchive: [], speechDict: [], dailyGoal: null };
+    const local = { ...base, dupResolved: ['sigA', 'sigB', 'sigC'] };
+    const remote = { ...base, dupResolved: ['sigC', 'sigA', 'sigB'] };
+    const diff = dev.api.computeSyncDiff(local, remote);
+    check('並び順だけの違いはotherFieldLabelsに含まれない', diff.otherFieldLabels.length === 0, JSON.stringify(diff.otherFieldLabels));
+  }
+
+  console.log('\n■ E8c: 並び順ではなく実際に中身が違う場合は、引き続き正しく検知する');
+  {
+    const dev = loadDevice(null);
+    const base = { entries: [], studyLog: {}, manualLog: {}, pastExamLogs: [], dupArchive: [], dupResolved: [], speechDict: [], dailyGoal: null };
+    const local = { ...base, countdowns: [{ id: 'c1', label: 'X', date: '2027-01-01' }] };
+    const remote = { ...base, countdowns: [] };
+    const diff = dev.api.computeSyncDiff(local, remote);
+    check('実際に中身が違う場合はotherFieldLabelsで検知される', diff.otherFieldLabels.some(l => l.includes('カウントダウン')));
+  }
 }
 
 // ---- duplicate-check.js の関数試験 ----

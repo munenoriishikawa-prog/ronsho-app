@@ -76,12 +76,29 @@
   // 含めると、何も編集していない端末でも常に「未同期の変更あり」と誤判定
   // されてしまうため、競合検出の比較対象からは除外する
   const withoutVolatileFields = (snap) => { const { dailyStats, ...rest } = snap; return rest; };
+  // オブジェクトのキー順・配列の要素順を正規化してから比較するための文字列を作る。
+  // 保存・同期のたびにlocalStorageへの書き込み順や他端末での操作順によって
+  // 配列やオブジェクトの並びが変わることがあるが、同期にとって意味があるのは
+  // 中身であって並び順ではない。ここで正規化した文字列は「変更があるか」
+  // 「クラウドと何が違うか」の判定にのみ使い、実際に保存・送受信するデータの
+  // 並び順そのものには一切手を加えない（並び順だけの違いで、論証・学習記録に
+  // 差が無いのに競合ポップアップが出てしまう不具合を防ぐ）
+  function canonicalJSON(value) {
+    if (Array.isArray(value)) {
+      return '[' + value.map(canonicalJSON).sort().join(',') + ']';
+    }
+    if (value && typeof value === 'object') {
+      const keys = Object.keys(value).sort();
+      return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalJSON(value[k])).join(',') + '}';
+    }
+    return JSON.stringify(value);
+  }
   const markSynced = (snap) => {
-    last = JSON.stringify(withoutVolatileFields(snap));
+    last = canonicalJSON(withoutVolatileFields(snap));
     localStorage.setItem(LAST_SYNCED_KEY, last);
   };
   // 前回の同期完了時点から、この端末でデータが変わっているか
-  const hasUnsyncedLocalChanges = () => JSON.stringify(withoutVolatileFields(snapshot())) !== last;
+  const hasUnsyncedLocalChanges = () => canonicalJSON(withoutVolatileFields(snapshot())) !== last;
 
   function applyRemoteData(data) {
     data = data || {};
@@ -187,7 +204,7 @@
       dailyGoal: '🎯 今日の目標値'
     };
     const otherFieldLabels = Object.keys(OTHER_FIELD_LABELS).filter(k => {
-      return JSON.stringify((localData || {})[k]) !== JSON.stringify((remoteData || {})[k]);
+      return canonicalJSON((localData || {})[k]) !== canonicalJSON((remoteData || {})[k]);
     }).map(k => OTHER_FIELD_LABELS[k]);
 
     return {
@@ -300,8 +317,31 @@
       + '</div>'
       + '</div>'
       + '</div>';
-    document.getElementById('driveSyncKeepLocalBtn').onclick = () => resolveConflictKeepLocal();
-    document.getElementById('driveSyncKeepCloudBtn').onclick = () => resolveConflictKeepCloud(remoteData, remoteRevision);
+    const keepLocalBtn = document.getElementById('driveSyncKeepLocalBtn');
+    const keepCloudBtn = document.getElementById('driveSyncKeepCloudBtn');
+    // この端末のデータをアップロードする処理は、全データ(約1MB規模になりうる)を
+    // 送信するため数秒かかることがある。押した直後にボタンを無効化して
+    // 「処理中」と分かるようにし、連打による二重送信も防ぐ。失敗してモーダルが
+    // まだ残っている場合だけ、再度押せる状態に戻す
+    keepLocalBtn.onclick = async () => {
+      if (keepLocalBtn.disabled) return;
+      keepLocalBtn.disabled = true;
+      keepCloudBtn.disabled = true;
+      keepLocalBtn.textContent = '⏳ アップロード中…';
+      await resolveConflictKeepLocal();
+      if (isConflictModalOpen()) {
+        keepLocalBtn.disabled = false;
+        keepCloudBtn.disabled = false;
+        keepLocalBtn.textContent = 'この端末のデータを使う';
+      }
+    };
+    keepCloudBtn.onclick = async () => {
+      if (keepCloudBtn.disabled) return;
+      keepLocalBtn.disabled = true;
+      keepCloudBtn.disabled = true;
+      keepCloudBtn.textContent = '⏳ 取り込み中…';
+      await resolveConflictKeepCloud(remoteData, remoteRevision);
+    };
     document.getElementById('driveSyncConflictLaterBtn').onclick = () => hideSyncConflictModal();
     // 差分の各行をクリックすると、その論証・学習記録の中身を開閉できるようにする
     root.onclick = (e) => {
@@ -425,15 +465,22 @@
     timer = setTimeout(() => syncNow().catch(e => state(e.message)), 1200);
   };
 
-  // 「都度同期」のため、変更検知・他端末更新の取り込みは短い間隔で行う
+  // メインの変更検知は各save*()からの都度同期フック(ronshoSyncNotifyChange)が
+  // 担っており、このポーリングはフックが呼ばれなかった場合の保険にすぎない
   // （localStorageには変更イベントが無く、同一タブ内での変更を検知する標準的な
-  // 仕組みが無いため、短い間隔でのポーリングによって「変更のたびに同期される」
-  // 状態に近づけている）
+  // 仕組みが無いため）。保険用の頻度なので、hasUnsyncedLocalChanges()（770件規模の
+  // 論証データ全体を比較するため軽くない）を必要以上の頻度で呼ばないよう、
+  // 短すぎない間隔にしている
   const AUTO_PULL_INTERVAL_MS = 30 * 1000;
   const MIN_PULL_GAP_MS = 10 * 1000;
-  const LOCAL_CHANGE_CHECK_INTERVAL_MS = 3 * 1000;
+  const LOCAL_CHANGE_CHECK_INTERVAL_MS = 10 * 1000;
+  const isConflictModalOpen = () => {
+    const root = document.getElementById('driveSyncConflictModal');
+    return !!(root && root.innerHTML.trim() !== '');
+  };
   function maybePullIfIdle() {
     if (syncSuspended || syncInFlight) return;
+    if (isConflictModalOpen()) return; // 競合の選択待ちの間は取得し直さない
     if (hasUnsyncedLocalChanges()) return; // 未同期のローカル変更があれば、こちらからは取得しない
     const now = Date.now();
     if (now - lastPullAttempt < MIN_PULL_GAP_MS) return;
@@ -444,7 +491,7 @@
   // 同期ロジックの自動テスト(tools/sync-test)から直接検証するための公開。アプリの動作には影響しない
   window.__ronshoSyncTest = {
     pushToCloud, pullFromCloud, snapshot, applyRemoteData, adoptRemoteWholesale,
-    hasUnsyncedLocalChanges, computeSyncDiff,
+    hasUnsyncedLocalChanges, computeSyncDiff, canonicalJSON,
     getRevision: () => revision,
     setRevision: (v) => { revision = v; localStorage.setItem(REVISION_KEY, String(v)); },
     getLast: () => last,
@@ -473,12 +520,14 @@
 
     pullFromCloud(true).catch(e => state('オフラインで動作中（' + e.message + '）'));
 
-    // ローカル変更を検知したら短い遅延で自動アップロード
-    // （タブが非表示の間はスキップし、iPad等での不要なCPU消費を抑える）
+    // ローカル変更を検知したら短い遅延で自動アップロード（保険用のポーリング）。
+    // タブが非表示の間・同期処理中・競合ポップアップの選択待ちの間はスキップし、
+    // iPad等での不要なCPU消費（操作中の重さの原因になりうる）を抑える
     setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        if (hasUnsyncedLocalChanges()) queue();
-      }
+      if (document.visibilityState !== 'visible') return;
+      if (syncInFlight) return;
+      if (isConflictModalOpen()) return;
+      if (hasUnsyncedLocalChanges()) queue();
     }, LOCAL_CHANGE_CHECK_INTERVAL_MS);
 
     // 変更が無いときに限り、数分おきに他端末の更新を取り込む安全策

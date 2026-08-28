@@ -805,6 +805,7 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   cursor: pointer;
   width: 100%;
 }
+.driveSyncConflictCol button:disabled { opacity: 0.6; cursor: default; }
 .driveSyncConflictHint { font-size: 11px; color: #8a9db8; line-height: 1.6; margin-bottom: 10px; }
 .driveSyncConflictLaterBtn { display: inline-block; font-size: 12px; color: #4a6a90; cursor: pointer; text-decoration: underline; }
 .driveSyncConflictLaterBtn:hover { color: #0c2340; }

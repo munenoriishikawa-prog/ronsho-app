@@ -341,6 +341,48 @@ function dupMergeStudyLogInto(keepEntry, dropEntry) {
   saveStudyLog();
   return true;
 }
+// ワードファイルの再読み込みでタイトルや本文が少し変わった論証も、
+// 学習記録(学習回数・暗記済みフラグ等)が0件に戻ってしまわないよう、
+// 重複チェックと同じ類似度判定(dupCombinedScore)を使って「同じ論証の
+// 書き直し」とみなせるものを探し、学習記録を新しいタイトルへ引き継ぐ。
+// タイトルが完全一致する場合はstudyLogがそのまま引き継がれるため対象外。
+// 誤って別の論証に学習記録を付け替えてしまわないよう、閾値は重複チェックの
+// 「重複候補」判定(DUP_FUZZY_THRESHOLD=0.7)よりやや低い程度に留め、かつ
+// 同じ科目内でのみ照合する
+const REIMPORT_CARRY_OVER_THRESHOLD = 0.65;
+function carryOverStudyLogOnReimport(oldEntries, newEntries) {
+  const newTitleSet = new Set(newEntries.map(e => e.title));
+  const usedNewTitles = new Set();
+  let carriedCount = 0;
+  oldEntries.forEach(oldE => {
+    if (newTitleSet.has(oldE.title)) return; // タイトル完全一致ならそのまま引き継がれる
+    const oldLog = studyLog[oldE.title];
+    if (!oldLog) return; // 学習記録が無ければ引き継ぐものが無い
+    let best = null, bestScore = 0;
+    newEntries.forEach(newE => {
+      if (usedNewTitles.has(newE.title)) return;
+      if ((newE.subject || 'その他') !== (oldE.subject || 'その他')) return;
+      const score = dupCombinedScore(oldE, newE);
+      if (score > bestScore) { bestScore = score; best = newE; }
+    });
+    if (!best || bestScore < REIMPORT_CARRY_OVER_THRESHOLD) return;
+    usedNewTitles.add(best.title);
+    const newLog = studyLog[best.title];
+    studyLog[best.title] = newLog ? {
+      ...newLog,
+      history: dupMergeHistoryArrays(newLog.history, oldLog.history),
+      memorized: !!(newLog.memorized || oldLog.memorized),
+      starred: !!(newLog.starred || oldLog.starred),
+      bookmarked: !!(newLog.bookmarked || oldLog.bookmarked),
+      skipped: !!(newLog.skipped || oldLog.skipped),
+      confidence: newLog.confidence || oldLog.confidence || null,
+      memo: newLog.memo || oldLog.memo || ''
+    } : oldLog;
+    delete studyLog[oldE.title];
+    carriedCount++;
+  });
+  return carriedCount;
+}
 function dupRemovePairsReferencing(target) {
   dupCheckPairs = dupCheckPairs.filter(p => p.a !== target && p.b !== target);
 }

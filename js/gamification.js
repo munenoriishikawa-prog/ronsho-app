@@ -70,8 +70,37 @@ function computeTotalStudyCount() {
 function computeMemorizedCount() {
   return entries.filter(e => studyLog[e.title] && studyLog[e.title].memorized).length;
 }
+// 経験値(XP)は、暗記度・暗記済み件数から毎回計算し直す値ではなく、
+// 「問題を解くたびに加算されるだけ」の単純増加のカウンタとして持つ。
+// 以前は合計学習回数×10＋暗記済み件数×50から都度算出していたが、
+// 暗記済みフラグは学習し直して「ダメ」を選ぶと外れる（＝合計が減る）ため、
+// 正直に「ダメ」を選んで復習した回でもXP・レベルが下がって見えてしまい、
+// 「学習したのに進んでいないように見える」原因になっていた。
+// 暗記度に応じてXPの量に差はつけつつ、どの暗記度で答えてもXPは必ず増える
+// ようにする（暗記度別の重みは 完璧4:できた3:あやしい2:ダメ1 の比率）
+const XP_KEY = 'ronshoXpV1';
+const XP_BY_CONFIDENCE = { perfect: 40, good: 30, unsure: 20, bad: 10 };
+const XP_MEMORIZED_BONUS = 50;
+function loadXp() {
+  const n = Number(localStorage.getItem(XP_KEY));
+  return (Number.isFinite(n) && n >= 0) ? n : 0;
+}
+function saveXp(n) {
+  localStorage.setItem(XP_KEY, String(Math.max(0, Math.round(n))));
+  if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
+}
+// 問題を解いて暗記度を選ぶたびに呼ぶ。暗記度がどれであってもXPは必ず増える
+function awardXp(level) {
+  const amount = XP_BY_CONFIDENCE[level];
+  if (!amount) return;
+  saveXp(loadXp() + amount);
+}
+// 新たに「暗記済み」になった瞬間（初めて／再び）にだけ呼ぶボーナス
+function awardMemorizedBonusXp() {
+  saveXp(loadXp() + XP_MEMORIZED_BONUS);
+}
 function computeXp() {
-  return computeTotalStudyCount() * 10 + computeMemorizedCount() * 50;
+  return loadXp();
 }
 function getLevelInfo(xp) {
   let level = 1;

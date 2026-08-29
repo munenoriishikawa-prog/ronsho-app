@@ -780,6 +780,11 @@ async function handleFiles(files) {
       ? carryOverStudyLogOnReimport(oldTouchedEntries, newEntries)
       : 0;
     if (carriedOverCount > 0) saveStudyLog();
+    // 同じく、直接編集機能で手動で色付け・太字にした文言も、
+    // 同一ないし類似の論証として引き継ぐ
+    const carriedOverHighlightCount = (typeof carryOverManualHighlightsOnReimport === 'function')
+      ? carryOverManualHighlightsOnReimport(oldTouchedEntries, newEntries)
+      : 0;
     const newBySubject = new Map();
     newEntries.forEach(e => {
       const s = e.subject || 'その他';
@@ -822,7 +827,8 @@ async function handleFiles(files) {
     renderAll();
     const touchedLabel = Array.from(touchedSubjects).map(s => s === 'その他' ? s : s).join('・');
     status.textContent = '✨ ' + newEntries.length + '件の論証を抽出しました（' + touchedLabel + 'を更新）。読み込みファイル数: ' + files.length + '件／全体 ' + entries.length + '件（次回起動時も自動で復元されます）'
-      + (carriedOverCount > 0 ? '／内容が少し変わった' + carriedOverCount + '件の学習記録を引き継ぎました' : '');
+      + (carriedOverCount > 0 ? '／内容が少し変わった' + carriedOverCount + '件の学習記録を引き継ぎました' : '')
+      + (carriedOverHighlightCount > 0 ? '／手動で色付け・太字にした' + carriedOverHighlightCount + '件の文言を引き継ぎました' : '');
     downloadBtn.style.display = 'inline-block';
     downloadLogBtn.style.display = 'inline-block';
     if (typeof findDuplicatePairs === 'function') {

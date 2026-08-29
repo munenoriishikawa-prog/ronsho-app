@@ -73,7 +73,7 @@ function buildQuizPool() {
     quizMinCount = 0;
     return quizSequentialMode ? pool : shuffleArray(pool);
   }
-  if (!quizIncludeMemorizedChk.checked) {
+  if (quizHideMemorizedChk.checked) {
     pool = pool.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
   }
   if (pool.length === 0) {
@@ -110,6 +110,7 @@ function renderQuizPage() {
   }
   const extraNotes = [];
   if (quizExcludeTodayChk.checked) extraNotes.push('本日学習済みは除外');
+  if (quizHideMemorizedChk.checked) extraNotes.push('🙈暗記済みは除外');
   if (quizWeakOnlyChk.checked) extraNotes.push('😰苦手のみ');
   if (quizSkippedOnlyChk.checked) extraNotes.push('⏭️スキップのみ');
   const extraNote = extraNotes.length ? '（' + extraNotes.join('・') + '）' : '';

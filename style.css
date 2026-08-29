@@ -851,6 +851,10 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .trendToggleBtn.active { background: linear-gradient(135deg, #0057e7, #00c2ff); color: #fff; border-color: transparent; font-weight: 700; }
 .trendSummary { font-size: 12px; color: #4a6a90; margin-bottom: 6px; }
 .trendSvgWrap { overflow-x: auto; }
+.trendLegend { display: flex; gap: 14px; margin-bottom: 4px; }
+.trendLegendItem { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #4a6a90; }
+.trendLegendSwatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
+.trendLegendSwatchDashed { background: none !important; height: 0; border-top-width: 2px; border-top-style: dashed; }
 .trendPoint { cursor: pointer; }
 .trendPoint:hover { r: 5; }
 button {

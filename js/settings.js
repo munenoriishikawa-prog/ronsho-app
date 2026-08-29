@@ -69,6 +69,30 @@ document.getElementById('resetShortcutsBtn').addEventListener('click', () => {
   status.textContent = '⌨️ ショートカットキーを初期設定に戻しました。';
 });
 document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderShortcutSettings);
+/* ▼▼▼ 新規追加：デスクトップペット設定 ここから ▼▼▼ */
+function renderPetSettings() {
+  const wrap = document.getElementById('petSettingsWrap');
+  if (!wrap || !window.ronshoPetControl) return;
+  const control = window.ronshoPetControl;
+  const enabled = control.isEnabled();
+  const speciesIdx = control.getSpeciesIndex();
+  let html = '<label class="petEnableLabel"><input type="checkbox" id="petEnabledChk"' + (enabled ? ' checked' : '') + '> ペットを表示する</label>';
+  html += '<div class="petSpeciesRow"><span>キャラクター：</span><select id="petSpeciesSelect"' + (enabled ? '' : ' disabled') + '>'
+    + control.SPECIES_LABELS.map((label, idx) => '<option value="' + idx + '"' + (idx === speciesIdx ? ' selected' : '') + '>' + label + '</option>').join('')
+    + '</select></div>';
+  wrap.innerHTML = html;
+  document.getElementById('petEnabledChk').addEventListener('change', (evt) => {
+    control.setEnabled(evt.target.checked);
+    renderPetSettings();
+    status.textContent = evt.target.checked ? '🐾 ペットを表示しました。' : '🐾 ペットを非表示にしました。';
+  });
+  document.getElementById('petSpeciesSelect').addEventListener('change', (evt) => {
+    control.setSpeciesIndex(Number(evt.target.value));
+    status.textContent = '🐾 キャラクターを「' + control.SPECIES_LABELS[Number(evt.target.value)] + '」に変更しました。';
+  });
+}
+document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderPetSettings);
+/* ▲▲▲ 新規追加：デスクトップペット設定 ここまで ▲▲▲ */
 function isTypingTarget(el) {
   if (!el) return false;
   const tag = el.tagName;

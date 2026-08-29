@@ -50,7 +50,12 @@ function buildQuizLastStudyHtml(e) {
     + ' ／ 通算' + history.length + '回</div>';
 }
 function buildQuizPool() {
-  let pool = filterEntries(entries, '');
+  // 問題演習は、ホーム画面（暗記済み一覧・学習記録一覧）の科目・分野・タグ・
+  // 苦手のみ・出題年頻度などの絞り込みとは独立して、常に全論証を母集団とする。
+  // 以前はfilterEntries()経由でホーム画面の絞り込み状態をそのまま引き継いで
+  // いたため、ホーム画面である科目を選んだままにしておくと、問題演習の画面には
+  // 何の表示も無いまま対象外の論証が静かに除外されてしまっていた
+  let pool = entries.slice();
   if (quizExcludeTodayChk.checked) {
     pool = pool.filter(e => !isStudiedToday(e));
   }

@@ -463,14 +463,27 @@ function reapplyManualHighlights(oldBodyHtml, newBodyHtml) {
   const newChars = bodyHtmlToStyledChars(newBodyHtml);
   const oldPlain = oldChars.map(c => c.ch).join('');
   const newPlain = newChars.map(c => c.ch).join('');
+  // ワード文書側で新しく色・太字が設定された場合はそちらを優先する
+  // （新しい書式が既に付いている文字は上書きしない）。旧の書式は、
+  // 新しい解析結果には書式が無い箇所を補う形でのみ復元する
+  const hasNewStyle = c => !!(c.color || c.bold);
   if (oldPlain === newPlain) {
-    for (let i = 0; i < newChars.length; i++) { newChars[i].color = oldChars[i].color; newChars[i].bold = oldChars[i].bold; }
-    return styledCharsToBodyHtml(newChars);
+    let changed = false;
+    for (let i = 0; i < newChars.length; i++) {
+      if (hasNewStyle(newChars[i])) continue;
+      if (oldChars[i].color || oldChars[i].bold) {
+        newChars[i].color = oldChars[i].color;
+        newChars[i].bold = oldChars[i].bold;
+        changed = true;
+      }
+    }
+    return changed ? styledCharsToBodyHtml(newChars) : null;
   }
   const pairs = computeLcsAlignment(oldPlain, newPlain);
   if (!pairs) return null;
   let changed = false;
   pairs.forEach(([oi, ni]) => {
+    if (hasNewStyle(newChars[ni])) return;
     if (oldChars[oi].color || oldChars[oi].bold) {
       newChars[ni].color = oldChars[oi].color;
       newChars[ni].bold = oldChars[oi].bold;

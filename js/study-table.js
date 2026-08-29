@@ -220,79 +220,53 @@ function getTrendBuckets(mode) {
   }
   return buckets;
 }
-// 折れ線グラフのSVGを組み立てる共通処理（学習推移・暗記率の推移で共用）
-function buildTrendSvg(values, labels, opts) {
-  opts = opts || {};
-  const color = opts.color || '#0057e7';
-  const gradId = opts.gradId || 'trendGrad';
-  const formatValue = opts.formatValue || (v => v + '件');
-  const w = 680, h = 180, padL = 36, padR = 16, padT = 16, padB = 28;
+// 折れ線グラフのSVGを組み立てる共通処理。学習回数(左軸)・暗記率(右軸)の
+// 単位が違う2本の線を、1つのグラフに重ねて表示する（rightSeriesを渡さなければ
+// 学習回数だけの単軸グラフになる）
+function buildTrendSvg(labels, leftSeries, rightSeries) {
+  const w = 680, h = 200, padL = 40, padR = 40, padT = 16, padB = 28;
   const innerW = w - padL - padR, innerH = h - padT - padB;
-  const maxVal = Math.max(1, ...values);
-  const stepX = values.length > 1 ? innerW / (values.length - 1) : innerW;
-  const points = values.map((v, i) => {
-    const x = padL + i * stepX;
-    const y = padT + innerH - (v / maxVal) * innerH;
-    return { x, y, v, label: labels[i] };
-  });
-  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
-  const areaD = pathD + ' L' + points[points.length - 1].x.toFixed(1) + ',' + (padT + innerH) + ' L' + points[0].x.toFixed(1) + ',' + (padT + innerH) + ' Z';
+  const stepX = labels.length > 1 ? innerW / (labels.length - 1) : innerW;
+  function mapPoints(series) {
+    const maxVal = Math.max(1, ...series.values);
+    return { maxVal, points: series.values.map((v, i) => ({
+      x: padL + i * stepX,
+      y: padT + innerH - (v / maxVal) * innerH,
+      v, label: labels[i]
+    })) };
+  }
+  function pathOf(points) {
+    return points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+  }
+  const left = mapPoints(leftSeries);
   let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" style="max-width:720px;">';
-  svg += '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + color + '" stop-opacity="0.25"/><stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>';
-  svg += '<path d="' + areaD + '" fill="url(#' + gradId + ')" stroke="none"/>';
-  svg += '<path d="' + pathD + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
-  points.forEach((p, i) => {
-    svg += '<circle class="trendPoint" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3.5" fill="' + color + '"><title>' + escapeHtml(p.label) + '：' + formatValue(p.v) + '</title></circle>';
-    if (i % Math.ceil(points.length / 8) === 0 || i === points.length - 1) {
-      svg += '<text x="' + p.x.toFixed(1) + '" y="' + (h - 8) + '" font-size="9" fill="#4a6a90" text-anchor="middle">' + escapeHtml(p.label) + '</text>';
+  svg += '<defs><linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + leftSeries.color + '" stop-opacity="0.2"/><stop offset="100%" stop-color="' + leftSeries.color + '" stop-opacity="0"/></linearGradient></defs>';
+  const leftPathD = pathOf(left.points);
+  const leftAreaD = leftPathD + ' L' + left.points[left.points.length - 1].x.toFixed(1) + ',' + (padT + innerH) + ' L' + left.points[0].x.toFixed(1) + ',' + (padT + innerH) + ' Z';
+  svg += '<path d="' + leftAreaD + '" fill="url(#trendGrad)" stroke="none"/>';
+  svg += '<path d="' + leftPathD + '" fill="none" stroke="' + leftSeries.color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  left.points.forEach(p => {
+    svg += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3.2" fill="' + leftSeries.color + '"><title>' + escapeHtml(p.label) + '：' + leftSeries.formatValue(p.v) + '</title></circle>';
+  });
+  svg += '<text x="4" y="' + (padT + 4) + '" font-size="9" fill="' + leftSeries.color + '">' + leftSeries.formatValue(left.maxVal) + '</text>';
+  if (rightSeries) {
+    const right = mapPoints(rightSeries);
+    const rightPathD = pathOf(right.points);
+    svg += '<path d="' + rightPathD + '" fill="none" stroke="' + rightSeries.color + '" stroke-width="2.5" stroke-dasharray="5,4" stroke-linejoin="round" stroke-linecap="round"/>';
+    right.points.forEach(p => {
+      svg += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3.2" fill="' + rightSeries.color + '"><title>' + escapeHtml(p.label) + '：' + rightSeries.formatValue(p.v) + '</title></circle>';
+    });
+    svg += '<text x="' + (w - 4) + '" y="' + (padT + 4) + '" font-size="9" fill="' + rightSeries.color + '" text-anchor="end">' + rightSeries.formatValue(right.maxVal) + '</text>';
+  }
+  labels.forEach((label, i) => {
+    if (i % Math.ceil(labels.length / 8) === 0 || i === labels.length - 1) {
+      const x = padL + i * stepX;
+      svg += '<text x="' + x.toFixed(1) + '" y="' + (h - 8) + '" font-size="9" fill="#4a6a90" text-anchor="middle">' + escapeHtml(label) + '</text>';
     }
   });
-  svg += '<text x="' + padL + '" y="' + (padT + 4) + '" font-size="9" fill="#4a6a90">' + formatValue(maxVal) + '</text>';
   svg += '</svg>';
   return svg;
 }
-function renderTrendChart() {
-  if (trendWrap) {
-    const dailyCounts = getDailyStudyCounts();
-    const buckets = getTrendBuckets(trendMode);
-    const labels = [];
-    const values = [];
-    buckets.forEach(b => {
-      let sum = 0;
-      if (trendMode === 'week') {
-        for (let d = 0; d < 7; d++) {
-          const day = new Date(b.start);
-          day.setDate(b.start.getDate() + d);
-          sum += dailyCounts[formatLocalDate(day)] || 0;
-        }
-      } else {
-        Object.keys(dailyCounts).forEach(dateStr => {
-          const dd = new Date(dateStr + 'T00:00:00');
-          if (dd.getFullYear() === b.start.getFullYear() && dd.getMonth() === b.start.getMonth()) sum += dailyCounts[dateStr];
-        });
-      }
-      labels.push(b.label);
-      values.push(sum);
-    });
-    const total = values.reduce((a, b) => a + b, 0);
-    const avg = values.length ? Math.round((total / values.length) * 10) / 10 : 0;
-    const svg = buildTrendSvg(values, labels);
-    const modeLabel = trendMode === 'week' ? '週次（直近8週間）' : '月次（直近12ヶ月）';
-    trendWrap.innerHTML = '<div class="trendCard">'
-      + '<div class="trendHeader">'
-      + '<div class="trendTitle">📈 学習推移（' + modeLabel + '）</div>'
-      + '<div class="trendToggle">'
-      + '<button type="button" class="trendToggleBtn' + (trendMode === 'week' ? ' active' : '') + '" data-trend="week">週次</button>'
-      + '<button type="button" class="trendToggleBtn' + (trendMode === 'month' ? ' active' : '') + '" data-trend="month">月次</button>'
-      + '</div>'
-      + '</div>'
-      + '<div class="trendSummary">期間合計 ' + total + '件 ／ 平均 ' + avg + '件</div>'
-      + '<div class="trendSvgWrap">' + svg + '</div>'
-      + '</div>';
-  }
-  if (typeof renderMemorizedTrendChart === 'function') renderMemorizedTrendChart();
-}
-// --- 暗記率の推移グラフ ---
 // 「今日の伸びしろ」機能が日々記録しているdailyStats（各日の暗記済み件数の
 // スナップショット）を再利用し、記録がある日を最新のものから遡って引き継ぐ
 // (株価チャートのように、記録の無い日は直前の記録値をそのまま延ばす)ことで
@@ -318,29 +292,74 @@ function pctAtOrBefore(dates, pctByDate, targetDateStr) {
   }
   return result;
 }
-function renderMemorizedTrendChart() {
-  if (!memorizedTrendWrap) return;
-  const modeLabel = trendMode === 'week' ? '週次（直近8週間）' : '月次（直近12ヶ月）';
+// バケット(週/月)ごとの期間末時点の暗記率を求める。最初の記録より前の
+// バケットは、最初に記録された値をそのまま延長する（学習推移の折れ線と
+// 長さ・並びを揃え、1つのグラフに重ねて表示できるようにするため）
+function buildAlignedMemorizedPctValues(buckets) {
   const { dates, pctByDate } = getMemorizedPctSeries();
-  const emptyHtml = '<div class="trendCard"><div class="trendHeader"><div class="trendTitle">📊 暗記率の推移（' + modeLabel + '）</div></div>'
-    + '<div class="trendSummary">記録がまだありません。日をまたいでアプリを開くと少しずつ記録されます。</div></div>';
-  if (dates.length === 0) { memorizedTrendWrap.innerHTML = emptyHtml; return; }
+  if (dates.length === 0) return null;
+  const raw = buckets.map(b => pctAtOrBefore(dates, pctByDate, formatLocalDate(b.end)));
+  const firstKnownIdx = raw.findIndex(v => v != null);
+  if (firstKnownIdx === -1) return null;
+  for (let i = 0; i < firstKnownIdx; i++) raw[i] = raw[firstKnownIdx];
+  return raw.map(v => Math.round(v * 10) / 10);
+}
+// --- 学習推移・暗記率の推移グラフ（1つのグラフにまとめて表示） ---
+function renderTrendChart() {
+  if (!trendWrap) return;
+  const dailyCounts = getDailyStudyCounts();
   const buckets = getTrendBuckets(trendMode);
   const labels = [];
-  const values = [];
+  const countValues = [];
   buckets.forEach(b => {
-    const pct = pctAtOrBefore(dates, pctByDate, formatLocalDate(b.end));
-    if (pct == null && values.length === 0) return; // 最初の記録より前の期間は表示しない
+    let sum = 0;
+    if (trendMode === 'week') {
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(b.start);
+        day.setDate(b.start.getDate() + d);
+        sum += dailyCounts[formatLocalDate(day)] || 0;
+      }
+    } else {
+      Object.keys(dailyCounts).forEach(dateStr => {
+        const dd = new Date(dateStr + 'T00:00:00');
+        if (dd.getFullYear() === b.start.getFullYear() && dd.getMonth() === b.start.getMonth()) sum += dailyCounts[dateStr];
+      });
+    }
     labels.push(b.label);
-    values.push(pct == null ? values[values.length - 1] : Math.round(pct * 10) / 10);
+    countValues.push(sum);
   });
-  if (values.length === 0) { memorizedTrendWrap.innerHTML = emptyHtml; return; }
-  const latest = values[values.length - 1];
-  const diff = Math.round((latest - values[0]) * 10) / 10;
-  const svg = buildTrendSvg(values, labels, { color: '#00a86b', gradId: 'memorizedTrendGrad', formatValue: v => v + '%' });
-  memorizedTrendWrap.innerHTML = '<div class="trendCard">'
-    + '<div class="trendHeader"><div class="trendTitle">📊 暗記率の推移（' + modeLabel + '）</div></div>'
-    + '<div class="trendSummary">現在 ' + latest + '%（期間内で' + (diff >= 0 ? '+' : '') + diff + 'pt）</div>'
+  const total = countValues.reduce((a, b) => a + b, 0);
+  const avg = countValues.length ? Math.round((total / countValues.length) * 10) / 10 : 0;
+  const pctValues = buildAlignedMemorizedPctValues(buckets);
+
+  const modeLabel = trendMode === 'week' ? '週次（直近8週間）' : '月次（直近12ヶ月）';
+  const leftSeries = { values: countValues, color: '#0057e7', formatValue: v => v + '件' };
+  let svg, pctSummaryHtml, legendHtml;
+  if (pctValues) {
+    const rightSeries = { values: pctValues, color: '#00a86b', formatValue: v => v + '%' };
+    svg = buildTrendSvg(labels, leftSeries, rightSeries);
+    const latestPct = pctValues[pctValues.length - 1];
+    const diffPct = Math.round((latestPct - pctValues[0]) * 10) / 10;
+    pctSummaryHtml = ' ／ 暗記率 現在 ' + latestPct + '%（期間内で' + (diffPct >= 0 ? '+' : '') + diffPct + 'pt）';
+    legendHtml = '<div class="trendLegend">'
+      + '<span class="trendLegendItem"><span class="trendLegendSwatch" style="background:#0057e7;"></span>学習回数（左軸）</span>'
+      + '<span class="trendLegendItem"><span class="trendLegendSwatch trendLegendSwatchDashed" style="border-top-color:#00a86b;"></span>暗記率（右軸）</span>'
+      + '</div>';
+  } else {
+    svg = buildTrendSvg(labels, leftSeries);
+    pctSummaryHtml = '';
+    legendHtml = '<div class="trendSummary">暗記率の記録はまだありません。日をまたいでアプリを開くと少しずつ記録されます。</div>';
+  }
+  trendWrap.innerHTML = '<div class="trendCard">'
+    + '<div class="trendHeader">'
+    + '<div class="trendTitle">📈 学習・暗記率の推移（' + modeLabel + '）</div>'
+    + '<div class="trendToggle">'
+    + '<button type="button" class="trendToggleBtn' + (trendMode === 'week' ? ' active' : '') + '" data-trend="week">週次</button>'
+    + '<button type="button" class="trendToggleBtn' + (trendMode === 'month' ? ' active' : '') + '" data-trend="month">月次</button>'
+    + '</div>'
+    + '</div>'
+    + legendHtml
+    + '<div class="trendSummary">学習回数 期間合計 ' + total + '件 ／ 平均 ' + avg + '件' + pctSummaryHtml + '</div>'
     + '<div class="trendSvgWrap">' + svg + '</div>'
     + '</div>';
 }

@@ -650,6 +650,9 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .memoToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .memoToggle:hover { opacity: 0.7; transform: scale(1.2); }
 .memoToggle.active { opacity: 1; }
+.skipToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
+.skipToggle:hover { opacity: 0.7; transform: scale(1.2); }
+.skipToggle.active { opacity: 1; }
 .editToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .editToggle:hover { opacity: 0.7; transform: scale(1.2); }
 .editToggle.active { opacity: 1; }

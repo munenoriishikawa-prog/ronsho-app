@@ -20,13 +20,19 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">😰</span>';
   const memoTitle = memo ? ('メモ：' + memo) : 'メモを追加';
   const memoHtml = '<span class="memoToggle' + (memo ? ' active' : '') + '" data-idx="' + idx + '" title="' + escapeHtml(memoTitle) + '">🗒️</span>';
+  const skipped = !!log.skipped;
+  // 問題演習の⏭️ボタンでスキップにした論証は、通常の出題からは除外され続けるが、
+  // これまでホーム画面側には表示も解除手段も無く、一度スキップすると
+  // 気づかないまま二度と出題されなくなってしまっていた。ここに表示・解除の
+  // 手段を用意する
+  const skipHtml = '<span class="skipToggle' + (skipped ? ' active' : '') + '" data-idx="' + idx + '" title="' + (skipped ? 'スキップ中（問題演習から除外）。クリックで解除' : 'クリックで問題演習から除外') + '">⏭️</span>';
   const isEditing = editingEntryTitle === e.title;
   const editToggleHtml = '<span class="editToggle' + (isEditing ? ' active' : '') + '" data-idx="' + idx + '" title="内容を編集">✏️</span>';
   const isCompareSelected = compareList.includes(e.title);
   const compareToggleHtml = '<span class="compareToggle' + (isCompareSelected ? ' active' : '') + '" data-title="' + escapeHtml(e.title) + '" title="比較に追加／解除">⚖️</span>';
   const titleCellContent = isEditing
     ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
-    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
+    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + skipHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
   let bodyCellContent;
   if (isEditing) {
     bodyCellContent = buildBodyEditorHtml(e, idx);
@@ -691,6 +697,12 @@ function attachTableClickHandler(wrapEl) {
     if (memoToggle) {
       e.stopPropagation();
       editMemo(Number(memoToggle.dataset.idx));
+      return;
+    }
+    const skipToggle = e.target.closest('.skipToggle');
+    if (skipToggle) {
+      e.stopPropagation();
+      toggleSkip(Number(skipToggle.dataset.idx));
       return;
     }
     const subjectCell = e.target.closest('.subjectCell');

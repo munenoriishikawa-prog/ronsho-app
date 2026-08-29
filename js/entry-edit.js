@@ -190,6 +190,7 @@ function saveEntryEdit(idx) {
   ent.title = newTitle;
   ent.body = newBodyText;
   ent.bodyHtml = newBodyHtml;
+  ent.hasManualBodyEdit = true;
   ent.tags = tagsInput ? parseTagsInputValue(tagsInput.value) : (ent.tags || []);
   if (oldTitle !== newTitle) {
     if (studyLog[oldTitle]) {

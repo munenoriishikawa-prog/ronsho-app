@@ -383,6 +383,131 @@ function carryOverStudyLogOnReimport(oldEntries, newEntries) {
   });
   return carriedCount;
 }
+// ワードファイルの再読み込みで、論証の直接編集機能(entry-edit.js)を使って
+// 手動で色付け・太字にした文言が消えてしまわないよう、学習記録と同じ
+// 類似度判定(dupCombinedScore)で「同じ論証の書き直し」とみなせる相手を
+// 見つけ、そちらへ書式を引き継ぐ。手動で編集したことがある論証
+// (hasManualBodyEdit)だけを対象とする。それ以外はワード文書の色付けが
+// 読み込みのたびに新しい内容から作り直されるだけなので、ここでは触らない
+function bodyHtmlToStyledChars(html) {
+  const chars = [];
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html || '';
+  const walk = (node, color, bold) => {
+    node.childNodes.forEach(child => {
+      if (child.nodeType === 3) {
+        for (const ch of child.textContent) chars.push({ ch: ch, color: color, bold: bold });
+      } else if (child.nodeType === 1) {
+        const tag = child.tagName.toLowerCase();
+        if (tag === 'br') { chars.push({ ch: '\n', color: null, bold: false }); return; }
+        let nextColor = color, nextBold = bold;
+        if (tag === 'span' && child.style && child.style.color) {
+          nextColor = (typeof editRgbToHex === 'function' ? editRgbToHex(child.style.color) : null) || color;
+        }
+        if (tag === 'b' || tag === 'strong') nextBold = true;
+        walk(child, nextColor, nextBold);
+      }
+    });
+  };
+  walk(tmp, null, false);
+  return chars;
+}
+function styledCharsToBodyHtml(chars) {
+  const lines = [];
+  let current = [];
+  chars.forEach(c => {
+    if (c.ch === '\n') { lines.push(current); current = []; }
+    else current.push(c);
+  });
+  lines.push(current);
+  return lines.map(lineChars => {
+    let html = '';
+    let i = 0;
+    while (i < lineChars.length) {
+      const color = lineChars[i].color, bold = lineChars[i].bold;
+      let j = i;
+      while (j < lineChars.length && lineChars[j].color === color && lineChars[j].bold === bold) j++;
+      let seg = escapeHtml(lineChars.slice(i, j).map(c => c.ch).join(''));
+      if (bold) seg = '<b>' + seg + '</b>';
+      if (color) seg = '<span style="color:' + color + ';">' + seg + '</span>';
+      html += seg;
+      i = j;
+    }
+    return html;
+  }).join('<br>');
+}
+// dupCharDiffMarksと同じLCSだが、差分の位置だけでなく、一致した文字同士の
+// 対応関係(どのoldの文字がどのnewの文字に対応するか)が欲しいのでpairsで返す
+function computeLcsAlignment(a, b) {
+  const n = a.length, m = b.length;
+  if (n * m > DUP_DIFF_MAX_CELLS) return null;
+  const dp = new Array(n + 1);
+  for (let i = 0; i <= n; i++) dp[i] = new Uint16Array(m + 1);
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  const pairs = [];
+  let i = n, j = m;
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) { pairs.push([i - 1, j - 1]); i--; j--; }
+    else if (dp[i - 1][j] >= dp[i][j - 1]) i--;
+    else j--;
+  }
+  pairs.reverse();
+  return pairs;
+}
+function reapplyManualHighlights(oldBodyHtml, newBodyHtml) {
+  const oldChars = bodyHtmlToStyledChars(oldBodyHtml);
+  const newChars = bodyHtmlToStyledChars(newBodyHtml);
+  const oldPlain = oldChars.map(c => c.ch).join('');
+  const newPlain = newChars.map(c => c.ch).join('');
+  if (oldPlain === newPlain) {
+    for (let i = 0; i < newChars.length; i++) { newChars[i].color = oldChars[i].color; newChars[i].bold = oldChars[i].bold; }
+    return styledCharsToBodyHtml(newChars);
+  }
+  const pairs = computeLcsAlignment(oldPlain, newPlain);
+  if (!pairs) return null;
+  let changed = false;
+  pairs.forEach(([oi, ni]) => {
+    if (oldChars[oi].color || oldChars[oi].bold) {
+      newChars[ni].color = oldChars[oi].color;
+      newChars[ni].bold = oldChars[oi].bold;
+      changed = true;
+    }
+  });
+  if (!changed) return null;
+  return styledCharsToBodyHtml(newChars);
+}
+function carryOverManualHighlightsOnReimport(oldEntries, newEntries) {
+  const newByTitle = new Map(newEntries.map(e => [e.title, e]));
+  const usedNewEntries = new Set();
+  let carriedCount = 0;
+  oldEntries.forEach(oldE => {
+    if (!oldE.hasManualBodyEdit || !oldE.bodyHtml) return;
+    let matched = newByTitle.get(oldE.title);
+    if (matched && usedNewEntries.has(matched)) matched = null;
+    if (!matched) {
+      let best = null, bestScore = 0;
+      newEntries.forEach(newE => {
+        if (usedNewEntries.has(newE)) return;
+        if ((newE.subject || 'その他') !== (oldE.subject || 'その他')) return;
+        const score = dupCombinedScore(oldE, newE);
+        if (score > bestScore) { bestScore = score; best = newE; }
+      });
+      if (best && bestScore >= REIMPORT_CARRY_OVER_THRESHOLD) matched = best;
+    }
+    if (!matched) return;
+    usedNewEntries.add(matched);
+    const reapplied = reapplyManualHighlights(oldE.bodyHtml, matched.bodyHtml || escapeHtml(matched.body || ''));
+    if (reapplied == null) return;
+    matched.bodyHtml = reapplied;
+    matched.hasManualBodyEdit = true;
+    carriedCount++;
+  });
+  return carriedCount;
+}
 function dupRemovePairsReferencing(target) {
   dupCheckPairs = dupCheckPairs.filter(p => p.a !== target && p.b !== target);
 }

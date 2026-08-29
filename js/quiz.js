@@ -50,12 +50,11 @@ function buildQuizLastStudyHtml(e) {
     + ' ／ 通算' + history.length + '回</div>';
 }
 function buildQuizPool() {
-  // 問題演習は、ホーム画面（暗記済み一覧・学習記録一覧）の科目・分野・タグ・
-  // 苦手のみ・出題年頻度などの絞り込みとは独立して、常に全論証を母集団とする。
-  // 以前はfilterEntries()経由でホーム画面の絞り込み状態をそのまま引き継いで
-  // いたため、ホーム画面である科目を選んだままにしておくと、問題演習の画面には
-  // 何の表示も無いまま対象外の論証が静かに除外されてしまっていた
-  let pool = entries.slice();
+  // 問題演習ページ自体に科目・分野・重要度を選ぶタブ(subjectTabsQuiz等)が
+  // あり、これらは選択を反映するためfilterEntries()を通す必要がある
+  // （v21.84で全論証を母集団にする変更を入れたが、この選択が一切反映
+  // されなくなる regression だったため、filterEntries()に戻した）
+  let pool = filterEntries(entries, '');
   if (quizExcludeTodayChk.checked) {
     pool = pool.filter(e => !isStudiedToday(e));
   }

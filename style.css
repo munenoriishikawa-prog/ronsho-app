@@ -1243,3 +1243,23 @@ input[type=file] { display:none; }
 .shortcutSettingsTable th { background: #cfe3ff; }
 .shortcutKeySelect { font-size: 13px; padding: 2px 4px; }
 /* ▲▲▲ その他タブ用 ここまで ▲▲▲ */
+/* ▼▼▼ 画面を歩き回るドット絵のペット ここから ▼▼▼ */
+#deskPet {
+  position: fixed;
+  bottom: 6px;
+  left: 0;
+  z-index: 500;
+  pointer-events: none;
+  transform-origin: center;
+}
+.deskPetSprite {
+  position: relative;
+}
+#deskPet.walking .deskPetSprite {
+  animation: deskPetBob 0.4s steps(2) infinite;
+}
+@keyframes deskPetBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+/* ▲▲▲ ドット絵のペット ここまで ▲▲▲ */

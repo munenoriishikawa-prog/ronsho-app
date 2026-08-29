@@ -2,6 +2,7 @@
 loadStudyLog();
 loadManualLog();
 loadEntries();
+if (typeof migrateLegacyXpIfNeeded === 'function') migrateLegacyXpIfNeeded();
 if (entries.length > 0) {
   status.textContent = '📂 前回読み込んだ ' + entries.length + '件のデータを復元しました。';
   downloadBtn.style.display = 'inline-block';

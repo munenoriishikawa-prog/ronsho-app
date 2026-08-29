@@ -102,6 +102,20 @@ function awardMemorizedBonusXp() {
 function computeXp() {
   return loadXp();
 }
+// v21.83でXPを単純増加カウンタ方式に切り替えた際、旧方式（合計学習回数×10＋
+// 暗記済み件数×50を毎回算出）で積み上がっていたXP・レベルが、新方式では
+// 0から始まってしまい、これまでの進捗が消えたように見えてしまっていた。
+// 初回起動時に一度だけ、旧方式の計算結果をXPカウンタの初期値として
+// 引き継ぐ（studyLog・entriesは同期後の最新状態のため、これまでの学習は
+// もちろん、この移行より前に今日すでに学習した分も含めて反映される）。
+// 一度移行した後は、二重に加算されないよう二度と実行しない
+const XP_MIGRATED_KEY = 'ronshoXpMigratedFromLegacyV1';
+function migrateLegacyXpIfNeeded() {
+  if (localStorage.getItem(XP_MIGRATED_KEY)) return;
+  localStorage.setItem(XP_MIGRATED_KEY, '1');
+  const legacyXp = computeTotalStudyCount() * 10 + computeMemorizedCount() * 50;
+  if (legacyXp > loadXp()) saveXp(legacyXp);
+}
 function getLevelInfo(xp) {
   let level = 1;
   let threshold = 0;

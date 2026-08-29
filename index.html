@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v21.92（ペットにキャラクター種類・クリック反応・複数の動きを追加）＋過去問ログ</title>
+<title>論証集アプリ v21.93（ペットを設定画面で表示ON/OFF・キャラクター変更できるように）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.92</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v21.93</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -246,6 +246,11 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div class="dupCheckIntro">入力欄にフォーカスしていない状態で数字キーを押すと、割り当てたタブに直接移動できます。同じ数字は1つのタブにしか割り当てられません（別のタブに割り当て直すと、元のタブは「未設定」になります）。この設定はこの端末だけに保存され、他の端末とは同期されません。</div>
 <div id="shortcutSettingsWrap"></div>
 <span class="clearEntriesLink" id="resetShortcutsBtn">↺ 初期設定に戻す</span>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🐾 デスクトップペット</div>
+<div class="dupCheckIntro">画面の下を歩き回る、癒し用のドット絵のペットです。学習データには一切影響しません。この設定はこの端末だけに保存されます。</div>
+<div id="petSettingsWrap"></div>
 </div>
 </div>
 <!-- ▲▲▲ 新規追加：その他タブ ここまで ▲▲▲ -->

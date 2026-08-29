@@ -14,10 +14,14 @@ function loadPastExamLogs() {
   }
   let migrated = false;
   logs = logs.map(l => {
-    if (l.examType) return l;
+    const examType = l.examType || '予備試験';
+    // 以前は 種別+科目+年度+回数 のみをキーにしていたため、同じ回数のまま
+    // 解答日だけ変えて記録すると上書きされてしまっていた。解答日もキーに
+    // 含めることで、日付が違えば別のログとして残せるようにする
+    const key = examType + '|' + l.subject + '|' + l.year + '|' + l.round + '|' + (l.date || '');
+    if (l.examType && l.key === key) return l;
     migrated = true;
-    const examType = '予備試験';
-    return { ...l, examType: examType, key: examType + '|' + l.subject + '|' + l.year + '|' + l.round };
+    return { ...l, examType: examType, key: key };
   });
   if (migrated) savePastExamLogs(logs);
   return logs;
@@ -52,7 +56,8 @@ function renderPastLogs() {
     const yearA = a.year || '';
     const yearB = b.year || '';
     if (yearA !== yearB) return yearA.localeCompare(yearB, 'ja');
-    return (a.round || 0) - (b.round || 0);
+    if ((a.round || 0) !== (b.round || 0)) return (a.round || 0) - (b.round || 0);
+    return (a.date || '').localeCompare(b.date || '');
   });
 
   logs.forEach((log) => {
@@ -90,7 +95,9 @@ function initPastExamLogFeature() {
     }
 
     const logs = loadPastExamLogs();
-    const key = examType + '|' + subject + '|' + year + '|' + round;
+    // 種別＋科目＋年度＋回数＋解答日が全て一致する場合のみ上書きする
+    // （同じ回数のまま予習・復習で日付を変えて記録した場合は別のログにする）
+    const key = examType + '|' + subject + '|' + year + '|' + round + '|' + date;
     const existingIdx = logs.findIndex(l => l.key === key);
     const newItem = {
       key: key,

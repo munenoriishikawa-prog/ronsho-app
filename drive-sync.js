@@ -12,6 +12,7 @@
   const SPEECHDICT_KEY = 'ronshoSpeechDictV1';
   const DAILYSTATS_KEY = 'ronshoDailyStatsV1';
   const DAILYGOAL_KEY = 'ronshoDailyGoalV1';
+  const XP_KEY = 'ronshoXpV1';
 
   let revision = Number(localStorage.getItem(REVISION_KEY) || 0);
   // 「最後に同期が完了した時点のローカルの状態」。ページを再読み込みしても
@@ -63,7 +64,8 @@
     dupResolved: read(DUPRESOLVED_KEY, []),
     speechDict: read(SPEECHDICT_KEY, []),
     dailyStats: read(DAILYSTATS_KEY, {}),
-    dailyGoal: read(DAILYGOAL_KEY, null)
+    dailyGoal: read(DAILYGOAL_KEY, null),
+    xp: read(XP_KEY, 0)
   });
 
   const hasLocalData = () => {
@@ -117,6 +119,7 @@
       write(SPEECHDICT_KEY, data.speechDict || []);
       write(DAILYSTATS_KEY, data.dailyStats || {});
       if (data.dailyGoal != null) write(DAILYGOAL_KEY, data.dailyGoal);
+      write(XP_KEY, data.xp || 0);
       try { entries = data.entries || [] } catch (_) {}
       try { studyLog = data.studyLog || {} } catch (_) {}
       try { manualLog = data.manualLog || {} } catch (_) {}
@@ -201,7 +204,8 @@
       dupArchive: '🗑 重複チェックのアーカイブ',
       dupResolved: '✅ 重複チェックの「両方残す」記録',
       speechDict: '🗣 読み方辞書',
-      dailyGoal: '🎯 今日の目標値'
+      dailyGoal: '🎯 今日の目標値',
+      xp: '🏆 経験値・レベル'
     };
     const otherFieldLabels = Object.keys(OTHER_FIELD_LABELS).filter(k => {
       return canonicalJSON((localData || {})[k]) !== canonicalJSON((remoteData || {})[k]);

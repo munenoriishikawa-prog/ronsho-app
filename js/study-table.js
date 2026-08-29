@@ -421,27 +421,39 @@ function setConfidence(idx, level, sourceEl) {
   const today = todayStr();
   if (!studyLog[title]) studyLog[title] = { history: [] };
   if (!studyLog[title].history) studyLog[title].history = [];
-  if (level === 'bad') {
-    studyLog[title].history = [today];
-  } else {
-    const hist = studyLog[title].history;
-    if (hist[hist.length - 1] !== today) hist.push(today);
-  }
+  // 「ダメ」を選んだ場合も、他の暗記度と同様に学習履歴には今日の日付を
+  // 追加するだけにする（以前は履歴を今日1件だけに巻き戻していたため、
+  // 正直に「ダメ」と答えて復習しただけで学習回数・経験値が減ってしまい、
+  // 学習したのに後退したように見えていた）。次回の復習日を早める効果は
+  // getNextReviewInfo()側でconfidence==='bad'のときに間隔を1日にする形で
+  // 別途担っているため、履歴を巻き戻さなくても「明日また復習」は変わらない
+  const hist = studyLog[title].history;
+  if (hist[hist.length - 1] !== today) hist.push(today);
+  const wasMemorized = !!studyLog[title].memorized;
   studyLog[title].confidence = level;
   studyLog[title].memorized = (level === 'good' || level === 'perfect');
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
   saveStudyLog();
+  // 暗記度に応じてXPを加算する（どの暗記度でも必ず増える）。
+  // 新たに暗記済みになった回だけボーナスXPも加える
+  if (typeof awardXp === 'function') {
+    awardXp(level);
+    if (!wasMemorized && studyLog[title].memorized && typeof awardMemorizedBonusXp === 'function') {
+      awardMemorizedBonusXp();
+    }
+  }
+  const xpGained = XP_BY_CONFIDENCE[level] || 0;
   if (level === 'perfect') {
     if (sourceEl) triggerFireworkLevelUp(sourceEl);
-    status.textContent = '🎉 「' + title + '」を暗記済み一覧に移動しました！（完璧！）';
+    status.textContent = '🎉 「' + title + '」を暗記済み一覧に移動しました！（完璧！ +' + xpGained + 'XP）';
   } else if (level === 'good') {
     if (sourceEl) triggerFireworkLevelUp(sourceEl);
-    status.textContent = '🎉 「' + title + '」を暗記済み一覧に移動しました！';
+    status.textContent = '🎉 「' + title + '」を暗記済み一覧に移動しました！（+' + xpGained + 'XP）';
   } else if (level === 'unsure') {
-    status.textContent = '「' + title + '」を「あやしい」に設定しました。復習間隔を短縮します。';
+    status.textContent = '「' + title + '」を「あやしい」に設定しました。復習間隔を短縮します。（+' + xpGained + 'XP）';
   } else {
-    status.textContent = '「' + title + '」を「ダメ」に設定しました。明日また復習しましょう。';
+    status.textContent = '「' + title + '」を「ダメ」に設定しました。明日また復習しましょう。（+' + xpGained + 'XP）';
   }
   renderStudyTable(entries);
   renderMemorizedTable(entries);

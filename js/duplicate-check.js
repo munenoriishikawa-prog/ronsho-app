@@ -350,6 +350,19 @@ function dupMergeStudyLogInto(keepEntry, dropEntry) {
 // 「重複候補」判定(DUP_FUZZY_THRESHOLD=0.7)よりやや低い程度に留め、かつ
 // 同じ科目内でのみ照合する
 const REIMPORT_CARRY_OVER_THRESHOLD = 0.65;
+// 再読み込み時の「同じ論証の書き直し」判定は、学習記録の引き継ぎ・手動書式の
+// 引き継ぎのどちらでも同じ考え方(同じ科目内でdupCombinedScoreが最も高い、
+// まだ他の照合で使われていない新しい論証を選ぶ)を使うため、探索部分だけ共通化する
+function findBestReimportMatch(oldE, newEntries, isNewEntryUsed) {
+  let best = null, bestScore = 0;
+  newEntries.forEach(newE => {
+    if (isNewEntryUsed(newE)) return;
+    if ((newE.subject || 'その他') !== (oldE.subject || 'その他')) return;
+    const score = dupCombinedScore(oldE, newE);
+    if (score > bestScore) { bestScore = score; best = newE; }
+  });
+  return bestScore >= REIMPORT_CARRY_OVER_THRESHOLD ? best : null;
+}
 function carryOverStudyLogOnReimport(oldEntries, newEntries) {
   const newTitleSet = new Set(newEntries.map(e => e.title));
   const usedNewTitles = new Set();
@@ -358,14 +371,8 @@ function carryOverStudyLogOnReimport(oldEntries, newEntries) {
     if (newTitleSet.has(oldE.title)) return; // タイトル完全一致ならそのまま引き継がれる
     const oldLog = studyLog[oldE.title];
     if (!oldLog) return; // 学習記録が無ければ引き継ぐものが無い
-    let best = null, bestScore = 0;
-    newEntries.forEach(newE => {
-      if (usedNewTitles.has(newE.title)) return;
-      if ((newE.subject || 'その他') !== (oldE.subject || 'その他')) return;
-      const score = dupCombinedScore(oldE, newE);
-      if (score > bestScore) { bestScore = score; best = newE; }
-    });
-    if (!best || bestScore < REIMPORT_CARRY_OVER_THRESHOLD) return;
+    const best = findBestReimportMatch(oldE, newEntries, newE => usedNewTitles.has(newE.title));
+    if (!best) return;
     usedNewTitles.add(best.title);
     const newLog = studyLog[best.title];
     studyLog[best.title] = newLog ? {
@@ -501,16 +508,7 @@ function carryOverManualHighlightsOnReimport(oldEntries, newEntries) {
     if (!oldE.hasManualBodyEdit || !oldE.bodyHtml) return;
     let matched = newByTitle.get(oldE.title);
     if (matched && usedNewEntries.has(matched)) matched = null;
-    if (!matched) {
-      let best = null, bestScore = 0;
-      newEntries.forEach(newE => {
-        if (usedNewEntries.has(newE)) return;
-        if ((newE.subject || 'その他') !== (oldE.subject || 'その他')) return;
-        const score = dupCombinedScore(oldE, newE);
-        if (score > bestScore) { bestScore = score; best = newE; }
-      });
-      if (best && bestScore >= REIMPORT_CARRY_OVER_THRESHOLD) matched = best;
-    }
+    if (!matched) matched = findBestReimportMatch(oldE, newEntries, newE => usedNewEntries.has(newE));
     if (!matched) return;
     usedNewEntries.add(matched);
     const reapplied = reapplyManualHighlights(oldE.bodyHtml, matched.bodyHtml || escapeHtml(matched.body || ''));

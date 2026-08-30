@@ -1218,9 +1218,11 @@ input[type=file] { display:none; }
 .quizFinished { font-size: 16px; font-weight: 700; color: #0c2340; padding: 20px; }
 /* ▼▼▼ 過去問ログ タブ用（新規追加・既存クラスとは無関係） ▼▼▼ */
 /* 記録フォームは普段は折りたたんでおき、「＋ 記録する」ボタンで開閉する */
+/* 予備試験／新司法試験タブ（.pastMatrixTabBtn）と高さを揃えるため、
+   font-size・上下のpaddingを同じ値にしている */
 .pastAddToggleBtn {
   display: inline-flex; align-items: center; gap: 5px; background: #e4edfc; color: #0057e7;
-  border: 1px solid #e4edfc; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700;
+  border: 1px solid #e4edfc; border-radius: 8px; padding: 6px 16px; font-size: 13px; font-weight: 700;
   cursor: pointer; margin-bottom: 8px;
 }
 .pastAddToggleBtn:hover { background: #0057e7; color: #fff; }

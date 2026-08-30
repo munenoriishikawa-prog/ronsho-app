@@ -6,6 +6,21 @@ let speechIsPlaying = false;
 let speechGapTimer = null;
 const SPEECH_TITLE_BODY_PAUSE_MS = 700;
 const SPEECH_ENTRY_PAUSE_MS = 1400;
+// 「読み上げ」タブを開いたときに最初から選ばれている速さを、設定画面
+// (js/settings.js)から変更できるようにする。この端末だけのローカル設定
+const SPEECH_DEFAULT_RATE_KEY = 'ronshoSpeechDefaultRateV1';
+const SPEECH_RATE_OPTIONS = ['0.75', '1', '1.15', '1.25', '1.5', '2'];
+function loadSpeechDefaultRate() {
+  const raw = localStorage.getItem(SPEECH_DEFAULT_RATE_KEY);
+  return SPEECH_RATE_OPTIONS.includes(raw) ? raw : '1.5';
+}
+function saveSpeechDefaultRate(rate) {
+  localStorage.setItem(SPEECH_DEFAULT_RATE_KEY, String(rate));
+}
+(() => {
+  const sel = document.getElementById('speechRateSelect');
+  if (sel) sel.value = loadSpeechDefaultRate();
+})();
 function clearSpeechGapTimer() {
   if (speechGapTimer) {
     clearTimeout(speechGapTimer);

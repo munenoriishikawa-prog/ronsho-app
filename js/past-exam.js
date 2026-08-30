@@ -51,6 +51,12 @@ function savePastExamLogs(logs) {
   }
 }
 
+// 詳細ログの表は件数が増えると縦に伸び続けてしまうため、既定では解答日が
+// 新しい順に直近5件だけを表示し、残りはテーブル下部のチップボタンで
+// 展開できるようにする
+const PAST_LOG_DISPLAY_LIMIT = 5;
+let pastLogExpanded = false;
+
 function renderPastLogs() {
   const table = document.getElementById('pastLogTable');
   const progressText = document.getElementById('pastProgressText');
@@ -61,7 +67,9 @@ function renderPastLogs() {
   const tbody = table.querySelector('tbody');
   tbody.innerHTML = '';
 
+  // 直近の記録が一目で分かるよう、解答日が新しい順に並べる
   logs.sort((a, b) => {
+    if ((a.date || '') !== (b.date || '')) return (b.date || '').localeCompare(a.date || '');
     const typeA = a.examType || '予備試験';
     const typeB = b.examType || '予備試験';
     if (typeA !== typeB) return typeA.localeCompare(typeB, 'ja');
@@ -71,11 +79,13 @@ function renderPastLogs() {
     const yearA = a.year || '';
     const yearB = b.year || '';
     if (yearA !== yearB) return yearA.localeCompare(yearB, 'ja');
-    if ((a.round || 0) !== (b.round || 0)) return (a.round || 0) - (b.round || 0);
-    return (a.date || '').localeCompare(b.date || '');
+    return (a.round || 0) - (b.round || 0);
   });
 
-  logs.forEach((log) => {
+  const total = logs.length;
+  const visibleLogs = pastLogExpanded ? logs : logs.slice(0, PAST_LOG_DISPLAY_LIMIT);
+
+  visibleLogs.forEach((log) => {
     const tr = document.createElement('tr');
     tr.innerHTML = '<td>' + escapeHtml(log.examType || '予備試験') + '</td>'
       + '<td>' + escapeHtml(log.subject || '') + '</td>'
@@ -87,7 +97,15 @@ function renderPastLogs() {
     tbody.appendChild(tr);
   });
 
-  const total = logs.length;
+  if (total > PAST_LOG_DISPLAY_LIMIT) {
+    const trFoot = document.createElement('tr');
+    trFoot.className = 'pastLogExpandRow';
+    const remaining = total - PAST_LOG_DISPLAY_LIMIT;
+    const label = pastLogExpanded ? ('直近' + PAST_LOG_DISPLAY_LIMIT + '件だけ表示 ▲') : ('+ 残り' + remaining + '件を表示 ▼');
+    trFoot.innerHTML = '<td colspan="7"><button type="button" id="pastLogExpandBtn" class="pastLogExpandChip">' + label + '</button></td>';
+    tbody.appendChild(trFoot);
+  }
+
   progressText.textContent = '登録済み ' + total + ' 件';
   progressBar.style.width = total > 0 ? '100%' : '0%';
 }
@@ -263,6 +281,17 @@ function initPastExamLogFeature() {
   const table = document.getElementById('pastLogTable');
   if (!saveBtn || !table) return;
 
+  // 記録フォームは普段は折りたたんでおき、「＋ 記録する」を押したときだけ
+  // 開くようにして、詳細ログ一覧が主役の画面をコンパクトに保つ
+  const addToggleBtn = document.getElementById('pastAddToggleBtn');
+  const form = document.getElementById('pastLogForm');
+  if (addToggleBtn && form) {
+    addToggleBtn.addEventListener('click', () => {
+      const open = form.classList.toggle('pastLogFormOpen');
+      addToggleBtn.textContent = open ? '－ 閉じる' : '＋ 記録する';
+    });
+  }
+
   saveBtn.addEventListener('click', () => {
     const examType = document.getElementById('pastExamTypeSelect').value;
     const subject = document.getElementById('pastSubjectInput').value.trim();
@@ -284,14 +313,20 @@ function initPastExamLogFeature() {
 
   table.addEventListener('click', (e) => {
     const delBtn = e.target.closest('.pastDelBtn');
-    if (!delBtn) return;
-    const logs = loadPastExamLogs();
-    const idx = logs.findIndex(l => l.key === delBtn.dataset.key);
-    if (idx === -1) return;
-    logs.splice(idx, 1);
-    savePastExamLogs(logs);
-    renderPastLogs();
-    renderPastMatrixTable();
+    if (delBtn) {
+      const logs = loadPastExamLogs();
+      const idx = logs.findIndex(l => l.key === delBtn.dataset.key);
+      if (idx === -1) return;
+      logs.splice(idx, 1);
+      savePastExamLogs(logs);
+      renderPastLogs();
+      renderPastMatrixTable();
+      return;
+    }
+    if (e.target.closest('#pastLogExpandBtn')) {
+      pastLogExpanded = !pastLogExpanded;
+      renderPastLogs();
+    }
   });
 
   table.addEventListener('blur', (e) => {

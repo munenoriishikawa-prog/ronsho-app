@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v22.7（新司法試験の実務基礎列を非表示・行間隔を統一）</title>
+<title>論証集アプリ v22.8（過去問ログの一覧とフォームを1枚のカードに統合）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.7</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.8</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -193,43 +193,48 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <!-- ▼▼▼ 新規追加：過去問ログ タブ（既存タブ・既存機能には一切影響しません） ▼▼▼ -->
 <div id="pastExamPage" class="page">
   <div class="pastMatrixCard">
-    <div class="pastMatrixTitle">📊 年度×科目 一覧</div>
-    <div class="pastMatrixDesc">どの年度のどの科目に取り組んだか一目で分かる一覧です。マスをクリックすると今日の日付で下の詳細ログに1件記録され、回数に応じて色が変わります。詳細ログを直接記録・削除した場合も、このマスに自動的に反映されます。</div>
     <div class="pastMatrixTabs" id="pastMatrixTabs"></div>
-    <div class="pastMatrixTableWrap" id="pastMatrixTableWrap"></div>
-    <div class="pastMatrixLegend" id="pastMatrixLegend"></div>
-    <div class="pastMatrixNote">・「・」は対象外のマスです（予備試験の労働法は令和4年〜7年のみ、実務基礎は予備試験のみが対象です）。</div>
+    <div class="pastCombinedGrid">
+      <div class="pastMatrixCol">
+        <div class="pastMatrixTableWrap" id="pastMatrixTableWrap"></div>
+        <div class="pastMatrixLegend" id="pastMatrixLegend"></div>
+        <div class="pastMatrixNote">・「・」は対象外のマスです（予備試験の労働法は令和4年〜7年のみ、実務基礎は予備試験のみが対象です）。マスをクリックすると今日の日付で右の詳細ログに1件記録され、回数に応じて色が変わります。</div>
+      </div>
+      <div class="pastLogCol">
+        <button type="button" id="pastAddToggleBtn" class="pastAddToggleBtn">＋ 記録する</button>
+        <div class="past-log-header" id="pastLogForm">
+          <span>種別：</span>
+          <select id="pastExamTypeSelect">
+            <option value="予備試験">予備試験</option>
+            <option value="新司法試験">新司法試験</option>
+          </select>
+          <span>科目：</span>
+          <input type="text" id="pastSubjectInput" placeholder="例：民法" style="width:110px;" list="subjectSuggestions">
+          <span>年度：</span>
+          <input type="text" id="pastYearInput" placeholder="例：令和7年（2025）" style="width:150px;">
+          <span>回数：</span>
+          <select id="pastRoundSelect">
+            <option value="1">1回目</option>
+            <option value="2">2回目</option>
+            <option value="3">3回目</option>
+          </select>
+          <span>解答日：</span>
+          <input type="date" id="pastDateInput">
+          <button id="pastSaveBtn">記録する</button>
+        </div>
+        <div class="past-log-small-note">
+          ・このタブは既存の学習機能（暗記度・カレンダー・クイズなど）とは完全に独立しています。<br>
+          ・入力したログはブラウザのローカルストレージに保存されます。種別＋科目＋年度＋回数＋解答日が全て同じ場合のみ上書きされます（同じ回数のまま解答日を変えれば、予習・復習など別のログとして記録できます）。
+        </div>
+        <div class="past-log-progress" id="pastProgressText"></div>
+        <div class="past-log-progress-bar-outer"><div class="past-log-progress-bar-inner" id="pastProgressBar"></div></div>
+        <table class="past-log-table" id="pastLogTable">
+          <thead><tr><th>種別</th><th>科目</th><th>年度</th><th>回数</th><th>解答日</th><th>メモ</th><th>削除</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </div>
-  <div class="past-log-header">
-    <span>種別：</span>
-    <select id="pastExamTypeSelect">
-      <option value="予備試験">予備試験</option>
-      <option value="新司法試験">新司法試験</option>
-    </select>
-    <span>科目：</span>
-    <input type="text" id="pastSubjectInput" placeholder="例：民法" style="width:110px;" list="subjectSuggestions">
-    <span>年度：</span>
-    <input type="text" id="pastYearInput" placeholder="例：令和7年（2025）" style="width:150px;">
-    <span>回数：</span>
-    <select id="pastRoundSelect">
-      <option value="1">1回目</option>
-      <option value="2">2回目</option>
-      <option value="3">3回目</option>
-    </select>
-    <span>解答日：</span>
-    <input type="date" id="pastDateInput">
-    <button id="pastSaveBtn">記録する</button>
-  </div>
-  <div class="past-log-small-note">
-    ・このタブは既存の学習機能（暗記度・カレンダー・クイズなど）とは完全に独立しています。<br>
-    ・入力したログはブラウザのローカルストレージに保存されます。種別＋科目＋年度＋回数＋解答日が全て同じ場合のみ上書きされます（同じ回数のまま解答日を変えれば、予習・復習など別のログとして記録できます）。
-  </div>
-  <div class="past-log-progress" id="pastProgressText"></div>
-  <div class="past-log-progress-bar-outer"><div class="past-log-progress-bar-inner" id="pastProgressBar"></div></div>
-  <table class="past-log-table" id="pastLogTable">
-    <thead><tr><th>種別</th><th>科目</th><th>年度</th><th>回数</th><th>解答日</th><th>メモ</th><th>削除</th></tr></thead>
-    <tbody></tbody>
-  </table>
 </div>
 <!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
 <!-- ▼▼▼ 新規追加：その他タブ（ショートカットキー設定） ▼▼▼ -->

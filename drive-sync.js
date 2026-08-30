@@ -6,6 +6,7 @@
   const STUDYLOG_KEY = 'ronshoStudyLog';
   const MANUALLOG_KEY = 'ronshoManualLog';
   const PASTEXAM_KEY = 'ronshoPastExamLogs_v1';
+  const PASTEXAM_MATRIX_KEY = 'ronshoPastExamMatrixV1';
   const COUNTDOWN_KEY = 'ronshoCountdowns_v1';
   const DUPARCHIVE_KEY = 'ronshoDupArchiveV1';
   const DUPRESOLVED_KEY = 'ronshoDupResolvedV1';
@@ -59,6 +60,7 @@
     studyLog: read(STUDYLOG_KEY, {}),
     manualLog: read(MANUALLOG_KEY, {}),
     pastExamLogs: read(PASTEXAM_KEY, []),
+    pastExamMatrix: read(PASTEXAM_MATRIX_KEY, {}),
     countdowns: read(COUNTDOWN_KEY, []),
     dupArchive: read(DUPARCHIVE_KEY, []),
     dupResolved: read(DUPRESOLVED_KEY, []),
@@ -113,6 +115,7 @@
       write(STUDYLOG_KEY, data.studyLog || {});
       write(MANUALLOG_KEY, data.manualLog || {});
       write(PASTEXAM_KEY, data.pastExamLogs || []);
+      write(PASTEXAM_MATRIX_KEY, data.pastExamMatrix || {});
       write(COUNTDOWN_KEY, data.countdowns || []);
       write(DUPARCHIVE_KEY, data.dupArchive || []);
       write(DUPRESOLVED_KEY, data.dupResolved || []);
@@ -130,6 +133,7 @@
       if (typeof renderAll === 'function') renderAll(true);
       if (typeof renderCountdownCard === 'function') renderCountdownCard();
       if (typeof renderDupArchive === 'function') renderDupArchive();
+      if (typeof renderPastMatrixTable === 'function') renderPastMatrixTable();
       if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
     } finally {
       applyingRemoteData = false;

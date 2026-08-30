@@ -92,6 +92,140 @@ function renderPastLogs() {
   progressBar.style.width = total > 0 ? '100%' : '0%';
 }
 
+/* ▼▼▼ 新規追加：過去問ログ「年度×科目 一覧」マトリクス
+   詳細ログ（上記のkey/logs）とは別の専用キーのみを使用し、既存のロジックには
+   一切影響しません。色は js/core.js の STUDY_COUNT_COLORS（ホーム画面の
+   学習回数の色）をそのまま流用します。 */
+const PAST_EXAM_MATRIX_KEY = 'ronshoPastExamMatrixV1';
+const PAST_EXAM_MATRIX_SUBJECTS = [
+  { key: 'con',   name: '憲法',         abbr: '憲法' },
+  { key: 'adm',   name: '行政法',       abbr: '行政' },
+  { key: 'civ',   name: '民法',         abbr: '民法' },
+  { key: 'com',   name: '商法',         abbr: '商法' },
+  { key: 'civP',  name: '民事訴訟法',   abbr: '民訴' },
+  { key: 'crim',  name: '刑法',         abbr: '刑法' },
+  { key: 'crimP', name: '刑事訴訟法',   abbr: '刑訴' },
+  { key: 'labor', name: '労働法',       abbr: '労働' },
+  { key: 'pracC', name: '実務基礎(民事)', abbr: '実務民', onlyYobi: true },
+  { key: 'pracK', name: '実務基礎(刑事)', abbr: '実務刑', onlyYobi: true }
+];
+const PAST_EXAM_MATRIX_YEARS = [1, 2, 3, 4, 5, 6, 7];
+function pastMatrixYearFullLabel(y) { return y === 1 ? '令和元年' : '令和' + y + '年'; }
+function pastMatrixYearShortLabel(y) { return 'R' + y; }
+function pastMatrixSubjectsFor(examType) {
+  return PAST_EXAM_MATRIX_SUBJECTS.filter(s => !s.onlyYobi || examType === '予備試験');
+}
+function pastMatrixApplicable(examType, subjKey, year) {
+  if (subjKey === 'labor' && examType === '予備試験' && year < 4) return false;
+  return true;
+}
+function loadPastExamMatrix() {
+  try {
+    const raw = localStorage.getItem(PAST_EXAM_MATRIX_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.error('過去問一覧マトリクスの読み込みに失敗しました:', e);
+    return {};
+  }
+}
+function savePastExamMatrix(matrix) {
+  try {
+    localStorage.setItem(PAST_EXAM_MATRIX_KEY, JSON.stringify(matrix));
+    if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
+  } catch (e) {
+    console.error('過去問一覧マトリクスの保存に失敗しました:', e);
+  }
+}
+function pastMatrixCellKey(examType, subjKey, year) { return examType + '|' + subjKey + '|' + year; }
+function pastMatrixRoundOf(matrix, examType, subjKey, year) {
+  return matrix[pastMatrixCellKey(examType, subjKey, year)] || 0;
+}
+function pastMatrixBucket(round) { return round >= 4 ? '4+' : String(round); }
+function pastMatrixCellHtml(round) {
+  const bucket = pastMatrixBucket(round);
+  if (round === 0) return '<span class="pastMatrixCellInner pastMatrixCellEmpty"></span>';
+  return '<span class="pastMatrixCellInner" style="background:' + STUDY_COUNT_COLORS[bucket] + ';">' + (round >= 4 ? '4+' : round) + '</span>';
+}
+
+let pastMatrixCurrentType = loadPastExamDefaultType();
+
+function renderPastMatrixLegend() {
+  const legendEl = document.getElementById('pastMatrixLegend');
+  if (!legendEl) return;
+  legendEl.innerHTML = STUDY_COUNT_BUCKETS.map(b => {
+    return '<span class="pastMatrixLegendDot"><span class="pastMatrixLegendSwatch" style="background:' + STUDY_COUNT_COLORS[b] + ';"></span>' + STUDY_COUNT_LABELS[b] + '</span>';
+  }).join('');
+}
+
+function renderPastMatrixTable() {
+  const wrap = document.getElementById('pastMatrixTableWrap');
+  if (!wrap) return;
+  const matrix = loadPastExamMatrix();
+  const examType = pastMatrixCurrentType;
+  const subjects = pastMatrixSubjectsFor(examType);
+
+  let html = '<table class="pastMatrixTable"><thead><tr><th></th>'
+    + subjects.map(s => '<th class="pastMatrixSubjHead" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.abbr) + '</th>').join('')
+    + '</tr></thead><tbody>';
+
+  PAST_EXAM_MATRIX_YEARS.forEach(y => {
+    html += '<tr><th class="pastMatrixYearHead" title="' + pastMatrixYearFullLabel(y) + '">' + pastMatrixYearShortLabel(y) + '</th>';
+    subjects.forEach(s => {
+      const applicable = pastMatrixApplicable(examType, s.key, y);
+      if (!applicable) {
+        html += '<td class="pastMatrixCell pastMatrixNa"><span class="pastMatrixNaMark">・</span></td>';
+        return;
+      }
+      const round = pastMatrixRoundOf(matrix, examType, s.key, y);
+      const bucket = pastMatrixBucket(round);
+      const title = s.name + ' ' + pastMatrixYearFullLabel(y) + '：' + STUDY_COUNT_LABELS[bucket];
+      html += '<td class="pastMatrixCell" data-subj="' + s.key + '" data-year="' + y + '" title="' + escapeHtml(title) + '">' + pastMatrixCellHtml(round) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function initPastExamMatrixFeature() {
+  const tabsEl = document.getElementById('pastMatrixTabs');
+  const wrap = document.getElementById('pastMatrixTableWrap');
+  if (!tabsEl || !wrap) return;
+
+  PAST_EXAM_TYPE_OPTIONS.forEach(t => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pastMatrixTabBtn' + (t === pastMatrixCurrentType ? ' active' : '');
+    btn.textContent = t;
+    btn.addEventListener('click', () => {
+      pastMatrixCurrentType = t;
+      tabsEl.querySelectorAll('.pastMatrixTabBtn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPastMatrixTable();
+    });
+    tabsEl.appendChild(btn);
+  });
+
+  wrap.addEventListener('click', (e) => {
+    const td = e.target.closest('td.pastMatrixCell:not(.pastMatrixNa)');
+    if (!td) return;
+    const matrix = loadPastExamMatrix();
+    const key = pastMatrixCellKey(pastMatrixCurrentType, td.dataset.subj, td.dataset.year);
+    const round = ((matrix[key] || 0) + 1) % 5;
+    if (round === 0) delete matrix[key]; else matrix[key] = round;
+    savePastExamMatrix(matrix);
+    td.innerHTML = pastMatrixCellHtml(round);
+    const s = PAST_EXAM_MATRIX_SUBJECTS.find(x => x.key === td.dataset.subj);
+    const bucket = pastMatrixBucket(round);
+    td.title = s.name + ' ' + pastMatrixYearFullLabel(Number(td.dataset.year)) + '：' + STUDY_COUNT_LABELS[bucket];
+  });
+
+  renderPastMatrixLegend();
+  renderPastMatrixTable();
+}
+initPastExamMatrixFeature();
+/* ▲▲▲ 新規追加：過去問ログ「年度×科目 一覧」マトリクス ここまで ▲▲▲ */
+
 function initPastExamLogFeature() {
   const saveBtn = document.getElementById('pastSaveBtn');
   const table = document.getElementById('pastLogTable');

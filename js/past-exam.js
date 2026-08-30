@@ -114,10 +114,13 @@ const PAST_EXAM_MATRIX_SUBJECTS = [
 const PAST_EXAM_MATRIX_YEARS = [1, 2, 3, 4, 5, 6, 7];
 function pastMatrixYearFullLabel(y) { return y === 1 ? '令和元年' : '令和' + y + '年'; }
 function pastMatrixYearShortLabel(y) { return 'R' + y; }
-// タブ（種別）を切り替えても表の列構成が変わらないよう、科目は常に全10科目分の
-// 列を出す。対象外の科目・年度は pastMatrixApplicable() 側でマスを「・」にする
+// 新司法試験には無い科目（実務基礎）は列ごと非表示にする。それ以外の列構成・
+// 行の高さはタブを切り替えても完全に統一し、行がずれて見えないようにする
 function pastMatrixSubjectsFor(examType) {
-  return PAST_EXAM_MATRIX_SUBJECTS;
+  return PAST_EXAM_MATRIX_SUBJECTS.filter(s => {
+    if ((s.name === '実務基礎民事' || s.name === '実務基礎刑事') && examType !== '予備試験') return false;
+    return true;
+  });
 }
 function pastMatrixApplicable(examType, subjName, year) {
   if ((subjName === '実務基礎民事' || subjName === '実務基礎刑事') && examType !== '予備試験') return false;

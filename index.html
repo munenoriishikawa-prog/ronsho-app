@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v22.8（過去問ログの一覧とフォームを1枚のカードに統合）</title>
+<title>論証集アプリ v22.9（過去問ログ一覧を拡大・解答日を和暦表示に）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.8</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.9</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -198,7 +198,6 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
       <div class="pastMatrixCol">
         <div class="pastMatrixTableWrap" id="pastMatrixTableWrap"></div>
         <div class="pastMatrixLegend" id="pastMatrixLegend"></div>
-        <div class="pastMatrixNote">・「・」は対象外のマスです（予備試験の労働法は令和4年〜7年のみ、実務基礎は予備試験のみが対象です）。マスをクリックすると今日の日付で右の詳細ログに1件記録され、回数に応じて色が変わります。</div>
       </div>
       <div class="pastLogCol">
         <button type="button" id="pastAddToggleBtn" class="pastAddToggleBtn">＋ 記録する</button>

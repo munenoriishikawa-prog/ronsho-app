@@ -1239,45 +1239,53 @@ input[type=file] { display:none; }
 /* ▲▲▲ 過去問ログ タブ用 ここまで ▲▲▲ */
 /* ▼▼▼ 過去問ログ一覧マトリクス（新規追加・既存クラスとは無関係） ▼▼▼ */
 .pastMatrixCard {
-  background: #fff; border: 1px solid #dbe6f2; border-radius: 12px;
-  padding: 14px; margin-bottom: 16px;
+  background: #fff; border: 1px solid #dbe6f2; border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 12px;
 }
-.pastMatrixTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 2px; }
-.pastMatrixDesc { font-size: 11.5px; color: #4a6a90; margin-bottom: 10px; line-height: 1.6; }
-.pastMatrixTabs { display: flex; gap: 4px; margin-bottom: 10px; }
+.pastMatrixTitle { font-weight: 700; font-size: 13px; color: #0c2340; margin-bottom: 1px; }
+.pastMatrixDesc { font-size: 11px; color: #4a6a90; margin-bottom: 6px; line-height: 1.5; }
+.pastMatrixTabs { display: flex; gap: 4px; margin-bottom: 6px; }
 .pastMatrixTabBtn {
   border: 1px solid #dbe6f2; background: #eaf1fa; color: #4a6a90;
-  font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; cursor: pointer;
 }
 .pastMatrixTabBtn.active { background: #0057e7; border-color: #0057e7; color: #fff; }
 .pastMatrixTableWrap { overflow-x: auto; }
-table.pastMatrixTable { border-collapse: collapse; width: 100%; }
-table.pastMatrixTable th, table.pastMatrixTable td { padding: 0; text-align: center; }
+/* 既存の共通 table/th/td スタイル（縦書き見出し・固定高さ・罫線など）を
+   このマトリクスだけ打ち消して、コンパクトな独自レイアウトにする */
+table.pastMatrixTable {
+  border-collapse: collapse; width: auto; table-layout: auto; background: transparent; font-size: inherit;
+}
+table.pastMatrixTable th, table.pastMatrixTable td {
+  padding: 0; margin: 0; border: none; background: transparent; position: static;
+  writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;
+  vertical-align: middle; letter-spacing: normal; height: auto; text-align: center; word-break: normal;
+}
 .pastMatrixTable th.pastMatrixYearHead {
-  font-size: 11.5px; color: #4a6a90; font-weight: 700; padding: 2px 6px 6px 2px;
+  font-size: 10.5px; color: #4a6a90; font-weight: 700; padding: 1px 4px 3px 1px;
   text-align: left; white-space: nowrap;
 }
 .pastMatrixTable th.pastMatrixSubjHead {
-  font-size: 11px; color: #4a6a90; font-weight: 700; padding: 0 0 6px; white-space: nowrap;
+  font-size: 10px; color: #4a6a90; font-weight: 700; padding: 0 0 3px; white-space: nowrap;
 }
 .pastMatrixCell { cursor: pointer; user-select: none; }
 .pastMatrixCell.pastMatrixNa { cursor: default; }
 .pastMatrixCellInner {
-  display: flex; align-items: center; justify-content: center; margin: 2px auto;
-  width: 26px; height: 26px; border-radius: 7px; color: #fff; font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; margin: 1px;
+  width: 19px; height: 19px; border-radius: 5px; color: #fff; font-size: 9.5px; font-weight: 800;
   transition: transform 0.1s ease;
 }
 .pastMatrixCell:not(.pastMatrixNa):hover .pastMatrixCellInner { transform: scale(1.12); }
 .pastMatrixCell:not(.pastMatrixNa):active .pastMatrixCellInner { transform: scale(0.9); }
 .pastMatrixCellEmpty { box-shadow: inset 0 0 0 1.5px #dbe6f2; background: transparent !important; }
-.pastMatrixNaMark { color: #dbe6f2; font-size: 12px; }
+.pastMatrixNaMark { color: #dbe6f2; font-size: 11px; }
 .pastMatrixLegend {
-  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-  margin-top: 12px; font-size: 11.5px; color: #4a6a90;
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-top: 6px; font-size: 10.5px; color: #4a6a90;
 }
-.pastMatrixLegendDot { display: inline-flex; align-items: center; gap: 5px; }
-.pastMatrixLegendSwatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
-.pastMatrixNote { font-size: 11px; color: #4a6a90; margin-top: 8px; line-height: 1.6; }
+.pastMatrixLegendDot { display: inline-flex; align-items: center; gap: 4px; }
+.pastMatrixLegendSwatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.pastMatrixNote { font-size: 10px; color: #4a6a90; margin-top: 5px; line-height: 1.5; }
 /* ▲▲▲ 過去問ログ一覧マトリクス ここまで ▲▲▲ */
 /* ▼▼▼ その他タブ（ショートカットキー設定）用 ここから ▼▼▼ */
 .shortcutSettingsTable { width: 100%; max-width: 420px; border-collapse: collapse; font-size: 13px; margin-top: 8px; }

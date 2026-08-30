@@ -1261,6 +1261,10 @@ table.pastMatrixTable th, table.pastMatrixTable td {
   writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;
   vertical-align: middle; letter-spacing: normal; height: auto; text-align: center; word-break: normal;
 }
+/* 科目の列幅を固定し、種別タブを切り替えても列幅・行位置が動かないようにする */
+.pastMatrixTable th.pastMatrixSubjHead, .pastMatrixTable td.pastMatrixCell, .pastMatrixTable td.pastMatrixNa {
+  width: 21px;
+}
 .pastMatrixTable th.pastMatrixYearHead {
   font-size: 10.5px; color: #4a6a90; font-weight: 700; padding: 1px 4px 3px 1px;
   text-align: left; white-space: nowrap;

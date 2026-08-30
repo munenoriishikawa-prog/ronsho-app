@@ -100,24 +100,27 @@ function renderPastLogs() {
    色は js/core.js の STUDY_COUNT_COLORS（ホーム画面の学習回数の色）を
    そのまま流用します。 */
 const PAST_EXAM_MATRIX_SUBJECTS = [
-  { name: '憲法',         abbr: '憲法' },
-  { name: '行政法',       abbr: '行政' },
-  { name: '民法',         abbr: '民法' },
-  { name: '商法',         abbr: '商法' },
+  { name: '憲法',         abbr: '憲' },
+  { name: '民法',         abbr: '民' },
+  { name: '刑法',         abbr: '刑' },
+  { name: '行政法',       abbr: '行' },
+  { name: '商法',         abbr: '商' },
   { name: '民事訴訟法',   abbr: '民訴' },
-  { name: '刑法',         abbr: '刑法' },
   { name: '刑事訴訟法',   abbr: '刑訴' },
-  { name: '労働法',       abbr: '労働' },
-  { name: '実務基礎民事', abbr: '実務民', onlyYobi: true },
-  { name: '実務基礎刑事', abbr: '実務刑', onlyYobi: true }
+  { name: '労働法',       abbr: '労' },
+  { name: '実務基礎民事', abbr: '実民' },
+  { name: '実務基礎刑事', abbr: '実刑' }
 ];
 const PAST_EXAM_MATRIX_YEARS = [1, 2, 3, 4, 5, 6, 7];
 function pastMatrixYearFullLabel(y) { return y === 1 ? '令和元年' : '令和' + y + '年'; }
 function pastMatrixYearShortLabel(y) { return 'R' + y; }
+// タブ（種別）を切り替えても表の列構成が変わらないよう、科目は常に全10科目分の
+// 列を出す。対象外の科目・年度は pastMatrixApplicable() 側でマスを「・」にする
 function pastMatrixSubjectsFor(examType) {
-  return PAST_EXAM_MATRIX_SUBJECTS.filter(s => !s.onlyYobi || examType === '予備試験');
+  return PAST_EXAM_MATRIX_SUBJECTS;
 }
 function pastMatrixApplicable(examType, subjName, year) {
+  if ((subjName === '実務基礎民事' || subjName === '実務基礎刑事') && examType !== '予備試験') return false;
   if (subjName === '労働法' && examType === '予備試験' && year < 4) return false;
   return true;
 }

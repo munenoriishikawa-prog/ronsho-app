@@ -6,7 +6,7 @@ let speechIsPlaying = false;
 let speechGapTimer = null;
 const SPEECH_TITLE_BODY_PAUSE_MS = 700;
 const SPEECH_ENTRY_PAUSE_MS = 1400;
-// 「読み上げ」タブを開いたときに最初から選ばれている速さを、設定画面
+// 「読み上げ」タブを開いたときに最初から選ばれている内容を、設定画面
 // (js/settings.js)から変更できるようにする。この端末だけのローカル設定
 const SPEECH_DEFAULT_RATE_KEY = 'ronshoSpeechDefaultRateV1';
 const SPEECH_RATE_OPTIONS = ['0.75', '1', '1.15', '1.25', '1.5', '2'];
@@ -17,9 +17,40 @@ function loadSpeechDefaultRate() {
 function saveSpeechDefaultRate(rate) {
   localStorage.setItem(SPEECH_DEFAULT_RATE_KEY, String(rate));
 }
+const SPEECH_DEFAULT_IMPORTANCE_KEY = 'ronshoSpeechDefaultImportanceV1';
+const SPEECH_IMPORTANCE_OPTIONS = ['all', '2', '1', '0'];
+function loadSpeechDefaultImportance() {
+  const raw = localStorage.getItem(SPEECH_DEFAULT_IMPORTANCE_KEY);
+  return SPEECH_IMPORTANCE_OPTIONS.includes(raw) ? raw : 'all';
+}
+function saveSpeechDefaultImportance(v) {
+  localStorage.setItem(SPEECH_DEFAULT_IMPORTANCE_KEY, String(v));
+}
+const SPEECH_DEFAULT_LOOP_KEY = 'ronshoSpeechDefaultLoopV1';
+const SPEECH_LOOP_OPTIONS = ['none', 'one', 'all'];
+function loadSpeechDefaultLoop() {
+  const raw = localStorage.getItem(SPEECH_DEFAULT_LOOP_KEY);
+  return SPEECH_LOOP_OPTIONS.includes(raw) ? raw : 'all';
+}
+function saveSpeechDefaultLoop(v) {
+  localStorage.setItem(SPEECH_DEFAULT_LOOP_KEY, String(v));
+}
+const SPEECH_DEFAULT_INCLUDE_MEMORIZED_KEY = 'ronshoSpeechDefaultIncludeMemorizedV1';
+function loadSpeechDefaultIncludeMemorized() {
+  return localStorage.getItem(SPEECH_DEFAULT_INCLUDE_MEMORIZED_KEY) === '1';
+}
+function saveSpeechDefaultIncludeMemorized(v) {
+  localStorage.setItem(SPEECH_DEFAULT_INCLUDE_MEMORIZED_KEY, v ? '1' : '0');
+}
 (() => {
-  const sel = document.getElementById('speechRateSelect');
-  if (sel) sel.value = loadSpeechDefaultRate();
+  const rateSel = document.getElementById('speechRateSelect');
+  if (rateSel) rateSel.value = loadSpeechDefaultRate();
+  const importanceSel = document.getElementById('speechImportanceSelect');
+  if (importanceSel) importanceSel.value = loadSpeechDefaultImportance();
+  const loopSel = document.getElementById('speechLoopSelect');
+  if (loopSel) loopSel.value = loadSpeechDefaultLoop();
+  const includeMemorizedChk = document.getElementById('speechIncludeMemorizedChk');
+  if (includeMemorizedChk) includeMemorizedChk.checked = loadSpeechDefaultIncludeMemorized();
 })();
 function clearSpeechGapTimer() {
   if (speechGapTimer) {

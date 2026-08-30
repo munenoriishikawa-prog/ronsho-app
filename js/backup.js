@@ -5,7 +5,17 @@
 // 半自動（催促＋ワンタップ書き出し）として実装している。
 const BACKUP_LAST_AT_KEY = 'ronshoLastBackupAtV1';
 const BACKUP_SNOOZE_AT_KEY = 'ronshoBackupSnoozeAtV1';
-const BACKUP_REMINDER_DAYS = 7;
+const BACKUP_REMINDER_DAYS_KEY = 'ronshoBackupReminderDaysV1';
+const BACKUP_REMINDER_DAYS_DEFAULT = 7;
+// 通知までの日数は、設定タブ（⚙️ その他）から変更できるようにする。
+// この端末だけのローカル設定
+function loadBackupReminderDays() {
+  const n = Number(localStorage.getItem(BACKUP_REMINDER_DAYS_KEY));
+  return Number.isInteger(n) && n > 0 ? n : BACKUP_REMINDER_DAYS_DEFAULT;
+}
+function saveBackupReminderDays(days) {
+  localStorage.setItem(BACKUP_REMINDER_DAYS_KEY, String(days));
+}
 
 function buildBackupPayload() {
   const snap = (typeof window.ronshoBuildBackupSnapshot === 'function')
@@ -57,7 +67,7 @@ function renderBackupReminderBanner() {
   const banner = document.getElementById('backupReminderBanner');
   if (!banner) return;
   const last = localStorage.getItem(BACKUP_LAST_AT_KEY);
-  const overdue = last ? daysSince(last) >= BACKUP_REMINDER_DAYS : entries.length > 0;
+  const overdue = last ? daysSince(last) >= loadBackupReminderDays() : entries.length > 0;
   const snoozedToday = localStorage.getItem(BACKUP_SNOOZE_AT_KEY) === todayStr();
   if (!overdue || snoozedToday) {
     banner.innerHTML = '';

@@ -2,6 +2,21 @@
    既存の entries / studyLog / manualLog / renderStudyTable などには一切触れていません。
    保存先も専用のキー 'ronshoPastExamLogs_v1' のみを使用します。 */
 const PAST_EXAM_LOG_KEY = 'ronshoPastExamLogs_v1';
+// 「過去問ログ」タブを開いたときに最初から選ばれている種別を、設定画面
+// (js/settings.js)から変更できるようにする。この端末だけのローカル設定
+const PAST_EXAM_DEFAULT_TYPE_KEY = 'ronshoPastExamDefaultTypeV1';
+const PAST_EXAM_TYPE_OPTIONS = ['予備試験', '新司法試験'];
+function loadPastExamDefaultType() {
+  const raw = localStorage.getItem(PAST_EXAM_DEFAULT_TYPE_KEY);
+  return PAST_EXAM_TYPE_OPTIONS.includes(raw) ? raw : '予備試験';
+}
+function savePastExamDefaultType(v) {
+  localStorage.setItem(PAST_EXAM_DEFAULT_TYPE_KEY, v);
+}
+(() => {
+  const sel = document.getElementById('pastExamTypeSelect');
+  if (sel) sel.value = loadPastExamDefaultType();
+})();
 
 function loadPastExamLogs() {
   let logs;

@@ -1,4 +1,27 @@
 // --- 問題演習モード ---
+// 「問題演習」タブを開いたときに最初からチェックされている項目を、設定画面
+// (js/settings.js)から変更できるようにする。この端末だけのローカル設定
+const QUIZ_DEFAULT_FILTERS_KEY = 'ronshoQuizDefaultFiltersV1';
+const QUIZ_DEFAULT_FILTER_FIELDS = ['random', 'hideMemorized', 'overdueOnly', 'excludeToday', 'weakOnly', 'skippedOnly'];
+function loadQuizDefaultFilters() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(QUIZ_DEFAULT_FILTERS_KEY)) || {}; } catch (e) { saved = {}; }
+  const out = {};
+  QUIZ_DEFAULT_FILTER_FIELDS.forEach(f => { out[f] = !!saved[f]; });
+  return out;
+}
+function saveQuizDefaultFilters(defaults) {
+  localStorage.setItem(QUIZ_DEFAULT_FILTERS_KEY, JSON.stringify(defaults));
+}
+(() => {
+  const defaults = loadQuizDefaultFilters();
+  if (quizRandomChk) quizRandomChk.checked = defaults.random;
+  if (quizHideMemorizedChk) quizHideMemorizedChk.checked = defaults.hideMemorized;
+  if (quizOverdueOnlyChk) quizOverdueOnlyChk.checked = defaults.overdueOnly;
+  if (quizExcludeTodayChk) quizExcludeTodayChk.checked = defaults.excludeToday;
+  if (quizWeakOnlyChk) quizWeakOnlyChk.checked = defaults.weakOnly;
+  if (quizSkippedOnlyChk) quizSkippedOnlyChk.checked = defaults.skippedOnly;
+})();
 function shuffleArray(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {

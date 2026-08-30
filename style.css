@@ -1243,6 +1243,8 @@ input[type=file] { display:none; }
 .shortcutSettingsTable th { background: #cfe3ff; }
 .petEnableLabel { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 10px; }
 .petSpeciesRow { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.settingsInlineRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; margin-bottom: 8px; }
+.settingsInlineRow:last-child { margin-bottom: 0; }
 .shortcutKeySelect { font-size: 13px; padding: 2px 4px; }
 /* ▲▲▲ その他タブ用 ここまで ▲▲▲ */
 /* ▼▼▼ 画面を歩き回るドット絵のペット ここから ▼▼▼ */

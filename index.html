@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v22.1（読み上げ速度に1.15倍を追加し、デフォルトの速さを設定で変更できるように）＋過去問ログ</title>
+<title>論証集アプリ v22.2（問題演習・読み上げ・過去問ログ・バックアップのデフォルトを設定で変更できるように）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.1</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.2</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -232,7 +232,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div id="backupLastInfo" class="backupLastInfo"></div>
 <button type="button" id="downloadBackupBtn">📦 今すぐバックアップをダウンロード</button>
 <div class="past-log-small-note">
-・ブラウザの制約上、確認なしで自動的にファイルを保存し続けることはできないため、最後にバックアップしてから7日以上経つと、この画面とホーム画面上部にお知らせが表示されます。
+・ブラウザの制約上、確認なしで自動的にファイルを保存し続けることはできないため、最後にバックアップしてから一定日数経つと、この画面とホーム画面上部にお知らせが表示されます（日数は下の「⚙️ その他」の設定で変更できます）。
 </div>
 <div class="backupRestoreRow">
 <button type="button" id="restoreBackupBtn" class="stackBtn">🔄 バックアップファイルから復元する</button>
@@ -254,8 +254,10 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div id="petSettingsWrap"></div>
 </div>
 <div class="dataIoSection">
-<div class="dataIoSectionTitle">🔊 読み上げのデフォルト速さ</div>
-<div class="dupCheckIntro">「読み上げ」タブを開いたときに最初から選択されている速さです。この設定はこの端末だけに保存されます。</div>
+<div class="dataIoSectionTitle">🔊 読み上げのデフォルト設定</div>
+<div class="dupCheckIntro">「読み上げ」タブを開いたときに最初から選ばれている内容です。この設定はこの端末だけに保存されます。</div>
+<div class="settingsInlineRow">
+<label for="speechDefaultRateSelect">速さ：</label>
 <select id="speechDefaultRateSelect">
 <option value="0.75">0.75倍</option>
 <option value="1">1倍</option>
@@ -264,6 +266,56 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <option value="1.5">1.5倍</option>
 <option value="2">2倍</option>
 </select>
+</div>
+<div class="settingsInlineRow">
+<label for="speechDefaultImportanceSelect">重要度：</label>
+<select id="speechDefaultImportanceSelect">
+<option value="all">すべて</option>
+<option value="2">⭐⭐</option>
+<option value="1">⭐</option>
+<option value="0">なし</option>
+</select>
+</div>
+<div class="settingsInlineRow">
+<label for="speechDefaultLoopSelect">🔁 ループ：</label>
+<select id="speechDefaultLoopSelect">
+<option value="none">なし</option>
+<option value="one">この論証を繰り返す</option>
+<option value="all">全論証を繰り返す</option>
+</select>
+</div>
+<div class="settingsInlineRow">
+<label><input type="checkbox" id="speechDefaultIncludeMemorizedChk"> 暗記済みも含める</label>
+</div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">📝 問題演習のデフォルト設定</div>
+<div class="dupCheckIntro">「問題演習」タブを開いたときに最初からチェックされている項目です。この設定はこの端末だけに保存されます。</div>
+<div class="settingsInlineRow">
+<label><input type="checkbox" id="quizDefaultRandomChk"> 🔀 ランダム</label>
+<label><input type="checkbox" id="quizDefaultHideMemorizedChk"> 🙈 暗記済みを非表示にする</label>
+<label><input type="checkbox" id="quizDefaultOverdueOnlyChk"> ⏰ 復習期限が来ているものだけ出題</label>
+</div>
+<div class="settingsInlineRow">
+<label><input type="checkbox" id="quizDefaultExcludeTodayChk"> 🚫 本日学習済みを除外</label>
+<label><input type="checkbox" id="quizDefaultWeakOnlyChk"> 😰 苦手のみ出題</label>
+<label><input type="checkbox" id="quizDefaultSkippedOnlyChk"> ⏭️ スキップしたものだけ出題</label>
+</div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">📝 過去問ログのデフォルト種別</div>
+<div class="dupCheckIntro">「過去問ログ」タブを開いたときに最初から選ばれている種別です。この設定はこの端末だけに保存されます。</div>
+<select id="pastExamDefaultTypeSelect">
+<option value="予備試験">予備試験</option>
+<option value="新司法試験">新司法試験</option>
+</select>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">📦 バックアップのお知らせ日数</div>
+<div class="dupCheckIntro">最後にバックアップしてから何日経ったらお知らせを表示するかです。この設定はこの端末だけに保存されます。</div>
+<div class="settingsInlineRow">
+<input type="number" id="backupReminderDaysInput" min="1" max="90" style="width:70px;"> 日
+</div>
 </div>
 </div>
 <!-- ▲▲▲ 新規追加：その他タブ ここまで ▲▲▲ -->

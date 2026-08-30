@@ -130,6 +130,7 @@
       if (typeof renderAll === 'function') renderAll(true);
       if (typeof renderCountdownCard === 'function') renderCountdownCard();
       if (typeof renderDupArchive === 'function') renderDupArchive();
+      if (typeof renderPastMatrixTable === 'function') renderPastMatrixTable();
       if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
     } finally {
       applyingRemoteData = false;

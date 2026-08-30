@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v22.2（問題演習・読み上げ・過去問ログ・バックアップのデフォルトを設定で変更できるように）＋過去問ログ</title>
+<title>論証集アプリ v22.4（過去問ログの一覧マスと詳細ログを連動）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.2</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.4</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -192,6 +192,14 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 </div>
 <!-- ▼▼▼ 新規追加：過去問ログ タブ（既存タブ・既存機能には一切影響しません） ▼▼▼ -->
 <div id="pastExamPage" class="page">
+  <div class="pastMatrixCard">
+    <div class="pastMatrixTitle">📊 年度×科目 一覧</div>
+    <div class="pastMatrixDesc">どの年度のどの科目に取り組んだか一目で分かる一覧です。マスをクリックすると今日の日付で下の詳細ログに1件記録され、回数に応じて色が変わります。詳細ログを直接記録・削除した場合も、このマスに自動的に反映されます。</div>
+    <div class="pastMatrixTabs" id="pastMatrixTabs"></div>
+    <div class="pastMatrixTableWrap" id="pastMatrixTableWrap"></div>
+    <div class="pastMatrixLegend" id="pastMatrixLegend"></div>
+    <div class="pastMatrixNote">・「・」は対象外のマスです（予備試験の労働法は令和4年〜7年のみ、実務基礎は予備試験のみが対象です）。</div>
+  </div>
   <div class="past-log-header">
     <span>種別：</span>
     <select id="pastExamTypeSelect">

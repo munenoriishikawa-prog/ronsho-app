@@ -150,16 +150,18 @@ const PAST_EXAM_MATRIX_SUBJECTS = [
 const PAST_EXAM_MATRIX_YEARS = [1, 2, 3, 4, 5, 6, 7];
 function pastMatrixYearFullLabel(y) { return y === 1 ? '令和元年' : '令和' + y + '年'; }
 function pastMatrixYearShortLabel(y) { return 'R' + y; }
-// 新司法試験には無い科目（実務基礎）は列ごと非表示にする。それ以外の列構成・
-// 行の高さはタブを切り替えても完全に統一し、行がずれて見えないようにする
+// 列構成は常に全10科目分（科目数が最も多い予備試験を基準とした幅）で統一し、
+// タブを切り替えても表の幅・右側の詳細ログの位置が左右にずれないようにする。
+// 新司法試験には無い科目（実務基礎）は、列は残したまま中身だけ空欄にする
 function pastMatrixSubjectsFor(examType) {
-  return PAST_EXAM_MATRIX_SUBJECTS.filter(s => {
-    if ((s.name === '実務基礎民事' || s.name === '実務基礎刑事') && examType !== '予備試験') return false;
-    return true;
-  });
+  return PAST_EXAM_MATRIX_SUBJECTS;
+}
+function pastMatrixColumnApplicable(examType, subjName) {
+  if ((subjName === '実務基礎民事' || subjName === '実務基礎刑事') && examType !== '予備試験') return false;
+  return true;
 }
 function pastMatrixApplicable(examType, subjName, year) {
-  if ((subjName === '実務基礎民事' || subjName === '実務基礎刑事') && examType !== '予備試験') return false;
+  if (!pastMatrixColumnApplicable(examType, subjName)) return false;
   if (subjName === '労働法' && examType === '予備試験' && year < 4) return false;
   return true;
 }
@@ -228,12 +230,19 @@ function renderPastMatrixTable() {
   const roundMap = computePastMatrixRounds(examType);
 
   let html = '<table class="pastMatrixTable"><thead><tr><th></th>'
-    + subjects.map(s => '<th class="pastMatrixSubjHead" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.abbr) + '</th>').join('')
+    + subjects.map(s => {
+      if (!pastMatrixColumnApplicable(examType, s.name)) return '<th class="pastMatrixSubjHead pastMatrixBlankCol"></th>';
+      return '<th class="pastMatrixSubjHead" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.abbr) + '</th>';
+    }).join('')
     + '</tr></thead><tbody>';
 
   PAST_EXAM_MATRIX_YEARS.forEach(y => {
     html += '<tr><th class="pastMatrixYearHead" title="' + pastMatrixYearFullLabel(y) + '">' + pastMatrixYearShortLabel(y) + '</th>';
     subjects.forEach(s => {
+      if (!pastMatrixColumnApplicable(examType, s.name)) {
+        html += '<td class="pastMatrixBlankCol"></td>';
+        return;
+      }
       const applicable = pastMatrixApplicable(examType, s.name, y);
       if (!applicable) {
         html += '<td class="pastMatrixCell pastMatrixNa"><span class="pastMatrixNaMark">・</span></td>';

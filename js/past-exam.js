@@ -77,9 +77,7 @@ let pastLogExpanded = false;
 
 function renderPastLogs() {
   const table = document.getElementById('pastLogTable');
-  const progressText = document.getElementById('pastProgressText');
-  const progressBar = document.getElementById('pastProgressBar');
-  if (!table || !progressText || !progressBar) return;
+  if (!table) return;
 
   const logs = loadPastExamLogs();
   const tbody = table.querySelector('tbody');
@@ -123,9 +121,6 @@ function renderPastLogs() {
     trFoot.innerHTML = '<td colspan="7"><button type="button" id="pastLogExpandBtn" class="pastLogExpandChip">' + label + '</button></td>';
     tbody.appendChild(trFoot);
   }
-
-  progressText.textContent = '登録済み ' + total + ' 件';
-  progressBar.style.width = total > 0 ? '100%' : '0%';
 }
 
 /* ▼▼▼ 新規追加：過去問ログ「年度×科目 一覧」マトリクス

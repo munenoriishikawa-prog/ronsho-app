@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ronsho-app-cache-v86';
+const CACHE_NAME = 'ronsho-app-cache-v87';
 const PRECACHE_URLS = [
   './',
   './index.html',

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v22.12（過去問ログの案内文を削除しコンパクトに）</title>
+<title>論証集アプリ v22.13（記録するボタンを上に移動し登録件数バーを削除）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.12</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.13</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -202,6 +202,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
       <div class="pastLogCol">
         <button type="button" id="pastAddToggleBtn" class="pastAddToggleBtn">＋ 記録する</button>
         <div class="past-log-header" id="pastLogForm">
+          <button id="pastSaveBtn">記録する</button>
           <span>種別：</span>
           <select id="pastExamTypeSelect">
             <option value="予備試験">予備試験</option>
@@ -219,10 +220,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
           </select>
           <span>解答日：</span>
           <input type="date" id="pastDateInput">
-          <button id="pastSaveBtn">記録する</button>
         </div>
-        <div class="past-log-progress" id="pastProgressText"></div>
-        <div class="past-log-progress-bar-outer"><div class="past-log-progress-bar-inner" id="pastProgressBar"></div></div>
         <table class="past-log-table" id="pastLogTable">
           <thead><tr><th>種別</th><th>科目</th><th>年度</th><th>回数</th><th>解答日</th><th>メモ</th><th>削除</th></tr></thead>
           <tbody></tbody>

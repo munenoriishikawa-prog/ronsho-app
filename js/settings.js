@@ -93,6 +93,20 @@ function renderPetSettings() {
 }
 document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderPetSettings);
 /* ▲▲▲ 新規追加：デスクトップペット設定 ここまで ▲▲▲ */
+/* ▼▼▼ 新規追加：読み上げのデフォルト速さ設定 ここから ▼▼▼ */
+function renderSpeechRateSettings() {
+  const sel = document.getElementById('speechDefaultRateSelect');
+  if (!sel || typeof loadSpeechDefaultRate !== 'function') return;
+  sel.value = loadSpeechDefaultRate();
+}
+document.getElementById('speechDefaultRateSelect').addEventListener('change', (evt) => {
+  saveSpeechDefaultRate(evt.target.value);
+  const liveSel = document.getElementById('speechRateSelect');
+  if (liveSel) liveSel.value = evt.target.value;
+  status.textContent = '🔊 読み上げのデフォルトの速さを「' + evt.target.value + '倍」にしました。';
+});
+document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderSpeechRateSettings);
+/* ▲▲▲ 新規追加：読み上げのデフォルト速さ設定 ここまで ▲▲▲ */
 function isTypingTarget(el) {
   if (!el) return false;
   const tag = el.tagName;

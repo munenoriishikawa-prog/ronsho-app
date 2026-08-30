@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v22.0（デスクトップペット・ワード再読込時の色付け引き継ぎ・過去問ログの日付管理を追加）＋過去問ログ</title>
+<title>論証集アプリ v22.1（読み上げ速度に1.15倍を追加し、デフォルトの速さを設定で変更できるように）＋過去問ログ</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.0</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.1</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -104,6 +104,7 @@
 <select id="speechRateSelect">
 <option value="0.75">0.75倍</option>
 <option value="1">1倍</option>
+<option value="1.15">1.15倍</option>
 <option value="1.25">1.25倍</option>
 <option value="1.5" selected>1.5倍</option>
 <option value="2">2倍</option>
@@ -251,6 +252,18 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div class="dataIoSectionTitle">🐾 デスクトップペット</div>
 <div class="dupCheckIntro">画面の下を歩き回る、癒し用のドット絵のペットです。学習データには一切影響しません。この設定はこの端末だけに保存されます。</div>
 <div id="petSettingsWrap"></div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🔊 読み上げのデフォルト速さ</div>
+<div class="dupCheckIntro">「読み上げ」タブを開いたときに最初から選択されている速さです。この設定はこの端末だけに保存されます。</div>
+<select id="speechDefaultRateSelect">
+<option value="0.75">0.75倍</option>
+<option value="1">1倍</option>
+<option value="1.15">1.15倍</option>
+<option value="1.25">1.25倍</option>
+<option value="1.5">1.5倍</option>
+<option value="2">2倍</option>
+</select>
 </div>
 </div>
 <!-- ▲▲▲ 新規追加：その他タブ ここまで ▲▲▲ -->

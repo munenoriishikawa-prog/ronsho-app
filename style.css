@@ -1217,10 +1217,19 @@ input[type=file] { display:none; }
 .quizEmpty { color: #4a6a90; font-size: 14px; padding: 30px; }
 .quizFinished { font-size: 16px; font-weight: 700; color: #0c2340; padding: 20px; }
 /* ▼▼▼ 過去問ログ タブ用（新規追加・既存クラスとは無関係） ▼▼▼ */
-.past-log-header {
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-  margin-bottom: 10px; font-size: 13px; color: #2c4a70;
+/* 記録フォームは普段は折りたたんでおき、「＋ 記録する」ボタンで開閉する */
+.pastAddToggleBtn {
+  display: inline-flex; align-items: center; gap: 5px; background: #e4edfc; color: #0057e7;
+  border: 1px solid #e4edfc; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700;
+  cursor: pointer; margin-bottom: 8px;
 }
+.pastAddToggleBtn:hover { background: #0057e7; color: #fff; }
+.past-log-header {
+  display: none; flex-wrap: wrap; gap: 10px; align-items: center;
+  margin-bottom: 10px; font-size: 13px; color: #2c4a70;
+  background: #eaf1fa; border-radius: 8px; padding: 8px;
+}
+.past-log-header.pastLogFormOpen { display: flex; }
 .past-log-header input, .past-log-header select {
   padding: 4px 8px; border-radius: 6px; border: 1px solid #9dc4f2; font-size: 12px;
 }
@@ -1235,6 +1244,14 @@ input[type=file] { display:none; }
 .past-log-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; table-layout: auto; }
 .past-log-table th, .past-log-table td { border: 1px solid #cfe3ff; padding: 6px 8px; text-align: left; writing-mode: horizontal-tb; height: auto; }
 .past-log-table th { background: #cfe3ff; position: static; }
+/* 直近5件を超える分を展開するチップボタン（テーブル最下行に表示） */
+.past-log-table .pastLogExpandRow td { text-align: center; background: #fff; }
+.pastLogExpandChip {
+  display: inline-flex; align-items: center; gap: 4px; background: #eaf1fa; color: #0057e7;
+  border: 1px solid #cfe3ff; border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700;
+  cursor: pointer;
+}
+.pastLogExpandChip:hover { background: #e4edfc; }
 .past-log-small-note { font-size: 11px; color: #4a6a90; margin-top: 6px; }
 /* ▲▲▲ 過去問ログ タブ用 ここまで ▲▲▲ */
 /* ▼▼▼ 過去問ログ一覧マトリクス（新規追加・既存クラスとは無関係） ▼▼▼ */
@@ -1242,9 +1259,13 @@ input[type=file] { display:none; }
   background: #fff; border: 1px solid #dbe6f2; border-radius: 10px;
   padding: 10px 12px; margin-bottom: 12px;
 }
-.pastMatrixTitle { font-weight: 700; font-size: 13px; color: #0c2340; margin-bottom: 1px; }
-.pastMatrixDesc { font-size: 11px; color: #4a6a90; margin-bottom: 6px; line-height: 1.5; }
-.pastMatrixTabs { display: flex; gap: 4px; margin-bottom: 6px; }
+.pastMatrixTabs { display: flex; gap: 4px; margin-bottom: 8px; }
+/* 「年度×科目 一覧」と「記録フォーム＋詳細ログ」を1枚のカードの中で
+   左右に並べ、一覧の右側にできる余白を詳細ログ側に活かす */
+.pastCombinedGrid { display: grid; grid-template-columns: 3fr 7fr; gap: 18px; align-items: start; }
+@media (max-width: 640px) { .pastCombinedGrid { grid-template-columns: 1fr; } }
+.pastMatrixCol { min-width: 0; }
+.pastLogCol { min-width: 0; }
 .pastMatrixTabBtn {
   border: 1px solid #dbe6f2; background: #eaf1fa; color: #4a6a90;
   font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; cursor: pointer;

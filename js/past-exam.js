@@ -13,6 +13,24 @@ function loadPastExamDefaultType() {
 function savePastExamDefaultType(v) {
   localStorage.setItem(PAST_EXAM_DEFAULT_TYPE_KEY, v);
 }
+// 保存自体は既存の互換性のためYYYY-MM-DDのまま行うが、画面表示は年度欄
+// （令和◯年）に合わせて和暦で統一する
+const PAST_EXAM_ERAS = [
+  { name: '令和', start: new Date(2019, 4, 1) },
+  { name: '平成', start: new Date(1989, 0, 8) },
+  { name: '昭和', start: new Date(1926, 11, 25) },
+  { name: '大正', start: new Date(1912, 6, 30) },
+  { name: '明治', start: new Date(1868, 0, 25) }
+];
+function formatPastExamDateWareki(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return dateStr;
+  const era = PAST_EXAM_ERAS.find(e => d >= e.start);
+  if (!era) return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+  const eraYear = d.getFullYear() - era.start.getFullYear() + 1;
+  return era.name + (eraYear === 1 ? '元' : eraYear) + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
 (() => {
   const sel = document.getElementById('pastExamTypeSelect');
   if (sel) sel.value = loadPastExamDefaultType();
@@ -91,7 +109,7 @@ function renderPastLogs() {
       + '<td>' + escapeHtml(log.subject || '') + '</td>'
       + '<td>' + escapeHtml(log.year || '') + '</td>'
       + '<td>' + log.round + '回目</td>'
-      + '<td>' + escapeHtml(log.date || '') + '</td>'
+      + '<td>' + escapeHtml(formatPastExamDateWareki(log.date)) + '</td>'
       + '<td contenteditable="true" data-key="' + escapeHtml(log.key) + '" class="pastMemoCell">' + escapeHtml(log.memo || '') + '</td>'
       + '<td><button type="button" data-key="' + escapeHtml(log.key) + '" class="pastDelBtn">削除</button></td>';
     tbody.appendChild(tr);

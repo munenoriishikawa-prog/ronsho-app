@@ -93,11 +93,16 @@ function renderPetSettings() {
 }
 document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderPetSettings);
 /* ▲▲▲ 新規追加：デスクトップペット設定 ここまで ▲▲▲ */
-/* ▼▼▼ 新規追加：読み上げのデフォルト速さ設定 ここから ▼▼▼ */
+/* ▼▼▼ 新規追加：読み上げのデフォルト設定 ここから ▼▼▼ */
 function renderSpeechRateSettings() {
-  const sel = document.getElementById('speechDefaultRateSelect');
-  if (!sel || typeof loadSpeechDefaultRate !== 'function') return;
-  sel.value = loadSpeechDefaultRate();
+  const rateSel = document.getElementById('speechDefaultRateSelect');
+  if (rateSel && typeof loadSpeechDefaultRate === 'function') rateSel.value = loadSpeechDefaultRate();
+  const importanceSel = document.getElementById('speechDefaultImportanceSelect');
+  if (importanceSel && typeof loadSpeechDefaultImportance === 'function') importanceSel.value = loadSpeechDefaultImportance();
+  const loopSel = document.getElementById('speechDefaultLoopSelect');
+  if (loopSel && typeof loadSpeechDefaultLoop === 'function') loopSel.value = loadSpeechDefaultLoop();
+  const includeMemorizedChk = document.getElementById('speechDefaultIncludeMemorizedChk');
+  if (includeMemorizedChk && typeof loadSpeechDefaultIncludeMemorized === 'function') includeMemorizedChk.checked = loadSpeechDefaultIncludeMemorized();
 }
 document.getElementById('speechDefaultRateSelect').addEventListener('change', (evt) => {
   saveSpeechDefaultRate(evt.target.value);
@@ -105,8 +110,95 @@ document.getElementById('speechDefaultRateSelect').addEventListener('change', (e
   if (liveSel) liveSel.value = evt.target.value;
   status.textContent = '🔊 読み上げのデフォルトの速さを「' + evt.target.value + '倍」にしました。';
 });
+document.getElementById('speechDefaultImportanceSelect').addEventListener('change', (evt) => {
+  saveSpeechDefaultImportance(evt.target.value);
+  const liveSel = document.getElementById('speechImportanceSelect');
+  if (liveSel) liveSel.value = evt.target.value;
+  status.textContent = '🔊 読み上げのデフォルトの重要度の絞り込みを変更しました。';
+});
+document.getElementById('speechDefaultLoopSelect').addEventListener('change', (evt) => {
+  saveSpeechDefaultLoop(evt.target.value);
+  const liveSel = document.getElementById('speechLoopSelect');
+  if (liveSel) liveSel.value = evt.target.value;
+  status.textContent = '🔊 読み上げのデフォルトのループ設定を変更しました。';
+});
+document.getElementById('speechDefaultIncludeMemorizedChk').addEventListener('change', (evt) => {
+  saveSpeechDefaultIncludeMemorized(evt.target.checked);
+  const liveChk = document.getElementById('speechIncludeMemorizedChk');
+  if (liveChk) liveChk.checked = evt.target.checked;
+  status.textContent = '🔊 読み上げのデフォルトの「暗記済みも含める」を' + (evt.target.checked ? 'ONにしました。' : 'OFFにしました。');
+});
 document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderSpeechRateSettings);
-/* ▲▲▲ 新規追加：読み上げのデフォルト速さ設定 ここまで ▲▲▲ */
+/* ▲▲▲ 新規追加：読み上げのデフォルト設定 ここまで ▲▲▲ */
+/* ▼▼▼ 新規追加：問題演習のデフォルト設定 ここから ▼▼▼ */
+const QUIZ_SETTINGS_CHK_MAP = {
+  quizDefaultRandomChk: 'random',
+  quizDefaultHideMemorizedChk: 'hideMemorized',
+  quizDefaultOverdueOnlyChk: 'overdueOnly',
+  quizDefaultExcludeTodayChk: 'excludeToday',
+  quizDefaultWeakOnlyChk: 'weakOnly',
+  quizDefaultSkippedOnlyChk: 'skippedOnly'
+};
+function renderQuizDefaultFilterSettings() {
+  if (typeof loadQuizDefaultFilters !== 'function') return;
+  const defaults = loadQuizDefaultFilters();
+  Object.keys(QUIZ_SETTINGS_CHK_MAP).forEach(id => {
+    const chk = document.getElementById(id);
+    if (chk) chk.checked = defaults[QUIZ_SETTINGS_CHK_MAP[id]];
+  });
+}
+const QUIZ_SETTINGS_LIVE_CHK_ID = {
+  random: 'quizRandomChk',
+  hideMemorized: 'quizHideMemorizedChk',
+  overdueOnly: 'quizOverdueOnlyChk',
+  excludeToday: 'quizExcludeTodayChk',
+  weakOnly: 'quizWeakOnlyChk',
+  skippedOnly: 'quizSkippedOnlyChk'
+};
+Object.keys(QUIZ_SETTINGS_CHK_MAP).forEach(id => {
+  const chk = document.getElementById(id);
+  if (!chk) return;
+  chk.addEventListener('change', () => {
+    const field = QUIZ_SETTINGS_CHK_MAP[id];
+    const defaults = loadQuizDefaultFilters();
+    defaults[field] = chk.checked;
+    saveQuizDefaultFilters(defaults);
+    const liveChk = document.getElementById(QUIZ_SETTINGS_LIVE_CHK_ID[field]);
+    if (liveChk) liveChk.checked = chk.checked;
+    status.textContent = '📝 問題演習のデフォルト設定を変更しました。';
+  });
+});
+document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderQuizDefaultFilterSettings);
+/* ▲▲▲ 新規追加：問題演習のデフォルト設定 ここまで ▲▲▲ */
+/* ▼▼▼ 新規追加：過去問ログのデフォルト種別設定 ここから ▼▼▼ */
+function renderPastExamDefaultTypeSettings() {
+  const sel = document.getElementById('pastExamDefaultTypeSelect');
+  if (!sel || typeof loadPastExamDefaultType !== 'function') return;
+  sel.value = loadPastExamDefaultType();
+}
+document.getElementById('pastExamDefaultTypeSelect').addEventListener('change', (evt) => {
+  savePastExamDefaultType(evt.target.value);
+  const liveSel = document.getElementById('pastExamTypeSelect');
+  if (liveSel) liveSel.value = evt.target.value;
+  status.textContent = '📝 過去問ログのデフォルトの種別を「' + evt.target.value + '」にしました。';
+});
+document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderPastExamDefaultTypeSettings);
+/* ▲▲▲ 新規追加：過去問ログのデフォルト種別設定 ここまで ▲▲▲ */
+/* ▼▼▼ 新規追加：バックアップのお知らせ日数設定 ここから ▼▼▼ */
+function renderBackupReminderDaysSettings() {
+  const input = document.getElementById('backupReminderDaysInput');
+  if (!input || typeof loadBackupReminderDays !== 'function') return;
+  input.value = loadBackupReminderDays();
+}
+document.getElementById('backupReminderDaysInput').addEventListener('change', (evt) => {
+  const days = Math.min(90, Math.max(1, Math.round(Number(evt.target.value)) || 7));
+  evt.target.value = days;
+  saveBackupReminderDays(days);
+  if (typeof renderBackupReminderBanner === 'function') renderBackupReminderBanner();
+  status.textContent = '📦 バックアップのお知らせ日数を' + days + '日にしました。';
+});
+document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderBackupReminderDaysSettings);
+/* ▲▲▲ 新規追加：バックアップのお知らせ日数設定 ここまで ▲▲▲ */
 function isTypingTarget(el) {
   if (!el) return false;
   const tag = el.tagName;

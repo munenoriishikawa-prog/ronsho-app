@@ -1282,7 +1282,12 @@ table.pastMatrixTable th, table.pastMatrixTable td {
 .pastMatrixCell:not(.pastMatrixNa):hover .pastMatrixCellInner { transform: scale(1.12); }
 .pastMatrixCell:not(.pastMatrixNa):active .pastMatrixCellInner { transform: scale(0.9); }
 .pastMatrixCellEmpty { box-shadow: inset 0 0 0 1.5px #dbe6f2; background: transparent !important; }
-.pastMatrixNaMark { color: #dbe6f2; font-size: 11px; }
+/* マス（色付き／未実施の枠／対象外の「・」）の高さを完全に揃え、行の縦間隔が
+   タブや行ごとにばらつかないようにする */
+.pastMatrixNaMark {
+  display: flex; align-items: center; justify-content: center; margin: 1px;
+  width: 19px; height: 19px; color: #c3d4e6; font-size: 11px; line-height: 1;
+}
 .pastMatrixLegend {
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
   margin-top: 6px; font-size: 10.5px; color: #4a6a90;

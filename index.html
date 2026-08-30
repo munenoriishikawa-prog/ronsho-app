@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v22.3（過去問ログに年度×科目の一覧マトリクスを追加）</title>
+<title>論証集アプリ v22.4（過去問ログの一覧マスと詳細ログを連動）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.3</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.4</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -194,7 +194,7 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <div id="pastExamPage" class="page">
   <div class="pastMatrixCard">
     <div class="pastMatrixTitle">📊 年度×科目 一覧</div>
-    <div class="pastMatrixDesc">どの年度のどの科目に取り組んだか一目で分かる一覧です。マスをクリックすると「未→1回→2回→3回→4回以上→未…」の順に色が変わります（下の詳細ログとは別に、この一覧専用の記録として保存されます）。</div>
+    <div class="pastMatrixDesc">どの年度のどの科目に取り組んだか一目で分かる一覧です。マスをクリックすると今日の日付で下の詳細ログに1件記録され、回数に応じて色が変わります。詳細ログを直接記録・削除した場合も、このマスに自動的に反映されます。</div>
     <div class="pastMatrixTabs" id="pastMatrixTabs"></div>
     <div class="pastMatrixTableWrap" id="pastMatrixTableWrap"></div>
     <div class="pastMatrixLegend" id="pastMatrixLegend"></div>

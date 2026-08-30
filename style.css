@@ -1284,8 +1284,11 @@ table.pastMatrixTable th, table.pastMatrixTable td {
   vertical-align: middle; letter-spacing: normal; height: auto; text-align: center; word-break: normal;
 }
 /* 科目の列幅を固定し、種別タブを切り替えても列幅・行位置が動かないようにする。
-   科目数の多い予備試験（10科目）を基準に大きめのマスサイズにしている */
-.pastMatrixTable th.pastMatrixSubjHead, .pastMatrixTable td.pastMatrixCell, .pastMatrixTable td.pastMatrixNa {
+   科目数の多い予備試験（10科目）を基準に大きめのマスサイズにしている。
+   新司法試験に無い科目（実務基礎）は列自体は残し、中身だけ空欄（余白）にする
+   ことで、表の幅がタブ切替で変わらないようにしている */
+.pastMatrixTable th.pastMatrixSubjHead, .pastMatrixTable td.pastMatrixCell,
+.pastMatrixTable td.pastMatrixNa, .pastMatrixTable .pastMatrixBlankCol {
   width: 37px;
 }
 .pastMatrixTable th.pastMatrixYearHead {

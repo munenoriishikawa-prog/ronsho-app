@@ -509,8 +509,7 @@
     const p = document.createElement('div');
     p.id = 'driveSyncPanel';
     p.className = 'driveSyncPanel';
-    p.innerHTML = '<button id="driveSyncBtn" type="button">🔄 今すぐ同期</button> <span id="driveSyncState">起動時に自動で同期します</span>'
-      + '<button id="pageReloadBtn" type="button" title="このページを最新の状態に読み込み直します">🔄 ページ読込</button>';
+    p.innerHTML = '<button id="driveSyncBtn" type="button">🔄 今すぐ同期</button> <span id="driveSyncState">起動時に自動で同期します</span>';
     const slot = document.getElementById('driveSyncPanelSlot');
     const row = document.getElementById('topStatusRow');
     if (slot) slot.appendChild(p);
@@ -518,9 +517,6 @@
     else status.after(p);
     document.getElementById('driveSyncBtn').onclick = () => {
       syncNow().catch(e => state(e.message));
-    };
-    document.getElementById('pageReloadBtn').onclick = () => {
-      if (confirm('ページを読み込み直します。保存していない編集内容は失われますが、よろしいですか？')) location.reload();
     };
 
     pullFromCloud(true).catch(e => state('オフラインで動作中（' + e.message + '）'));

@@ -30,9 +30,10 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const editToggleHtml = '<span class="editToggle' + (isEditing ? ' active' : '') + '" data-idx="' + idx + '" title="内容を編集">✏️</span>';
   const isCompareSelected = compareList.includes(e.title);
   const compareToggleHtml = '<span class="compareToggle' + (isCompareSelected ? ' active' : '') + '" data-title="' + escapeHtml(e.title) + '" title="比較に追加／解除">⚖️</span>';
+  const deleteToggleHtml = '<span class="deleteToggle" data-idx="' + idx + '" title="この論証を削除">🗑️</span>';
   const titleCellContent = isEditing
     ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
-    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + skipHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
+    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + skipHtml + deleteToggleHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
   let bodyCellContent;
   if (isEditing) {
     bodyCellContent = buildBodyEditorHtml(e, idx);
@@ -680,6 +681,13 @@ function attachTableClickHandler(wrapEl) {
     if (skipToggle) {
       e.stopPropagation();
       toggleSkip(Number(skipToggle.dataset.idx));
+      return;
+    }
+    const deleteToggle = e.target.closest('.deleteToggle');
+    if (deleteToggle) {
+      e.stopPropagation();
+      const ent = entries[Number(deleteToggle.dataset.idx)];
+      if (deleteEntryConfirmed(ent)) renderAll(true);
       return;
     }
     const subjectCell = e.target.closest('.subjectCell');

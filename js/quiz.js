@@ -165,6 +165,7 @@ function renderQuizPage() {
     + '<span class="quizMemoBtn' + (quizMemo ? ' active' : '') + '" id="quizMemoBtn" title="' + escapeHtml(quizMemo ? ('メモ：' + quizMemo) : 'メモを追加') + '">🗒️</span>'
     + '<span class="quizSkipBtn' + (isSkipped ? ' active' : '') + '" id="quizSkipBtn" title="スキップ（問題演習から除外）">⏭️</span>'
     + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
+    + '<span class="quizDeleteBtn" id="quizDeleteBtn" title="この論証を削除">🗑️</span>'
     + '</div>';
   html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
   if (quizComboCount >= 2) {
@@ -277,6 +278,11 @@ function renderQuizPage() {
     if (idx === -1) return;
     editingEntryTitle = editingEntryTitle === e.title ? null : e.title;
     renderQuizPage();
+  });
+  const quizDeleteBtn = document.getElementById('quizDeleteBtn');
+  if (quizDeleteBtn) quizDeleteBtn.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    if (deleteEntryConfirmed(e)) renderAll(true);
   });
   if (isEditingThis) {
     quizArea.addEventListener('mousedown', (evt) => {

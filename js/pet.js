@@ -35,6 +35,34 @@
       ], colors: { 1: '#b39ddb', 2: '#1a1a2e' } }
   ];
   const SPECIES_LABELS = SPECIES.map(s => s.label);
+  // ペットがたまに話す豆知識・学習のコツ（間違った条文解釈と誤解されないよう、
+  // あくまで軽い雑学・励ましのトーンに留めている）
+  const PET_LINES = [
+    '豆知識：「善意」は知らないこと、「悪意」は知っていることを意味するよ（日常語とは逆！）',
+    '「即時」と「遅滞なく」、実は求められる速さの目安が違うんだって',
+    '六法全書の「六法」は憲法・民法・商法・刑法・民訴法・刑訴法が由来なんだよ',
+    '「善管注意義務」の「善管」は「善良な管理者」の略なんだ',
+    '未成年者の契約は原則取り消せるけど、婚姻による成年擬制だと話が変わるよ',
+    '「錯誤」は勘違い、「詐欺」はだまされること。似てるけど効果は違うんだ',
+    '「善意無過失」って言葉、法律の世界だとよく出てくるコンビなんだよ',
+    '「対抗要件」は「これがないと第三者に主張できないよ」という意味なんだって',
+    '憲法改正には国民投票が必要って知ってた？',
+    '商法と会社法、実は昔はひとつの法律だったんだよ',
+    '「時効」には取得時効と消滅時効の2種類があるよ',
+    '「代理」と「使者」、似てるようで法律上の意味は全然違うんだって',
+    '「瑕疵」は「かし」って読むよ。傷や欠陥という意味なんだ',
+    '刑事訴訟の「推定無罪」、疑わしきは被告人の利益に、なんだって',
+    '「善意」でも重過失があると保護されないことがあるんだよ',
+    '論証は書いて覚えるより「人に説明できるか」で確認するといいよ',
+    '苦手な論証ほど、寝る前に一回読むと定着しやすいんだって',
+    'たまには休憩も大事だよ。無理しすぎないでね',
+    '過去問を解くときは、まず自分の言葉で結論だけ言ってみるのがおすすめ',
+    '論証は丸暗記より「なぜそうなるか」の流れを掴むと忘れにくいよ',
+    '今日も少しずつでいいから、続けることが一番の近道だよ',
+    '一度に完璧を目指すより、何度も繰り返す方が記憶に残るんだって',
+    '「催告」は相手に行動を促すこと。放っておくと不利になることもあるよ',
+    '判例を読むときは、まず結論とその理由づけを分けて整理すると分かりやすいよ'
+  ];
   const UNIT = 5;
   const MIN_STOP_MS = 1200;
   const MAX_STOP_MS = 4000;
@@ -59,6 +87,34 @@
 
   let speciesIndex = loadSpeciesIndex();
   let outer = null, inner = null, x = 0, pendingTimer = null;
+  let bubble = null, bubbleHideTimer = null;
+
+  function hideBubble() {
+    clearTimeout(bubbleHideTimer);
+    if (bubble) { bubble.remove(); bubble = null; }
+  }
+  function showBubble(text) {
+    if (!outer) return;
+    hideBubble();
+    bubble = document.createElement('div');
+    bubble.className = 'deskPetBubble';
+    bubble.textContent = text;
+    document.body.appendChild(bubble);
+    const rect = outer.getBoundingClientRect();
+    bubble.style.left = (rect.left + rect.width / 2) + 'px';
+    bubble.style.top = rect.top + 'px';
+    bubbleHideTimer = setTimeout(() => {
+      if (!bubble) return;
+      bubble.classList.add('fadeOut');
+      setTimeout(hideBubble, 350);
+    }, 4200);
+  }
+  // 移動・ジャンプ・小休止の合間に、ランダムでときどき豆知識をつぶやく
+  function maybeSpeak() {
+    if (Math.random() >= 0.3) return;
+    const text = PET_LINES[Math.floor(Math.random() * PET_LINES.length)];
+    showBubble(text);
+  }
 
   function spriteSize(idx) {
     const g = SPECIES[idx].grid;
@@ -96,12 +152,14 @@
   // 左右に歩くだけでなく、その場でジャンプしたり、立ち止まって
   // ひと息ついたりと、いくつかの動きをランダムに織り交ぜる
   function chooseNextAction() {
+    maybeSpeak();
     const r = Math.random();
     if (r < 0.55) walkToRandom();
     else if (r < 0.75) jumpInPlace();
     else idlePause();
   }
   function walkToRandom() {
+    hideBubble();
     const { w } = spriteSize(speciesIndex);
     const maxX = Math.max(0, window.innerWidth - w);
     const targetX = Math.random() * maxX;
@@ -178,6 +236,7 @@
   }
   function destroyPet() {
     clearTimeout(pendingTimer);
+    hideBubble();
     if (outer) { outer.remove(); outer = null; inner = null; }
   }
 

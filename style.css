@@ -116,6 +116,39 @@ h1 {
 .dataIoSectionTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 10px; }
 .dataIoSubRow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 10px; font-size: 13px; }
 .dataIoSubRow .clearEntriesLink { margin-bottom: 0; }
+/* ▼▼▼ 新規追加：データ入出力の各カードを1行レイアウトに ▼▼▼ */
+.dataIoSection.oneLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 14px;
+  padding: 12px 20px;
+}
+.dataIoSection.oneLine .dataIoSectionTitle {
+  margin-bottom: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dataIoSection.oneLine .dataIoSectionTitle[title] { cursor: help; border-bottom: 1px dotted #9dc4f2; }
+.dataIoSection.oneLine .clearEntriesLink { margin-bottom: 0; white-space: nowrap; flex-shrink: 0; }
+.dataIoSection.oneLine .deleteByTitleBox { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.dataIoSection.oneLine .oneLineFill { flex: 1; min-width: 0; }
+.dataIoSection.oneLine .driveSyncPanel {
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+#drop.dropCompact.oneLineFill {
+  padding: 8px 16px;
+  margin-bottom: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* ▲▲▲ 新規追加：データ入出力の各カードを1行レイアウトに ▲▲▲ */
 .csvSubjectFilterRow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #2c4a70; }
 .csvSubjectFilterRow select { padding: 5px 10px; border-radius: 8px; border: 1px solid #9dc4f2; font-size: 13px; }
 .dupCheckIntro { font-size: 12px; color: #4a6a90; margin-bottom: 10px; }

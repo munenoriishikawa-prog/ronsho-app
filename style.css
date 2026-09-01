@@ -921,10 +921,11 @@ input[type=file] { display:none; }
 .tabBtn {
   padding: 7px 14px;
   margin-right: 5px;
+  margin-bottom: 6px;
   cursor: pointer;
-  border: 1px solid rgba(0, 87, 231, 0.1);
+  border: 1px solid rgba(0, 87, 231, 0.2);
   background: #dce8fa;
-  border-radius: 11px 11px 0 0;
+  border-radius: 8px;
   font-size: 12px;
   color: #2c4a70;
   box-shadow: none;
@@ -937,8 +938,7 @@ input[type=file] { display:none; }
 .tabBtn.active {
   background: linear-gradient(135deg, #0057e7, #00c2ff);
   color: #fff;
-  border-color: transparent;
-  border-bottom: 2px solid #0057e7;
+  border-color: #0057e7;
   font-weight: 700;
   box-shadow: 0 4px 12px rgba(0, 87, 231, 0.3);
 }

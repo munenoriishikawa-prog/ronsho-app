@@ -2,7 +2,6 @@ const drop = document.getElementById('drop');
 const fileInput = document.getElementById('fileInput');
 const status = document.getElementById('status');
 const tableWrap = document.getElementById('tableWrap');
-const memorizedTableWrap = document.getElementById('memorizedTableWrap');
 const csvTableWrap = document.getElementById('csvTableWrap');
 const csvSubjectFilter = document.getElementById('csvSubjectFilter');
 const calendarWrap = document.getElementById('calendarWrap');
@@ -10,26 +9,18 @@ const trendWrap = document.getElementById('trendWrap');
 const downloadBtn = document.getElementById('downloadBtn');
 const downloadLogBtn = document.getElementById('downloadLogBtn');
 const subjectTabsStudy = document.getElementById('subjectTabsStudy');
-const subjectTabsMemorized = document.getElementById('subjectTabsMemorized');
 const subjectTabsQuiz = document.getElementById('subjectTabsQuiz');
 const categoryTabsStudy = document.getElementById('categoryTabsStudy');
-const categoryTabsMemorized = document.getElementById('categoryTabsMemorized');
 const categoryTabsQuiz = document.getElementById('categoryTabsQuiz');
 const tagTabsStudy = document.getElementById('tagTabsStudy');
-const tagTabsMemorized = document.getElementById('tagTabsMemorized');
 const tagTabsQuiz = document.getElementById('tagTabsQuiz');
 const starTabsStudy = document.getElementById('starTabsStudy');
-const starTabsMemorized = document.getElementById('starTabsMemorized');
 const starTabsQuiz = document.getElementById('starTabsQuiz');
 const importanceTabsStudy = document.getElementById('importanceTabsStudy');
-const importanceTabsMemorized = document.getElementById('importanceTabsMemorized');
 const importanceTabsQuiz = document.getElementById('importanceTabsQuiz');
 const freqTabsStudy = document.getElementById('freqTabsStudy');
-const freqTabsMemorized = document.getElementById('freqTabsMemorized');
 const searchInputStudy = document.getElementById('searchInputStudy');
-const searchInputMemorized = document.getElementById('searchInputMemorized');
 const searchCountStudy = document.getElementById('searchCountStudy');
-const searchCountMemorized = document.getElementById('searchCountMemorized');
 const quizArea = document.getElementById('quizArea');
 const quizPriorityNote = document.getElementById('quizPriorityNote');
 const quizHideMemorizedChk = document.getElementById('quizHideMemorizedChk');
@@ -58,14 +49,23 @@ let selectedSubject = 'all';
 let selectedCsvSubject = 'all';
 let selectedCategory = 'all';
 let selectedTag = 'all';
-let starOnlyFilter = false;
-let hideMemorizedFilter = false;
+// 「すべて表示」「😰苦手のみ」「🙈暗記済みを除く」「✅暗記済みのみ」は互いに
+// 排他的な4択。この端末のデフォルト（STAR_FILTER_DEFAULT_KEY）から初期化する
+const STAR_FILTER_MODES = ['all', 'weak', 'hideMemorized', 'memorizedOnly'];
+const STAR_FILTER_DEFAULT_KEY = 'ronshoStarFilterDefaultV1';
+function loadStarFilterDefault() {
+  const raw = localStorage.getItem(STAR_FILTER_DEFAULT_KEY);
+  return STAR_FILTER_MODES.includes(raw) ? raw : 'all';
+}
+function saveStarFilterDefault(v) {
+  localStorage.setItem(STAR_FILTER_DEFAULT_KEY, v);
+}
+let starFilterMode = loadStarFilterDefault();
 let minYearFrequency = 0;
 let sortByFrequency = false;
 let selectedImportance = 'all';
 let expandedBodySet = new Set();
 let searchQueryStudy = '';
-let searchQueryMemorized = '';
 let quizPool = [];
 let quizIndex = 0;
 let quizRevealed = false;
@@ -324,14 +324,12 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   selectedSubject = 'all';
   selectedCsvSubject = 'all';
   selectedCategory = 'all';
-  starOnlyFilter = false;
-  hideMemorizedFilter = false;
+  starFilterMode = 'all';
   minYearFrequency = 0;
   sortByFrequency = false;
   selectedImportance = 'all';
   expandedBodySet = new Set();
   tableWrap.innerHTML = '';
-  memorizedTableWrap.innerHTML = '';
   csvTableWrap.innerHTML = '';
   csvSubjectFilter.innerHTML = '';
   calendarWrap.innerHTML = '';
@@ -461,24 +459,14 @@ function debounce(fn, delay) {
   };
 }
 const debouncedRenderStudyTable = debounce(() => renderStudyTable(entries), 200);
-const debouncedRenderMemorizedTable = debounce(() => renderMemorizedTable(entries), 200);
 searchInputStudy.addEventListener('input', () => {
   searchQueryStudy = searchInputStudy.value.trim();
   debouncedRenderStudyTable();
-});
-searchInputMemorized.addEventListener('input', () => {
-  searchQueryMemorized = searchInputMemorized.value.trim();
-  debouncedRenderMemorizedTable();
 });
 document.getElementById('searchClearStudy').addEventListener('click', () => {
   searchInputStudy.value = '';
   searchQueryStudy = '';
   renderStudyTable(entries);
-});
-document.getElementById('searchClearMemorized').addEventListener('click', () => {
-  searchInputMemorized.value = '';
-  searchQueryMemorized = '';
-  renderMemorizedTable(entries);
 });
 document.getElementById('quizStartBtn').addEventListener('click', () => {
   startQuiz();
@@ -758,7 +746,6 @@ async function parseSingleFile(file) {
 async function handleFiles(files) {
   status.textContent = '読み込み中...';
   tableWrap.innerHTML = '';
-  memorizedTableWrap.innerHTML = '';
   csvTableWrap.innerHTML = '';
   calendarWrap.innerHTML = '';
   downloadBtn.style.display = 'none';
@@ -815,15 +802,13 @@ async function handleFiles(files) {
     saveEntries();
     selectedSubject = 'all';
     selectedCategory = 'all';
-    starOnlyFilter = false;
+    starFilterMode = 'all';
     minYearFrequency = 0;
     sortByFrequency = false;
     selectedImportance = 'all';
     expandedBodySet = new Set();
     searchQueryStudy = '';
-    searchQueryMemorized = '';
     searchInputStudy.value = '';
-    searchInputMemorized.value = '';
     quizPool = [];
     quizStarted = false;
     renderAll();
@@ -903,11 +888,11 @@ function renderCategoryTabsHtml() {
 }
 function renderStarTabsHtml() {
   // 「すべて表示」は文字通り暗記済みも含めて全件を表示する（デフォルト）。
-  // 「苦手のみ」「暗記済みを除く」は互いに排他的な3択。
-  let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter && !hideMemorizedFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
-  html += '<button type="button" class="starFilterBtn' + (starOnlyFilter ? ' active' : '') + '" data-star="only">😰 苦手のみ</button>';
-  html += '<button type="button" class="starFilterBtn' + (hideMemorizedFilter ? ' active' : '') + '" data-star="hideMemorized">🙈 暗記済みを除く</button>';
-  return html;
+  // 苦手のみ／暗記済みを除く／暗記済みのみ、は互いに排他的な4択。
+  const modeLabels = { all: 'すべて表示', weak: '😰 苦手のみ', hideMemorized: '🙈 暗記済みを除く', memorizedOnly: '✅ 暗記済みのみ' };
+  return STAR_FILTER_MODES.map(m => {
+    return '<button type="button" class="starFilterBtn' + (starFilterMode === m ? ' active' : '') + '" data-star="' + m + '">' + modeLabels[m] + '</button>';
+  }).join('');
 }
 function renderImportanceTabsHtml() {
   let html = '<button type="button" class="starFilterBtn' + (selectedImportance === 'all' ? ' active' : '') + '" data-importance="all">重要度すべて</button>';
@@ -926,26 +911,20 @@ function renderFreqTabsHtml() {
 function renderSubjectTabs() {
   const html = renderSubjectTabsHtml();
   subjectTabsStudy.innerHTML = html;
-  subjectTabsMemorized.innerHTML = html;
   subjectTabsQuiz.innerHTML = html;
   const catHtml = renderCategoryTabsHtml();
   categoryTabsStudy.innerHTML = catHtml;
-  categoryTabsMemorized.innerHTML = catHtml;
   categoryTabsQuiz.innerHTML = catHtml;
   const starHtml = renderStarTabsHtml();
   starTabsStudy.innerHTML = starHtml;
-  starTabsMemorized.innerHTML = starHtml;
   starTabsQuiz.innerHTML = starHtml;
   const importanceHtml = renderImportanceTabsHtml();
   importanceTabsStudy.innerHTML = importanceHtml;
-  importanceTabsMemorized.innerHTML = importanceHtml;
   importanceTabsQuiz.innerHTML = importanceHtml;
   const freqHtml = renderFreqTabsHtml();
   freqTabsStudy.innerHTML = freqHtml;
-  freqTabsMemorized.innerHTML = freqHtml;
   const tagHtml = renderTagTabsHtml();
   if (tagTabsStudy) tagTabsStudy.innerHTML = tagHtml;
-  if (tagTabsMemorized) tagTabsMemorized.innerHTML = tagHtml;
   if (tagTabsQuiz) tagTabsQuiz.innerHTML = tagHtml;
 }
 function getUniqueTags() {
@@ -989,11 +968,12 @@ function filterEntries(data, searchQuery) {
   if (selectedTag !== 'all') {
     result = result.filter(e => (e.tags || []).includes(selectedTag));
   }
-  if (starOnlyFilter) {
+  if (starFilterMode === 'weak') {
     result = result.filter(e => studyLog[e.title] && studyLog[e.title].starred);
-  }
-  if (hideMemorizedFilter) {
+  } else if (starFilterMode === 'hideMemorized') {
     result = result.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
+  } else if (starFilterMode === 'memorizedOnly') {
+    result = result.filter(e => studyLog[e.title] && studyLog[e.title].memorized);
   }
   if (selectedImportance !== 'all') {
     result = result.filter(e => (e.importance || 0) === selectedImportance);
@@ -1019,7 +999,6 @@ function highlightSearch(html, query) {
 function renderAll(preserveQuiz) {
   renderSubjectTabs();
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
   renderCsvSubjectFilter();
   renderCsvTable(getCsvFilteredEntries());
   renderSpeechSubjectSelect();

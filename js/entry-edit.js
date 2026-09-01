@@ -103,7 +103,6 @@ function toggleCompare(title) {
   }
   renderCompareBar();
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
 }
 function renderCompareBar() {
   const bar = document.getElementById('compareBar');

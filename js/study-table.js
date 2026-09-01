@@ -58,10 +58,8 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
 const TABLE_PAGE_SIZE = 50;
 let studyTableVisibleCount = TABLE_PAGE_SIZE;
 let studyTableFilterKey = '';
-let memorizedTableVisibleCount = TABLE_PAGE_SIZE;
-let memorizedTableFilterKey = '';
 function currentFilterKey(searchQuery) {
-  return [selectedSubject, selectedCategory, selectedTag, starOnlyFilter, hideMemorizedFilter, selectedImportance, minYearFrequency, sortByFrequency, searchQuery].join('|');
+  return [selectedSubject, selectedCategory, selectedTag, starFilterMode, selectedImportance, minYearFrequency, sortByFrequency, searchQuery].join('|');
 }
 // 論証数が多い端末（特にiPad等の非力な端末）で描画が重くならないよう、
 // 一度に描画する行数を制限し「もっと見る」で追加表示する。
@@ -87,43 +85,15 @@ function renderStudyTable(data) {
   if (total > studyTableVisibleCount) {
     html += '<div class="loadMoreRow"><button type="button" id="studyLoadMoreBtn">もっと見る（残り' + (total - studyTableVisibleCount) + '件）</button></div>';
   }
-  if (total === 0 && hideMemorizedFilter) {
-    html = '<div class="reviewList"><div class="reviewItem">🎉 未暗記の論証はありません。すべて暗記済み一覧に移動済みです。</div></div>';
+  if (total === 0 && starFilterMode === 'hideMemorized') {
+    html = '<div class="reviewList"><div class="reviewItem">🎉 未暗記の論証はありません。すべて暗記済みです。</div></div>';
+  } else if (total === 0 && starFilterMode === 'memorizedOnly') {
+    html = '<div class="reviewList"><div class="reviewItem">暗記済みの論証はまだありません。◎完璧または○できたを押すとここに表示されます。</div></div>';
   } else if (total === 0) {
     html = '<div class="reviewList"><div class="reviewItem">該当する論証がありません。</div></div>';
   }
   tableWrap.innerHTML = html;
   searchCountStudy.textContent = searchQueryStudy ? total + '件見つかりました' : '';
-  renderProgressSummary();
-}
-function renderMemorizedTable(data) {
-  const filtered = filterEntries(data, searchQueryMemorized);
-  const memorized = [];
-  filtered.forEach((e) => {
-    const log = studyLog[e.title] || {};
-    if (log.memorized) memorized.push(e);
-  });
-  const filterKey = currentFilterKey(searchQueryMemorized);
-  if (filterKey !== memorizedTableFilterKey) {
-    memorizedTableFilterKey = filterKey;
-    memorizedTableVisibleCount = TABLE_PAGE_SIZE;
-  }
-  const total = memorized.length;
-  const visible = memorized.slice(0, memorizedTableVisibleCount);
-  let html = '<table>' + ENTRY_TABLE_COLGROUP + '<thead><tr><th>暗記度</th><th>科目</th><th>分野</th><th>タイトル</th><th>本文</th><th>出題年</th><th>学習回数</th><th>最終学習日</th><th>復習推奨日</th></tr></thead><tbody>';
-  visible.forEach((e) => {
-    const idx = entries.indexOf(e);
-    html += buildRowHtml(e, idx, true, false, searchQueryMemorized);
-  });
-  html += '</tbody></table>';
-  if (total > memorizedTableVisibleCount) {
-    html += '<div class="loadMoreRow"><button type="button" id="memorizedLoadMoreBtn">もっと見る（残り' + (total - memorizedTableVisibleCount) + '件）</button></div>';
-  }
-  if (total === 0) {
-    html = '<div class="reviewList"><div class="reviewItem">暗記済みの論証はまだありません。◎完璧または○できたを押すとここに移動します。</div></div>';
-  }
-  memorizedTableWrap.innerHTML = html;
-  searchCountMemorized.textContent = searchQueryMemorized ? total + '件見つかりました' : '';
   renderProgressSummary();
 }
 function getCsvFilteredEntries() {
@@ -496,7 +466,6 @@ function recordStudy(idx, sourceEl) {
   }
   status.textContent = '✅ 「' + title + '」を本日の学習として記録しました（学習回数：' + newCount + '回）';
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
   renderCalendar();
   renderTrendChart();
 }
@@ -510,7 +479,6 @@ function undoLastStudy(idx) {
     const newCount = studyLog[title].history.length;
     status.textContent = '「' + title + '」の直前の学習記録を取り消しました（学習回数：' + newCount + '回）';
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     renderCalendar();
     renderTrendChart();
   }
@@ -557,7 +525,6 @@ function setConfidence(idx, level, sourceEl) {
     status.textContent = '「' + title + '」を「ダメ」に設定しました。明日また復習しましょう。（+' + xpGained + 'XP）';
   }
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
   renderCalendar();
   renderTrendChart();
   // ホーム上部の全体カード・科目別学習回数・レベル/今日の目標は、問題演習からの
@@ -577,7 +544,6 @@ function toggleStar(idx) {
   saveStudyLog();
   status.textContent = studyLog[title].starred ? '😰 「' + title + '」を苦手フラグに追加しました。' : '「' + title + '」の苦手フラグを外しました。';
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
 }
 function toggleSkip(idx) {
   const ent = entries[idx];
@@ -590,7 +556,6 @@ function toggleSkip(idx) {
   saveStudyLog();
   status.textContent = studyLog[title].skipped ? '⏭️ 「' + title + '」をスキップしました（問題演習から除外）。' : '「' + title + '」のスキップを解除しました。';
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
 }
 function editSubject(idx) {
   const ent = entries[idx];
@@ -605,7 +570,6 @@ function editSubject(idx) {
   saveStudyLog();
   status.textContent = '「' + ent.title + '」の科目を「' + (trimmed || '未設定') + '」に変更しました。';
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
 }
 function editSource(idx) {
   const ent = entries[idx];
@@ -617,7 +581,6 @@ function editSource(idx) {
   saveEntries();
   status.textContent = trimmed ? '📚 「' + ent.title + '」の出典を保存しました。' : '「' + ent.title + '」の出典を削除しました。';
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
 }
 function editMemo(idx) {
   const ent = entries[idx];
@@ -633,7 +596,6 @@ function editMemo(idx) {
   saveStudyLog();
   status.textContent = trimmed ? '📝 「' + ent.title + '」にメモを保存しました。' : '「' + ent.title + '」のメモを削除しました。';
   renderStudyTable(entries);
-  renderMemorizedTable(entries);
 }
 function toggleBodyExpand(idx) {
   const ent = entries[idx];
@@ -663,7 +625,6 @@ function attachTableClickHandler(wrapEl) {
       if (!ent) return;
       editingEntryTitle = editingEntryTitle === ent.title ? null : ent.title;
       renderStudyTable(entries);
-      renderMemorizedTable(entries);
       return;
     }
     const boldBtn = e.target.closest('.editBoldBtn');
@@ -695,7 +656,6 @@ function attachTableClickHandler(wrapEl) {
       e.stopPropagation();
       editingEntryTitle = null;
       renderStudyTable(entries);
-      renderMemorizedTable(entries);
       return;
     }
     const confBtn = e.target.closest('.confBtn');
@@ -750,7 +710,6 @@ function attachTableClickHandler(wrapEl) {
   });
 }
 attachTableClickHandler(tableWrap);
-attachTableClickHandler(memorizedTableWrap);
 document.addEventListener('change', (e) => {
   const subjectTabSelect = e.target.closest('.subjectTabSelect');
   if (subjectTabSelect) {
@@ -758,7 +717,6 @@ document.addEventListener('change', (e) => {
     selectedCategory = 'all';
     renderSubjectTabs();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
     return;
@@ -768,7 +726,6 @@ document.addEventListener('change', (e) => {
     selectedCategory = categoryTabSelect.value;
     renderSubjectTabs();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
     return;
@@ -781,12 +738,6 @@ document.addEventListener('click', (e) => {
     renderStudyTable(entries);
     return;
   }
-  const memorizedLoadMoreBtn = e.target.closest('#memorizedLoadMoreBtn');
-  if (memorizedLoadMoreBtn) {
-    memorizedTableVisibleCount += TABLE_PAGE_SIZE;
-    renderMemorizedTable(entries);
-    return;
-  }
   const trendToggleBtn = e.target.closest('.trendToggleBtn');
   if (trendToggleBtn) {
     trendMode = trendToggleBtn.dataset.trend;
@@ -795,12 +746,9 @@ document.addEventListener('click', (e) => {
   }
   const starTabBtn = e.target.closest('.starFilterBtn[data-star]');
   if (starTabBtn) {
-    // 「苦手のみ」「暗記済みを除く」「すべて表示」は互いに排他的な3択
-    starOnlyFilter = (starTabBtn.dataset.star === 'only');
-    hideMemorizedFilter = (starTabBtn.dataset.star === 'hideMemorized');
+    starFilterMode = starTabBtn.dataset.star;
     renderSubjectTabs();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
     return;
@@ -811,7 +759,6 @@ document.addEventListener('click', (e) => {
     selectedImportance = (v === 'all') ? 'all' : Number(v);
     renderSubjectTabs();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
     return;
@@ -821,7 +768,6 @@ document.addEventListener('click', (e) => {
     minYearFrequency = Number(freqTabBtn.dataset.freq);
     renderSubjectTabs();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
     return;
@@ -831,7 +777,6 @@ document.addEventListener('click', (e) => {
     sortByFrequency = !sortByFrequency;
     renderSubjectTabs();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
     return;
@@ -841,7 +786,6 @@ document.addEventListener('click', (e) => {
     selectedTag = tagFilterBtn.dataset.tag;
     renderSubjectTabs();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
     return;
@@ -856,7 +800,6 @@ document.addEventListener('click', (e) => {
     selectedTag = tagChip.dataset.tag;
     renderSubjectTabs();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     quizStarted = false;
     renderQuizPage();
     return;
@@ -876,7 +819,6 @@ document.addEventListener('click', (e) => {
     compareList = [];
     renderCompareBar();
     renderStudyTable(entries);
-    renderMemorizedTable(entries);
     return;
   }
   const compareModalCloseBtn = e.target.closest('#compareModalCloseBtn');
@@ -912,7 +854,6 @@ document.addEventListener('click', (e) => {
         studyLog[t].history.splice(idx, 1);
         saveStudyLog();
         renderStudyTable(entries);
-        renderMemorizedTable(entries);
         renderCalendar();
         renderTrendChart();
       }

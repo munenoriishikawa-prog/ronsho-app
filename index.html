@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v24.0（論証一覧タブを新設）</title>
+<title>論証集アプリ v24.1（タブを格言の下に移動）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,19 +12,11 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.0</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.1</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
 <div id="quoteCard" class="quoteCard"></div>
-<div id="homeStatsCard" class="homeStatsCard">
-<div id="topStatusRow" class="topStatusRow">
-<div id="overallProgressCardWrap"></div>
-</div>
-<div id="gamificationRow" class="gamificationRow"></div>
-</div>
-<div id="progressSummary"></div>
-<div id="badgesSection"></div>
 <div class="tabs">
 <button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
 <button class="tabBtn" data-page="entryListPage">📚 論証一覧</button>
@@ -35,6 +27,14 @@
 <button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
 <button class="tabBtn" data-page="settingsPage">⚙️ その他</button>
 </div>
+<div id="homeStatsCard" class="homeStatsCard">
+<div id="topStatusRow" class="topStatusRow">
+<div id="overallProgressCardWrap"></div>
+</div>
+<div id="gamificationRow" class="gamificationRow"></div>
+</div>
+<div id="progressSummary"></div>
+<div id="badgesSection"></div>
 <div id="studyPage" class="page active">
 <div id="homeSummaryRow" class="homeSummaryRow">
 <div id="countdownCard"></div>

@@ -138,7 +138,6 @@ h1 {
   padding: 0;
   flex-shrink: 0;
 }
-.dataIoSection.oneLine .driveSyncPanel #pageReloadBtn { margin-left: 10px; }
 #drop.dropCompact.oneLineFill {
   padding: 8px 16px;
   margin-bottom: 0;
@@ -320,19 +319,6 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   white-space: nowrap;
 }
 .driveSyncPanel #driveSyncState { white-space: nowrap; }
-.driveSyncPanel #pageReloadBtn {
-  border-radius: 999px;
-  padding: 6px 16px;
-  font-size: 12px;
-  font-weight: 700;
-  border: 1px solid rgba(0, 87, 231, 0.25);
-  background: #fff;
-  color: #0057e7;
-  cursor: pointer;
-  white-space: nowrap;
-  margin-left: auto;
-}
-.driveSyncPanel #pageReloadBtn:hover { background: #eef6ff; }
 .progressCard {
   background: #fff;
   border-radius: 16px;

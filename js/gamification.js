@@ -43,11 +43,11 @@ function renderQuoteCard(forceNew) {
   const q = MOTIVATION_QUOTES[currentQuoteIndex];
   wrap.innerHTML = '<span class="quoteText">💬 ' + escapeHtml(q.text) + '</span>'
     + '<span class="quoteBy">－ ' + escapeHtml(q.by) + '</span>'
-    + '<span class="quoteRefreshBtn" id="quoteRefreshBtn" title="別の名言を見る">🔄</span>';
+    + '<span class="quoteRefreshBtn" id="quoteRefreshBtn" title="クリックでページを最新の状態に読み込み直します（名言も変わります）">🔄</span>';
 }
 document.getElementById('quoteCard') && document.getElementById('quoteCard').addEventListener('click', (e) => {
   if (!e.target.closest('#quoteRefreshBtn')) return;
-  renderQuoteCard(true);
+  if (confirm('ページを読み込み直します。保存していない編集内容は失われますが、よろしいですか？')) location.reload();
 });
 
 const DAILY_GOAL_KEY = 'ronshoDailyGoalV1';

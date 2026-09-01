@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v23.8（重複チェックボタンをWord読込の右に移動）</title>
+<title>論証集アプリ v23.9（重複チェックカード削除・ボタンサイズ統一）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.8</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.9</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -135,11 +135,7 @@
 </div>
 <button type="button" id="checkDuplicatesBtn">🔍 重複チェック</button>
 </div>
-<div class="dataIoSection">
-<div class="dataIoSectionTitle">🔍 重複チェック</div>
-<div class="dupCheckIntro">タイトルまたは本文が完全に一致するもの、およびタイトル・本文・出題年の大部分が似ているものを自動で検出します。</div>
 <div id="duplicateResultsWrap"></div>
-</div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🗄 削除アーカイブ</div>
 <div class="dupCheckIntro">重複チェックから削除した論証を保管しています。誤って削除した場合はここから復元できます。</div>

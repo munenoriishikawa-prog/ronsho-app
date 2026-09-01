@@ -203,22 +203,12 @@ function renderGamificationPanel() {
     + '<div class="gamiBarOuter"><div class="gamiBarInner" style="width:' + levelPct + '%;"></div></div>'
     + '<div class="gamiCardSub">XP ' + info.xpIntoLevel + ' / ' + info.xpForThisLevel + '</div>'
     + '</div>'
-    + '<div class="gamiCard gamiGoalCard" id="dailyGoalRing" title="クリックして今日の目標を変更">'
+    + '<div class="gamiCard gamiGoalCard" id="dailyGoalRing" title="目標は「⚙️ その他」タブで変更できます">'
     + '<div class="gamiRing" style="background: conic-gradient(#0057e7 ' + goalPct + '%, #e6edf7 ' + goalPct + '% 100%);"><div class="gamiRingInner">' + todayCount + ' / ' + goal + '</div></div>'
     + '<div class="gamiCardTitle">🎯 今日の目標</div>'
     + '</div>'
     + '<div class="gamiCard gamiGrowthCard">' + growthHtml + '</div>';
 }
-document.getElementById('gamificationRow') && document.getElementById('gamificationRow').addEventListener('click', (e) => {
-  const ring = e.target.closest('#dailyGoalRing');
-  if (!ring) return;
-  const input = prompt('今日の目標問題数を入力してください', String(loadDailyGoal()));
-  if (input === null) return;
-  const n = Number(input);
-  if (!Number.isFinite(n) || n <= 0) { alert('1以上の数値を入力してください。'); return; }
-  saveDailyGoal(Math.round(n));
-  renderGamificationPanel();
-});
 
 const BADGE_DEFS = [
   { id: 'first_step', icon: '🌱', name: 'はじめの一歩', desc: '論証を1回学習する', check: s => s.totalStudy >= 1 },

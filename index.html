@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v23.10（タブを四角い枠デザインに変更）</title>
+<title>論証集アプリ v23.11（今日の目標をその他タブで設定するように変更）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.10</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.11</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -309,6 +309,13 @@
 <div class="dupCheckIntro">最後にバックアップしてから何日経ったらお知らせを表示するかです。この設定はこの端末だけに保存されます。</div>
 <div class="settingsInlineRow">
 <input type="number" id="backupReminderDaysInput" min="1" max="90" style="width:70px;"> 日
+</div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🎯 今日の目標</div>
+<div class="dupCheckIntro">ホーム画面の「🎯 今日の目標」で目安にする、1日あたりの問題数です。この設定はこの端末だけに保存されます。</div>
+<div class="settingsInlineRow">
+<input type="number" id="dailyGoalInput" min="1" max="999" style="width:70px;"> 問
 </div>
 </div>
 </div>

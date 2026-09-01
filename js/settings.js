@@ -212,6 +212,21 @@ document.getElementById('backupReminderDaysInput').addEventListener('change', (e
 });
 document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderBackupReminderDaysSettings);
 /* ▲▲▲ 新規追加：バックアップのお知らせ日数設定 ここまで ▲▲▲ */
+/* ▼▼▼ 新規追加：今日の目標設定 ここから ▼▼▼ */
+function renderDailyGoalSettings() {
+  const input = document.getElementById('dailyGoalInput');
+  if (!input || typeof loadDailyGoal !== 'function') return;
+  input.value = loadDailyGoal();
+}
+document.getElementById('dailyGoalInput').addEventListener('change', (evt) => {
+  const n = Math.min(999, Math.max(1, Math.round(Number(evt.target.value)) || 10));
+  evt.target.value = n;
+  saveDailyGoal(n);
+  if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
+  status.textContent = '🎯 今日の目標を' + n + '問にしました。';
+});
+document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderDailyGoalSettings);
+/* ▲▲▲ 新規追加：今日の目標設定 ここまで ▲▲▲ */
 function isTypingTarget(el) {
   if (!el) return false;
   const tag = el.tagName;

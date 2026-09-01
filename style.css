@@ -379,8 +379,6 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .gamiCardSub { font-size: 11px; color: #4a6a90; }
 .gamiBarOuter { width: 100%; height: 8px; background: #e6edf7; border-radius: 999px; overflow: hidden; }
 .gamiBarInner { height: 100%; background: linear-gradient(135deg, #7c3aed, #a78bfa); border-radius: 999px; transition: width 0.3s ease; }
-.gamiGoalCard { cursor: pointer; }
-.gamiGoalCard:hover { box-shadow: 0 6px 20px rgba(0, 87, 231, 0.18); }
 .gamiRing {
   width: 64px;
   height: 64px;

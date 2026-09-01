@@ -3,6 +3,7 @@
 // このタブ自身（settingsPage）にも割り当てられるようにしておく。
 const SHORTCUT_PAGE_LIST = [
   { id: 'studyPage', label: '🏠 ホーム' },
+  { id: 'entryListPage', label: '📚 論証一覧' },
   { id: 'quizPage', label: '📝 問題演習' },
   { id: 'speechPage', label: '🔊 読み上げ' },
   { id: 'calendarPage', label: '📅 学習カレンダー・復習予定' },
@@ -13,6 +14,7 @@ const SHORTCUT_PAGE_LIST = [
 const SHORTCUT_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 const DEFAULT_TAB_SHORTCUTS = {
   '1': 'studyPage',
+  '2': 'entryListPage',
   '3': 'quizPage',
   '4': 'speechPage',
   '5': 'calendarPage',

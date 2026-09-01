@@ -919,7 +919,7 @@ function getRelatedEntries(e) {
   return entries.filter(other => other !== e && (other.tags || []).some(t => tags.includes(t)));
 }
 function jumpToEntryByTitle(title) {
-  const tabBtn = document.querySelector('.tabBtn[data-page="studyPage"]');
+  const tabBtn = document.querySelector('.tabBtn[data-page="entryListPage"]');
   if (tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
   selectedTag = 'all';
   searchQueryStudy = title;

@@ -137,6 +137,7 @@ h1 {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.dataIoSection.oneLine #checkDuplicatesBtn { flex-shrink: 0; white-space: nowrap; }
 /* ▲▲▲ 新規追加：データ入出力の各カードを1行レイアウトに ▲▲▲ */
 .csvSubjectFilterRow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #2c4a70; }
 .csvSubjectFilterRow select { padding: 5px 10px; border-radius: 8px; border: 1px solid #9dc4f2; font-size: 13px; }

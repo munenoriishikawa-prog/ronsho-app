@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v22.16（すべて表示・苦手のみに「暗記済みを除く」を追加）</title>
+<title>論証集アプリ v23.0（暗記済み一覧タブを廃止し、絞り込みに統合）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v22.16</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.0</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -27,7 +27,6 @@
 <div id="badgesSection"></div>
 <div class="tabs">
 <button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
-<button class="tabBtn" data-page="memorizedPage">✅ 暗記済み一覧</button>
 <button class="tabBtn" data-page="quizPage">📝 問題演習</button>
 <button class="tabBtn" data-page="speechPage">🔊 読み上げ</button>
 <button class="tabBtn" data-page="calendarPage">📅 学習カレンダー・復習予定</button>
@@ -40,7 +39,7 @@
 <div id="countdownCard"></div>
 <div id="summarySection" class="summarySection"></div>
 </div>
-<div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。😰＝苦手フラグ。◎完璧／○できた＝暗記済みへ移動（◎はさらに復習間隔を延長）／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
+<div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。😰＝苦手フラグ。◎完璧／○できた＝暗記済みにする（◎はさらに復習間隔を延長）／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
 <div class="searchBox">
 <input type="text" id="searchInputStudy" placeholder="🔍 タイトル・本文をキーワード検索">
 <span class="searchClearBtn" id="searchClearStudy">クリア</span>
@@ -53,20 +52,6 @@
 <div id="importanceTabsStudy" class="starFilterTabs"></div>
 <div id="freqTabsStudy" class="starFilterTabs"></div>
 <div id="tableWrap"></div>
-</div>
-<div id="memorizedPage" class="page">
-<div class="searchBox">
-<input type="text" id="searchInputMemorized" placeholder="🔍 タイトル・本文をキーワード検索">
-<span class="searchClearBtn" id="searchClearMemorized">クリア</span>
-<span class="searchResultCount" id="searchCountMemorized"></span>
-</div>
-<div id="subjectTabsMemorized" class="subjectTabs"></div>
-<div id="categoryTabsMemorized" class="categoryTabs"></div>
-<div id="tagTabsMemorized" class="categoryTabs"></div>
-<div id="starTabsMemorized" class="starFilterTabs"></div>
-<div id="importanceTabsMemorized" class="starFilterTabs"></div>
-<div id="freqTabsMemorized" class="starFilterTabs"></div>
-<div id="memorizedTableWrap"></div>
 </div>
 <div id="quizPage" class="page">
 <div id="subjectTabsQuiz" class="subjectTabs"></div>
@@ -307,6 +292,16 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <label><input type="checkbox" id="quizDefaultWeakOnlyChk"> 😰 苦手のみ出題</label>
 <label><input type="checkbox" id="quizDefaultSkippedOnlyChk"> ⏭️ スキップしたものだけ出題</label>
 </div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🏠 ホーム・問題演習の絞り込みのデフォルト</div>
+<div class="dupCheckIntro">「すべて表示／😰苦手のみ／🙈暗記済みを除く／✅暗記済みのみ」のうち、最初から選ばれているものです。この設定はこの端末だけに保存されます。</div>
+<select id="starFilterDefaultSelect">
+<option value="all">すべて表示</option>
+<option value="weak">😰 苦手のみ</option>
+<option value="hideMemorized">🙈 暗記済みを除く</option>
+<option value="memorizedOnly">✅ 暗記済みのみ</option>
+</select>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📝 過去問ログのデフォルト種別</div>

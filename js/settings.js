@@ -3,7 +3,6 @@
 // このタブ自身（settingsPage）にも割り当てられるようにしておく。
 const SHORTCUT_PAGE_LIST = [
   { id: 'studyPage', label: '🏠 ホーム' },
-  { id: 'memorizedPage', label: '✅ 暗記済み一覧' },
   { id: 'quizPage', label: '📝 問題演習' },
   { id: 'speechPage', label: '🔊 読み上げ' },
   { id: 'calendarPage', label: '📅 学習カレンダー・復習予定' },
@@ -14,7 +13,6 @@ const SHORTCUT_PAGE_LIST = [
 const SHORTCUT_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 const DEFAULT_TAB_SHORTCUTS = {
   '1': 'studyPage',
-  '2': 'memorizedPage',
   '3': 'quizPage',
   '4': 'speechPage',
   '5': 'calendarPage',
@@ -170,6 +168,21 @@ Object.keys(QUIZ_SETTINGS_CHK_MAP).forEach(id => {
 });
 document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderQuizDefaultFilterSettings);
 /* ▲▲▲ 新規追加：問題演習のデフォルト設定 ここまで ▲▲▲ */
+/* ▼▼▼ 新規追加：ホーム・問題演習の絞り込みのデフォルト設定 ここから ▼▼▼ */
+function renderStarFilterDefaultSettings() {
+  const sel = document.getElementById('starFilterDefaultSelect');
+  if (!sel || typeof loadStarFilterDefault !== 'function') return;
+  sel.value = loadStarFilterDefault();
+}
+document.getElementById('starFilterDefaultSelect').addEventListener('change', (evt) => {
+  saveStarFilterDefault(evt.target.value);
+  starFilterMode = evt.target.value;
+  renderSubjectTabs();
+  renderStudyTable(entries);
+  status.textContent = '🏠 絞り込みのデフォルトを変更しました。';
+});
+document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderStarFilterDefaultSettings);
+/* ▲▲▲ 新規追加：ホーム・問題演習の絞り込みのデフォルト設定 ここまで ▲▲▲ */
 /* ▼▼▼ 新規追加：過去問ログのデフォルト種別設定 ここから ▼▼▼ */
 function renderPastExamDefaultTypeSettings() {
   const sel = document.getElementById('pastExamDefaultTypeSelect');

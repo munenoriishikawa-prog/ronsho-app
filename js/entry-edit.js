@@ -221,4 +221,22 @@ function saveEntryEdit(idx) {
   status.textContent = '✏️ 「' + newTitle + '」を更新しました。';
   renderAll(true);
 }
+/* ▼▼▼ 新規追加：論証の個別削除機能（ホーム画面・問題演習の右上アイコンから） ▼▼▼ */
+function deleteEntryConfirmed(ent) {
+  if (!ent) return false;
+  if (!confirm('「' + ent.title + '」を削除しますか？（学習記録・暗記度・苦手フラグなどは削除されません）')) return false;
+  entries = entries.filter(x => x !== ent);
+  const qi = quizPool.indexOf(ent);
+  if (qi !== -1) {
+    quizPool.splice(qi, 1);
+    if (qi <= quizIndex && quizIndex > 0) quizIndex--;
+    if (quizIndex >= quizPool.length) quizIndex = Math.max(0, quizPool.length - 1);
+    quizRevealed = false;
+  }
+  saveEntries();
+  if (editingEntryTitle === ent.title) editingEntryTitle = null;
+  status.textContent = '🗑 「' + ent.title + '」を削除しました。';
+  return true;
+}
+/* ▲▲▲ 新規追加：論証の個別削除機能 ここまで ▲▲▲ */
 /* ▲▲▲ 新規追加：論証の直接編集機能 ここまで ▲▲▲ */

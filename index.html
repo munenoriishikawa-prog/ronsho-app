@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v23.0（暗記済み一覧タブを廃止し、絞り込みに統合）</title>
+<title>論証集アプリ v23.2（Google Drive同期とWord読込を1行に統合、論証の個別削除を右上アイコンに移動）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.0</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.2</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -127,23 +127,13 @@
 <div id="calendarWrap"></div>
 </div>
 <div id="csvPage" class="page">
-<div class="dataIoSection">
-<div class="dataIoSectionTitle">☁️ Google Drive同期</div>
-<div class="dupCheckIntro">変更があると数秒後に自動的に同期されます。この端末とクラウドの両方で更新があった場合のみ、どちらを使うか確認のポップアップが表示されます。すぐに反映させたい場合は下のボタンを押してください。</div>
+<div class="dataIoSection oneLine">
+<div class="dataIoSectionTitle" title="変更があると数秒後に自動的に同期されます。この端末とクラウドの両方で更新があった場合のみ、どちらを使うか確認のポップアップが表示されます。すぐに反映させたい場合は下のボタンを押してください。">☁️ Google Drive同期</div>
 <div id="driveSyncPanelSlot"></div>
-</div>
-<div class="dataIoSection">
 <div class="dataIoSectionTitle">📥 Wordファイルの読み込み</div>
-<div id="drop" class="dropCompact">
+<div id="drop" class="dropCompact oneLineFill" title="Wordファイル（.docx）をドラッグ＆ドロップ、またはクリックして選択（民法・刑法・憲法など複数対応）">
 Wordファイル（.docx）をドラッグ＆ドロップ、またはクリックして選択（民法・刑法・憲法など複数対応）
 <input type="file" id="fileInput" accept=".docx" multiple>
-</div>
-<div class="dataIoSubRow">
-<span class="clearEntriesLink" id="clearEntriesBtn">🗑 読み込みデータを削除して最初からやり直す</span>
-<span class="deleteByTitleBox">
-<input type="text" id="deleteTitleInput" placeholder="削除する論証のタイトルを入力" style="width:220px;">
-<button type="button" id="deleteTitleBtn">🗑 タイトルで論証を削除</button>
-</span>
 </div>
 </div>
 <div class="dataIoSection">
@@ -217,6 +207,11 @@ Wordファイル（.docx）をドラッグ＆ドロップ、またはクリッ�
 <!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
 <!-- ▼▼▼ 新規追加：その他タブ（ショートカットキー設定） ▼▼▼ -->
 <div id="settingsPage" class="page">
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🗑 読み込みデータの削除</div>
+<div class="dupCheckIntro">読み込んだWordデータを全て削除し、最初からやり直します（学習記録・暗記度・苦手フラグなどは削除されません）。</div>
+<span class="clearEntriesLink" id="clearEntriesBtn">🗑 読み込みデータを削除して最初からやり直す</span>
+</div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🗄 全データのバックアップ</div>
 <div class="dupCheckIntro">論証・学習記録・過去問ログなど、このアプリの全データを1つのファイルに書き出します。クラウド同期に問題が起きた場合や、誤って大量に削除してしまった場合の保険としてご利用ください。ダウンロードと同時に、Google Drive（同期先と同じアカウント）の「ronsho-app-backups」フォルダにも日付入りのファイルとして自動的にアップロードされます（最新30件まで保持）。</div>

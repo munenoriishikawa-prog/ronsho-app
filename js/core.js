@@ -339,27 +339,6 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   downloadLogBtn.style.display = 'none';
   status.textContent = '読み込みデータを削除しました。新しくWordファイルを読み込んでください。';
 });
-document.getElementById('deleteTitleBtn').addEventListener('click', () => {
-  const input = document.getElementById('deleteTitleInput');
-  const target = input.value.trim();
-  if (!target) {
-    alert('削除する論証のタイトルを入力してください。');
-    return;
-  }
-  const matches = entries.filter(e => e.title === target);
-  if (matches.length === 0) {
-    alert('「' + target + '」というタイトルの論証は見つかりませんでした。タイトルは完全一致で入力してください。');
-    return;
-  }
-  const subjectsLabel = Array.from(new Set(matches.map(e => e.subject || 'その他'))).join('・');
-  if (!confirm('「' + target + '」というタイトルの論証が' + matches.length + '件見つかりました（' + subjectsLabel + '）。削除しますか？（学習記録・暗記度・苦手フラグなどは削除されません）')) return;
-  entries = entries.filter(e => e.title !== target);
-  saveEntries();
-  input.value = '';
-  renderAll();
-  status.textContent = '🗑 「' + target + '」を削除しました（' + matches.length + '件）。';
-});
-
 document.getElementById('exportLogBtn').addEventListener('click', () => {
   const payload = { studyLog: studyLog, manualLog: manualLog };
   const json = JSON.stringify(payload, null, 2);

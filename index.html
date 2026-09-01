@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v23.13（ペットの吹き出しの表示時間を延長）</title>
+<title>論証集アプリ v24.0（論証一覧タブを新設）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.13</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.0</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -27,6 +27,7 @@
 <div id="badgesSection"></div>
 <div class="tabs">
 <button class="tabBtn active" data-page="studyPage">🏠 ホーム</button>
+<button class="tabBtn" data-page="entryListPage">📚 論証一覧</button>
 <button class="tabBtn" data-page="quizPage">📝 問題演習</button>
 <button class="tabBtn" data-page="speechPage">🔊 読み上げ</button>
 <button class="tabBtn" data-page="calendarPage">📅 学習カレンダー・復習予定</button>
@@ -39,6 +40,9 @@
 <div id="countdownCard"></div>
 <div id="summarySection" class="summarySection"></div>
 </div>
+</div>
+<!-- ▼▼▼ 新規追加：論証一覧タブ（studyPageから論証テーブル部分を分離） ▼▼▼ -->
+<div id="entryListPage" class="page">
 <div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。😰＝苦手フラグ。◎完璧／○できた＝暗記済みにする（◎はさらに復習間隔を延長）／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
 <div class="searchBox">
 <input type="text" id="searchInputStudy" placeholder="🔍 タイトル・本文をキーワード検索">
@@ -53,6 +57,7 @@
 <div id="freqTabsStudy" class="starFilterTabs"></div>
 <div id="tableWrap"></div>
 </div>
+<!-- ▲▲▲ 新規追加：論証一覧タブ ここまで ▲▲▲ -->
 <div id="quizPage" class="page">
 <div id="subjectTabsQuiz" class="subjectTabs"></div>
 <div id="categoryTabsQuiz" class="categoryTabs"></div>

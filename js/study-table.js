@@ -61,25 +61,23 @@ let studyTableFilterKey = '';
 let memorizedTableVisibleCount = TABLE_PAGE_SIZE;
 let memorizedTableFilterKey = '';
 function currentFilterKey(searchQuery) {
-  return [selectedSubject, selectedCategory, selectedTag, starOnlyFilter, selectedImportance, minYearFrequency, sortByFrequency, searchQuery].join('|');
+  return [selectedSubject, selectedCategory, selectedTag, starOnlyFilter, hideMemorizedFilter, selectedImportance, minYearFrequency, sortByFrequency, searchQuery].join('|');
 }
 // 論証数が多い端末（特にiPad等の非力な端末）で描画が重くならないよう、
 // 一度に描画する行数を制限し「もっと見る」で追加表示する。
 // フィルタ条件が変わったときだけ表示件数をリセットする。
 function renderStudyTable(data) {
+  // 「すべて表示」の場合は暗記済みも含めて表示する（暗記済みを除きたい場合は
+  // 「🙈 暗記済みを除く」を選ぶ。以前は常に未暗記のみに絞っていたが、
+  // 明示的に選べるようにした）
   const filtered = filterEntries(data, searchQueryStudy);
-  const unmemorized = [];
-  filtered.forEach((e) => {
-    const log = studyLog[e.title] || {};
-    if (!log.memorized) unmemorized.push(e);
-  });
   const filterKey = currentFilterKey(searchQueryStudy);
   if (filterKey !== studyTableFilterKey) {
     studyTableFilterKey = filterKey;
     studyTableVisibleCount = TABLE_PAGE_SIZE;
   }
-  const total = unmemorized.length;
-  const visible = unmemorized.slice(0, studyTableVisibleCount);
+  const total = filtered.length;
+  const visible = filtered.slice(0, studyTableVisibleCount);
   let html = '<table>' + ENTRY_TABLE_COLGROUP + '<thead><tr><th>暗記度</th><th>科目</th><th>分野</th><th>タイトル</th><th>本文</th><th>出題年</th><th>学習回数</th><th>最終学習日</th><th>復習推奨日</th></tr></thead><tbody>';
   visible.forEach((e) => {
     const idx = entries.indexOf(e);
@@ -89,9 +87,9 @@ function renderStudyTable(data) {
   if (total > studyTableVisibleCount) {
     html += '<div class="loadMoreRow"><button type="button" id="studyLoadMoreBtn">もっと見る（残り' + (total - studyTableVisibleCount) + '件）</button></div>';
   }
-  if (total === 0 && filtered.length > 0) {
+  if (total === 0 && hideMemorizedFilter) {
     html = '<div class="reviewList"><div class="reviewItem">🎉 未暗記の論証はありません。すべて暗記済み一覧に移動済みです。</div></div>';
-  } else if (filtered.length === 0) {
+  } else if (total === 0) {
     html = '<div class="reviewList"><div class="reviewItem">該当する論証がありません。</div></div>';
   }
   tableWrap.innerHTML = html;
@@ -797,7 +795,9 @@ document.addEventListener('click', (e) => {
   }
   const starTabBtn = e.target.closest('.starFilterBtn[data-star]');
   if (starTabBtn) {
+    // 「苦手のみ」「暗記済みを除く」「すべて表示」は互いに排他的な3択
     starOnlyFilter = (starTabBtn.dataset.star === 'only');
+    hideMemorizedFilter = (starTabBtn.dataset.star === 'hideMemorized');
     renderSubjectTabs();
     renderStudyTable(entries);
     renderMemorizedTable(entries);

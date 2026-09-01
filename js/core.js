@@ -59,6 +59,7 @@ let selectedCsvSubject = 'all';
 let selectedCategory = 'all';
 let selectedTag = 'all';
 let starOnlyFilter = false;
+let hideMemorizedFilter = false;
 let minYearFrequency = 0;
 let sortByFrequency = false;
 let selectedImportance = 'all';
@@ -324,6 +325,7 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   selectedCsvSubject = 'all';
   selectedCategory = 'all';
   starOnlyFilter = false;
+  hideMemorizedFilter = false;
   minYearFrequency = 0;
   sortByFrequency = false;
   selectedImportance = 'all';
@@ -900,8 +902,11 @@ function renderCategoryTabsHtml() {
   return html;
 }
 function renderStarTabsHtml() {
-  let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
+  // 「すべて表示」は文字通り暗記済みも含めて全件を表示する（デフォルト）。
+  // 「苦手のみ」「暗記済みを除く」は互いに排他的な3択。
+  let html = '<button type="button" class="starFilterBtn' + (!starOnlyFilter && !hideMemorizedFilter ? ' active' : '') + '" data-star="all">すべて表示</button>';
   html += '<button type="button" class="starFilterBtn' + (starOnlyFilter ? ' active' : '') + '" data-star="only">😰 苦手のみ</button>';
+  html += '<button type="button" class="starFilterBtn' + (hideMemorizedFilter ? ' active' : '') + '" data-star="hideMemorized">🙈 暗記済みを除く</button>';
   return html;
 }
 function renderImportanceTabsHtml() {
@@ -986,6 +991,9 @@ function filterEntries(data, searchQuery) {
   }
   if (starOnlyFilter) {
     result = result.filter(e => studyLog[e.title] && studyLog[e.title].starred);
+  }
+  if (hideMemorizedFilter) {
+    result = result.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
   }
   if (selectedImportance !== 'all') {
     result = result.filter(e => (e.importance || 0) === selectedImportance);

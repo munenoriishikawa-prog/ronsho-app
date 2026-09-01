@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v23.5（Word読込枠をコンパクトに）</title>
+<title>論証集アプリ v23.6（Word読込ラベルを枠内に統合）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.5</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v23.6</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -130,9 +130,8 @@
 <div class="dataIoSection oneLine">
 <div class="dataIoSectionTitle" title="変更があると数秒後に自動的に同期されます。この端末とクラウドの両方で更新があった場合のみ、どちらを使うか確認のポップアップが表示されます。すぐに反映させたい場合は下のボタンを押してください。">☁️ Google Drive同期</div>
 <div id="driveSyncPanelSlot"></div>
-<div class="dataIoSectionTitle">📥 Wordファイルの読み込み</div>
 <div id="drop" class="dropCompact" title="Wordファイル（.docx）をドラッグ＆ドロップ、またはクリックして選択（民法・刑法・憲法など複数対応）">
-ドラッグ＆ドロップ、又はクリック
+📥 Word読込
 <input type="file" id="fileInput" accept=".docx" multiple>
 </div>
 </div>

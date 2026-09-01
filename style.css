@@ -124,27 +124,18 @@ h1 {
   gap: 14px;
   padding: 12px 20px;
 }
-.dataIoSection.oneLine .dataIoSectionTitle {
-  margin-bottom: 0;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.dataIoSection.oneLine .dataIoSectionTitle[title] { cursor: help; border-bottom: 1px dotted #9dc4f2; }
-.dataIoSection.oneLine .clearEntriesLink { margin-bottom: 0; white-space: nowrap; flex-shrink: 0; }
-.dataIoSection.oneLine .oneLineFill { flex: 1; min-width: 0; }
 .dataIoSection.oneLine .driveSyncPanel {
   background: none;
   box-shadow: none;
   padding: 0;
   flex-shrink: 0;
 }
-#drop.dropCompact.oneLineFill {
+.dataIoSection.oneLine #drop.dropCompact {
   padding: 8px 16px;
   margin-bottom: 0;
   text-align: left;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 /* ▲▲▲ 新規追加：データ入出力の各カードを1行レイアウトに ▲▲▲ */
 .csvSubjectFilterRow { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; color: #2c4a70; }

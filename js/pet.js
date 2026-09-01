@@ -107,7 +107,7 @@
       if (!bubble) return;
       bubble.classList.add('fadeOut');
       setTimeout(hideBubble, 350);
-    }, 4200);
+    }, 8000);
   }
   // 移動・ジャンプ・小休止の合間に、ランダムでときどき豆知識をつぶやく
   function maybeSpeak() {
@@ -152,11 +152,16 @@
   // 左右に歩くだけでなく、その場でジャンプしたり、立ち止まって
   // ひと息ついたりと、いくつかの動きをランダムに織り交ぜる
   function chooseNextAction() {
-    maybeSpeak();
     const r = Math.random();
-    if (r < 0.55) walkToRandom();
-    else if (r < 0.75) jumpInPlace();
-    else idlePause();
+    if (r < 0.55) {
+      walkToRandom();
+    } else if (r < 0.75) {
+      maybeSpeak();
+      jumpInPlace();
+    } else {
+      maybeSpeak();
+      idlePause();
+    }
   }
   function walkToRandom() {
     hideBubble();

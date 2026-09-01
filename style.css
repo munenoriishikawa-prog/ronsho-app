@@ -124,13 +124,6 @@ h1 {
   gap: 14px;
   padding: 12px 20px;
 }
-.dataIoSection.oneLine .dataIoSectionTitle {
-  margin-bottom: 0;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.dataIoSection.oneLine .dataIoSectionTitle[title] { cursor: help; border-bottom: 1px dotted #9dc4f2; }
-.dataIoSection.oneLine .clearEntriesLink { margin-bottom: 0; white-space: nowrap; flex-shrink: 0; }
 .dataIoSection.oneLine .driveSyncPanel {
   background: none;
   box-shadow: none;

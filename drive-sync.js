@@ -509,7 +509,7 @@
     const p = document.createElement('div');
     p.id = 'driveSyncPanel';
     p.className = 'driveSyncPanel';
-    p.innerHTML = '<button id="driveSyncBtn" type="button">🔄 今すぐ同期</button> <span id="driveSyncState">起動時に自動で同期します</span>';
+    p.innerHTML = '<button id="driveSyncBtn" type="button" title="変更があると数秒後に自動的に同期されます。この端末とクラウドの両方で更新があった場合のみ、どちらを使うか確認のポップアップが表示されます。すぐに反映させたい場合はこのボタンを押してください。">☁️ 今すぐ同期</button> <span id="driveSyncState">起動時に自動で同期します</span>';
     const slot = document.getElementById('driveSyncPanelSlot');
     const row = document.getElementById('topStatusRow');
     if (slot) slot.appendChild(p);

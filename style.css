@@ -1409,4 +1409,38 @@ table.pastMatrixTable th, table.pastMatrixTable td {
   0% { opacity: 1; transform: translate(-50%, -100%) scale(0.8); }
   100% { opacity: 0; transform: translate(-50%, -220%) scale(1.2); }
 }
+.deskPetBubble {
+  position: fixed;
+  z-index: 502;
+  max-width: 220px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fff;
+  color: #0c2340;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 4px 14px rgba(0, 87, 231, 0.18);
+  border: 1px solid rgba(0, 87, 231, 0.15);
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  animation: deskPetBubbleIn 0.2s ease-out;
+  transition: opacity 0.35s ease;
+}
+.deskPetBubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-right: 1px solid rgba(0, 87, 231, 0.15);
+  border-bottom: 1px solid rgba(0, 87, 231, 0.15);
+  transform: translateX(-50%) rotate(45deg);
+}
+.deskPetBubble.fadeOut { opacity: 0; }
+@keyframes deskPetBubbleIn {
+  0% { opacity: 0; transform: translate(-50%, -90%) scale(0.9); }
+  100% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
 /* ▲▲▲ ドット絵のペット ここまで ▲▲▲ */

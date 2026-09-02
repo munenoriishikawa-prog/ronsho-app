@@ -296,7 +296,7 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .topStatusRow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; }
 #overallProgressCardWrap { flex: 1; min-width: 260px; }
 #overallProgressCardWrap .progressCard { margin-bottom: 0; height: 100%; box-sizing: border-box; }
-.homeStatsCard .topStatusRow { padding: 14px 20px; }
+.homeStatsCard .topStatusRow { padding: 14px 20px; border-top: 1px solid #e6edf7; }
 .homeStatsCard #overallProgressCardWrap .progressCard {
   background: transparent;
   box-shadow: none;
@@ -425,21 +425,19 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   flex-wrap: wrap;
   gap: 20px;
   align-items: stretch;
-  margin-bottom: 20px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 14px 20px;
-  box-shadow: 0 4px 16px rgba(0, 87, 231, 0.1);
   box-sizing: border-box;
 }
-.homeSummaryRow > #countdownCard { flex: 1; min-width: 280px; display: flex; }
-.homeSummaryRow > .summarySection { flex: 1; min-width: 280px; margin-bottom: 0; padding-left: 20px; border-left: 1px solid #e6edf7; }
-.summarySection { margin-bottom: 20px; }
-.summarySection {
+.homeStatsCard .homeSummaryRow { padding: 14px 20px; }
+.homeSummaryRow > #countdownCard { flex: 1; display: flex; }
+#progressSummary .summarySection {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #e6edf7;
 }
+#progressSummary .summarySection:empty { display: none; }
 .summarySectionTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin: 0 0 10px; }
 .summaryRow { display: flex; flex-wrap: wrap; gap: 12px; flex: 1; }
 .summaryBlock {
@@ -477,12 +475,13 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   0% { transform: scale(0.8); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
-.subjectProgressCard {
+#progressSummary {
   background: #fff;
   border-radius: 16px;
   padding: 14px 20px;
   box-shadow: 0 4px 16px rgba(0, 87, 231, 0.1);
   margin-bottom: 20px;
+  box-sizing: border-box;
 }
 .subjectProgressTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 8px; }
 .subjectProgressItem {

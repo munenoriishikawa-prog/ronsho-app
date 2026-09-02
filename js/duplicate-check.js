@@ -45,6 +45,40 @@ function saveDupArchive() {
   if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 loadDupArchive();
+
+// 再読み込み時に自動引き継ぎできなかった論証の内容（本文・出題年・取込日時など）を
+// タイトルをキーにスナップショットしておく。studyLogは暗記フラグ等しか持たないため、
+// その他タブで「これはどの論証だったか」を判断できるようにするための保管庫
+const ORPHAN_ENTRY_ARCHIVE_KEY = 'ronshoOrphanEntryArchiveV1';
+let orphanEntryArchive = {};
+function loadOrphanEntryArchive() {
+  try {
+    const raw = localStorage.getItem(ORPHAN_ENTRY_ARCHIVE_KEY);
+    orphanEntryArchive = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    orphanEntryArchive = {};
+  }
+}
+function saveOrphanEntryArchive() {
+  localStorage.setItem(ORPHAN_ENTRY_ARCHIVE_KEY, JSON.stringify(orphanEntryArchive));
+}
+loadOrphanEntryArchive();
+function saveOrphanedEntrySnapshot(e) {
+  orphanEntryArchive[e.title] = {
+    subject: e.subject || '',
+    category: e.category || '',
+    body: e.body || '',
+    year: e.year || '',
+    importedAt: e.importedAt || null
+  };
+  saveOrphanEntryArchive();
+}
+function deleteOrphanedEntrySnapshot(title) {
+  if (!Object.prototype.hasOwnProperty.call(orphanEntryArchive, title)) return;
+  delete orphanEntryArchive[title];
+  saveOrphanEntryArchive();
+}
+
 function dupArchiveEntry(target, reasonLabel) {
   dupArchiveList.unshift({ entry: target, deletedAt: new Date().toISOString(), reason: reasonLabel || '' });
   saveDupArchive();
@@ -386,10 +420,15 @@ function carryOverStudyLogOnReimport(oldEntries, newEntries) {
     const oldLog = studyLog[oldE.title];
     if (!oldLog) return; // 学習記録が無ければ引き継ぐものが無い
     const best = findBestReimportMatch(oldE, newEntries, newE => usedNewTitles.has(newE.title));
-    if (!best) return;
+    if (!best) {
+      // 引き継ぎ失敗：その他タブから内容を見て手動で引き継げるよう、論証の内容を保管しておく
+      saveOrphanedEntrySnapshot(oldE);
+      return;
+    }
     usedNewTitles.add(best.title);
     studyLog[best.title] = mergeStudyLogForCarryOver(oldLog, studyLog[best.title]);
     delete studyLog[oldE.title];
+    deleteOrphanedEntrySnapshot(oldE.title);
     carriedCount++;
   });
   return carriedCount;
@@ -401,14 +440,31 @@ function findOrphanedStudyLogTitles() {
   const currentTitles = new Set(entries.map(e => e.title));
   return Object.keys(studyLog).filter(title => !currentTitles.has(title));
 }
+// 手動引き継ぎでは、引き継ぎ先の論証が既に学習記録を持っていても、それぞれ
+// 別の時期に積み上げた学習として扱い、日付が重複していても単純に合計する
+// （自動引き継ぎ・重複チェックのマージが使う日ごとの最大値方式とはあえて変えている）
+function mergeStudyLogForManualCarryOver(oldLog, newLog) {
+  if (!newLog) return oldLog;
+  return {
+    ...newLog,
+    history: [...(newLog.history || []), ...(oldLog.history || [])].sort(),
+    memorized: !!(newLog.memorized || oldLog.memorized),
+    starred: !!(newLog.starred || oldLog.starred),
+    bookmarked: !!(newLog.bookmarked || oldLog.bookmarked),
+    skipped: !!(newLog.skipped || oldLog.skipped),
+    confidence: newLog.confidence || oldLog.confidence || null,
+    memo: newLog.memo || oldLog.memo || ''
+  };
+}
 // 「引き継がれなかった学習記録」を、ユーザーが選んだ現在の論証へ手動で引き継ぐ
 function manualCarryOverStudyLog(oldTitle, targetTitle) {
   const oldLog = studyLog[oldTitle];
   if (!oldLog) return false;
   if (!entries.some(e => e.title === targetTitle)) return false;
-  studyLog[targetTitle] = mergeStudyLogForCarryOver(oldLog, studyLog[targetTitle]);
+  studyLog[targetTitle] = mergeStudyLogForManualCarryOver(oldLog, studyLog[targetTitle]);
   delete studyLog[oldTitle];
   saveStudyLog();
+  deleteOrphanedEntrySnapshot(oldTitle);
   return true;
 }
 // 引き継ぎ先が見つからない（そもそも該当する論証が無くなった等の）学習記録を破棄する
@@ -416,6 +472,7 @@ function discardOrphanedStudyLog(oldTitle) {
   if (!studyLog[oldTitle]) return false;
   delete studyLog[oldTitle];
   saveStudyLog();
+  deleteOrphanedEntrySnapshot(oldTitle);
   return true;
 }
 // ▼▼▼ 新規追加：引き継がれなかった学習記録を、その他タブから手動で救済できるように ▼▼▼
@@ -440,13 +497,27 @@ function renderOrphanedStudyLog() {
     + '</datalist>';
   const rowsHtml = orphanTitles.map(title => {
     const log = studyLog[title];
+    const snap = orphanEntryArchive[title];
     const flags = [];
     if (log && log.memorized) flags.push('✅ 暗記済み');
     if (log && log.starred) flags.push('😰 苦手');
     if (log && log.history && log.history.length) flags.push('学習' + log.history.length + '回');
+    const snapMeta = [];
+    if (snap) {
+      if (snap.subject) snapMeta.push(snap.subject);
+      if (snap.year) snapMeta.push('出題年:' + snap.year);
+      snapMeta.push('取込日時:' + formatImportedAt(snap.importedAt));
+    } else {
+      snapMeta.push('内容不明（このバージョン以前に発生した引き継ぎ漏れ）');
+    }
+    const bodyPreview = snap && snap.body
+      ? '<div class="orphanedStudyLogBodyPreview">' + escapeHtml(snap.body.slice(0, 100)) + (snap.body.length > 100 ? '…' : '') + '</div>'
+      : '';
     return '<div class="dupArchiveRow orphanedStudyLogRow">'
       + '<div class="dupArchiveInfo">'
       + '<div class="dupArchiveTitle">' + escapeHtml(title) + '</div>'
+      + '<div class="dupArchiveMeta">' + escapeHtml(snapMeta.join(' ／ ')) + '</div>'
+      + bodyPreview
       + '<div class="dupArchiveMeta">' + (flags.length ? flags.join('／') : '記録なし') + '</div>'
       + '</div>'
       + '<div class="dupArchiveActions">'

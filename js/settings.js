@@ -7,7 +7,7 @@ const SHORTCUT_PAGE_LIST = [
   { id: 'quizPage', label: '📝 問題演習' },
   { id: 'speechPage', label: '🔊 読み上げ' },
   { id: 'calendarPage', label: '📅 カレンダー' },
-  { id: 'csvPage', label: '📥📤 データ' },
+  { id: 'csvPage', label: '📥 データ' },
   { id: 'pastExamPage', label: '📝 過去問ログ' },
   { id: 'settingsPage', label: '⚙️ その他' }
 ];

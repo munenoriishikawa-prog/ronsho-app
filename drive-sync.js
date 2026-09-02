@@ -13,6 +13,7 @@
   const DAILYSTATS_KEY = 'ronshoDailyStatsV1';
   const DAILYGOAL_KEY = 'ronshoDailyGoalV1';
   const XP_KEY = 'ronshoXpV1';
+  const ORPHANENTRYARCHIVE_KEY = 'ronshoOrphanEntryArchiveV1';
 
   let revision = Number(localStorage.getItem(REVISION_KEY) || 0);
   // 「最後に同期が完了した時点のローカルの状態」。ページを再読み込みしても
@@ -54,7 +55,7 @@
   const state = t => { const e = document.getElementById('driveSyncState'); if (e) e.textContent = t };
 
   const snapshot = () => ({
-    schemaVersion: 4,
+    schemaVersion: 5,
     entries: getEntries(),
     studyLog: read(STUDYLOG_KEY, {}),
     manualLog: read(MANUALLOG_KEY, {}),
@@ -65,7 +66,8 @@
     speechDict: read(SPEECHDICT_KEY, []),
     dailyStats: read(DAILYSTATS_KEY, {}),
     dailyGoal: read(DAILYGOAL_KEY, null),
-    xp: read(XP_KEY, 0)
+    xp: read(XP_KEY, 0),
+    orphanEntryArchive: read(ORPHANENTRYARCHIVE_KEY, {})
   });
 
   const hasLocalData = () => {
@@ -120,18 +122,21 @@
       write(DAILYSTATS_KEY, data.dailyStats || {});
       if (data.dailyGoal != null) write(DAILYGOAL_KEY, data.dailyGoal);
       write(XP_KEY, data.xp || 0);
+      write(ORPHANENTRYARCHIVE_KEY, data.orphanEntryArchive || {});
       try { entries = data.entries || [] } catch (_) {}
       try { studyLog = data.studyLog || {} } catch (_) {}
       try { manualLog = data.manualLog || {} } catch (_) {}
       try { dupArchiveList = data.dupArchive || [] } catch (_) {}
       try { dupResolvedSet = new Set(data.dupResolved || []) } catch (_) {}
       try { speechDict = data.speechDict || [] } catch (_) {}
+      try { orphanEntryArchive = data.orphanEntryArchive || {} } catch (_) {}
       if (typeof saveEntries === 'function') saveEntries();
       if (typeof renderAll === 'function') renderAll(true);
       if (typeof renderCountdownCard === 'function') renderCountdownCard();
       if (typeof renderDupArchive === 'function') renderDupArchive();
       if (typeof renderPastMatrixTable === 'function') renderPastMatrixTable();
       if (typeof renderSpeechDictList === 'function') renderSpeechDictList();
+      if (typeof renderOrphanedStudyLog === 'function') renderOrphanedStudyLog();
     } finally {
       applyingRemoteData = false;
     }
@@ -206,7 +211,8 @@
       dupResolved: '✅ 重複チェックの「両方残す」記録',
       speechDict: '🗣 読み方辞書',
       dailyGoal: '🎯 今日の目標値',
-      xp: '🏆 経験値・レベル'
+      xp: '🏆 経験値・レベル',
+      orphanEntryArchive: '🔗 引き継がれなかった学習記録の内容'
     };
     const otherFieldLabels = Object.keys(OTHER_FIELD_LABELS).filter(k => {
       return canonicalJSON((localData || {})[k]) !== canonicalJSON((remoteData || {})[k]);

@@ -61,6 +61,7 @@ function loadOrphanEntryArchive() {
 }
 function saveOrphanEntryArchive() {
   localStorage.setItem(ORPHAN_ENTRY_ARCHIVE_KEY, JSON.stringify(orphanEntryArchive));
+  if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 loadOrphanEntryArchive();
 function saveOrphanedEntrySnapshot(e) {

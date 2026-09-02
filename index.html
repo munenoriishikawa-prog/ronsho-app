@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v24.2（暗記率をホーム限定に、実績バッジをその他へ移動）</title>
+<title>論証集アプリ v24.3（カウントダウン・サマリーをタブ直下に移動）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.2</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.3</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -28,6 +28,10 @@
 <button class="tabBtn" data-page="settingsPage">⚙️ その他</button>
 </div>
 <div id="studyPage" class="page active">
+<div id="homeSummaryRow" class="homeSummaryRow">
+<div id="countdownCard"></div>
+<div id="summarySection" class="summarySection"></div>
+</div>
 <div id="homeStatsCard" class="homeStatsCard">
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
@@ -35,10 +39,6 @@
 <div id="gamificationRow" class="gamificationRow"></div>
 </div>
 <div id="progressSummary"></div>
-<div id="homeSummaryRow" class="homeSummaryRow">
-<div id="countdownCard"></div>
-<div id="summarySection" class="summarySection"></div>
-</div>
 </div>
 <!-- ▼▼▼ 新規追加：論証一覧タブ（studyPageから論証テーブル部分を分離） ▼▼▼ -->
 <div id="entryListPage" class="page">

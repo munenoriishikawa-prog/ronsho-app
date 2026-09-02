@@ -69,7 +69,7 @@ document.getElementById('resetShortcutsBtn').addEventListener('click', () => {
   renderShortcutSettings();
   status.textContent = '⌨️ ショートカットキーを初期設定に戻しました。';
 });
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderShortcutSettings);
+registerSettingsPageRenderer(renderShortcutSettings);
 /* ▼▼▼ 新規追加：デスクトップペット設定 ここから ▼▼▼ */
 function renderPetSettings() {
   const wrap = document.getElementById('petSettingsWrap');
@@ -107,7 +107,7 @@ function renderPetSettings() {
     status.textContent = '🐾 吹き出しの表示時間を' + (Number(evt.target.value) / 1000) + '秒に変更しました。';
   });
 }
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderPetSettings);
+registerSettingsPageRenderer(renderPetSettings);
 /* ▲▲▲ 新規追加：デスクトップペット設定 ここまで ▲▲▲ */
 /* ▼▼▼ 新規追加：読み上げのデフォルト設定 ここから ▼▼▼ */
 function renderSpeechRateSettings() {
@@ -144,7 +144,7 @@ document.getElementById('speechDefaultIncludeMemorizedChk').addEventListener('ch
   if (liveChk) liveChk.checked = evt.target.checked;
   status.textContent = '🔊 読み上げのデフォルトの「暗記済みも含める」を' + (evt.target.checked ? 'ONにしました。' : 'OFFにしました。');
 });
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderSpeechRateSettings);
+registerSettingsPageRenderer(renderSpeechRateSettings);
 /* ▲▲▲ 新規追加：読み上げのデフォルト設定 ここまで ▲▲▲ */
 /* ▼▼▼ 新規追加：問題演習のデフォルト設定 ここから ▼▼▼ */
 const QUIZ_SETTINGS_CHK_MAP = {
@@ -184,7 +184,7 @@ Object.keys(QUIZ_SETTINGS_CHK_MAP).forEach(id => {
     status.textContent = '📝 問題演習のデフォルト設定を変更しました。';
   });
 });
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderQuizDefaultFilterSettings);
+registerSettingsPageRenderer(renderQuizDefaultFilterSettings);
 /* ▲▲▲ 新規追加：問題演習のデフォルト設定 ここまで ▲▲▲ */
 /* ▼▼▼ 新規追加：ホーム・問題演習の絞り込みのデフォルト設定 ここから ▼▼▼ */
 function renderStarFilterDefaultSettings() {
@@ -199,7 +199,7 @@ document.getElementById('starFilterDefaultSelect').addEventListener('change', (e
   renderStudyTable(entries);
   status.textContent = '🏠 絞り込みのデフォルトを変更しました。';
 });
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderStarFilterDefaultSettings);
+registerSettingsPageRenderer(renderStarFilterDefaultSettings);
 /* ▲▲▲ 新規追加：ホーム・問題演習の絞り込みのデフォルト設定 ここまで ▲▲▲ */
 /* ▼▼▼ 新規追加：過去問ログのデフォルト種別設定 ここから ▼▼▼ */
 function renderPastExamDefaultTypeSettings() {
@@ -213,7 +213,7 @@ document.getElementById('pastExamDefaultTypeSelect').addEventListener('change', 
   if (liveSel) liveSel.value = evt.target.value;
   status.textContent = '📝 過去問ログのデフォルトの種別を「' + evt.target.value + '」にしました。';
 });
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderPastExamDefaultTypeSettings);
+registerSettingsPageRenderer(renderPastExamDefaultTypeSettings);
 /* ▲▲▲ 新規追加：過去問ログのデフォルト種別設定 ここまで ▲▲▲ */
 /* ▼▼▼ 新規追加：バックアップのお知らせ日数設定 ここから ▼▼▼ */
 function renderBackupReminderDaysSettings() {
@@ -228,7 +228,7 @@ document.getElementById('backupReminderDaysInput').addEventListener('change', (e
   if (typeof renderBackupReminderBanner === 'function') renderBackupReminderBanner();
   status.textContent = '📦 バックアップのお知らせ日数を' + days + '日にしました。';
 });
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderBackupReminderDaysSettings);
+registerSettingsPageRenderer(renderBackupReminderDaysSettings);
 /* ▲▲▲ 新規追加：バックアップのお知らせ日数設定 ここまで ▲▲▲ */
 /* ▼▼▼ 新規追加：今日の目標設定 ここから ▼▼▼ */
 function renderDailyGoalSettings() {
@@ -243,7 +243,7 @@ document.getElementById('dailyGoalInput').addEventListener('change', (evt) => {
   if (typeof renderGamificationPanel === 'function') renderGamificationPanel();
   status.textContent = '🎯 今日の目標を' + n + '問にしました。';
 });
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderDailyGoalSettings);
+registerSettingsPageRenderer(renderDailyGoalSettings);
 /* ▲▲▲ 新規追加：今日の目標設定 ここまで ▲▲▲ */
 function isTypingTarget(el) {
   if (!el) return false;

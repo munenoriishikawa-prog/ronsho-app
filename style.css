@@ -1185,16 +1185,6 @@ input[type=file] { display:none; }
 .speechTitle { font-size: 20px; font-weight: 800; color: #0c2340; margin: 12px 0 20px; line-height: 1.5; }
 .speechBody { text-align: left; font-size: 14px; line-height: 1.8; background: #f7fafe; border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
 .speechEmpty { color: #4a6a90; font-size: 14px; padding: 30px; }
-.speechDictSection {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px 20px;
-  box-shadow: 0 4px 16px rgba(0, 87, 231, 0.08);
-  margin: 20px auto 0;
-  max-width: 720px;
-}
-.speechDictTitle { font-weight: 700; font-size: 14px; color: #0c2340; margin-bottom: 6px; }
-.speechDictIntro { font-size: 12px; color: #4a6a90; margin-bottom: 12px; }
 .speechDictForm { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .speechDictForm input { padding: 6px 10px; border-radius: 8px; border: 1px solid #9dc4f2; font-size: 13px; }
 .speechDictForm input#speechDictWordInput { width: 140px; }

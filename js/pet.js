@@ -108,11 +108,29 @@
   let bubble = null, bubbleHideTimer = null, bubbleFollowRaf = null;
 
   // ペットの移動中も吹き出しの位置が追従するよう、表示中は毎フレーム座標を更新する
+  // 吹き出しの位置は「ペットの真上中央」を基準にしつつ、画面端では
+  // 中身がはみ出して潰れて見えないよう、吹き出し自体は画面内に収まる位置へ
+  // ずらす。その代わり、矢印(::after)だけをペットの実際の位置に向けて
+  // ずらすことで、見た目上はペットを指し続けているようにする
+  const BUBBLE_SCREEN_MARGIN = 8;
+  const BUBBLE_ARROW_SAFE_MARGIN = 14;
   function followBubble() {
     if (!bubble || !outer) { bubbleFollowRaf = null; return; }
     const rect = outer.getBoundingClientRect();
-    bubble.style.left = (rect.left + rect.width / 2) + 'px';
-    bubble.style.top = rect.top + 'px';
+    const bw = bubble.offsetWidth;
+    const bh = bubble.offsetHeight;
+    const petCenterX = rect.left + rect.width / 2;
+    const minX = bw / 2 + BUBBLE_SCREEN_MARGIN;
+    const maxX = Math.max(minX, window.innerWidth - bw / 2 - BUBBLE_SCREEN_MARGIN);
+    const anchorX = Math.min(Math.max(petCenterX, minX), maxX);
+    const minY = bh + BUBBLE_SCREEN_MARGIN;
+    const maxY = Math.max(minY, window.innerHeight - BUBBLE_SCREEN_MARGIN);
+    const anchorY = Math.min(Math.max(rect.top, minY), maxY);
+    bubble.style.left = anchorX + 'px';
+    bubble.style.top = anchorY + 'px';
+    const arrowSafe = Math.max(bw / 2 - BUBBLE_ARROW_SAFE_MARGIN, 0);
+    const arrowOffset = Math.min(Math.max(petCenterX - anchorX, -arrowSafe), arrowSafe);
+    bubble.style.setProperty('--bubbleArrowLeft', 'calc(50% + ' + arrowOffset + 'px)');
     bubbleFollowRaf = requestAnimationFrame(followBubble);
   }
   function hideBubble() {

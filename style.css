@@ -1347,7 +1347,7 @@ table.pastMatrixTable th, table.pastMatrixTable td {
 /* ▼▼▼ 画面を歩き回るドット絵のペット ここから ▼▼▼ */
 #deskPet {
   position: fixed;
-  bottom: 6px;
+  top: 0;
   left: 0;
   z-index: 500;
   transform-origin: center;

@@ -72,6 +72,8 @@
   const PET_BUBBLE_DURATION_KEY = 'ronshoPetBubbleDurationV1';
   const BUBBLE_DURATION_DEFAULT_MS = 8000;
   const BUBBLE_DURATION_OPTIONS_MS = [4000, 8000, 12000, 16000, 20000];
+  const PET_BUBBLE_ENABLED_KEY = 'ronshoPetBubbleEnabledV1';
+  const BOTTOM_MARGIN_PX = 6;
 
   function loadSpeciesIndex() {
     // Number(null)は0になってしまう(NaNにならない)ため、未保存(null)を
@@ -94,25 +96,38 @@
   function saveBubbleDurationMs(ms) {
     localStorage.setItem(PET_BUBBLE_DURATION_KEY, String(ms));
   }
+  function loadBubbleEnabled() {
+    return localStorage.getItem(PET_BUBBLE_ENABLED_KEY) !== '0'; // 未設定時はデフォルトで表示する
+  }
+  function saveBubbleEnabled(enabled) {
+    localStorage.setItem(PET_BUBBLE_ENABLED_KEY, enabled ? '1' : '0');
+  }
 
   let speciesIndex = loadSpeciesIndex();
-  let outer = null, inner = null, x = 0, pendingTimer = null;
-  let bubble = null, bubbleHideTimer = null;
+  let outer = null, inner = null, x = 0, y = 0, pendingTimer = null;
+  let bubble = null, bubbleHideTimer = null, bubbleFollowRaf = null;
 
+  // ペットの移動中も吹き出しの位置が追従するよう、表示中は毎フレーム座標を更新する
+  function followBubble() {
+    if (!bubble || !outer) { bubbleFollowRaf = null; return; }
+    const rect = outer.getBoundingClientRect();
+    bubble.style.left = (rect.left + rect.width / 2) + 'px';
+    bubble.style.top = rect.top + 'px';
+    bubbleFollowRaf = requestAnimationFrame(followBubble);
+  }
   function hideBubble() {
     clearTimeout(bubbleHideTimer);
+    if (bubbleFollowRaf) { cancelAnimationFrame(bubbleFollowRaf); bubbleFollowRaf = null; }
     if (bubble) { bubble.remove(); bubble = null; }
   }
   function showBubble(text) {
-    if (!outer) return;
+    if (!outer || !loadBubbleEnabled()) return;
     hideBubble();
     bubble = document.createElement('div');
     bubble.className = 'deskPetBubble';
     bubble.textContent = text;
     document.body.appendChild(bubble);
-    const rect = outer.getBoundingClientRect();
-    bubble.style.left = (rect.left + rect.width / 2) + 'px';
-    bubble.style.top = rect.top + 'px';
+    followBubble();
     bubbleHideTimer = setTimeout(() => {
       if (!bubble) return;
       bubble.classList.add('fadeOut');
@@ -163,29 +178,32 @@
   // ひと息ついたりと、いくつかの動きをランダムに織り交ぜる
   function chooseNextAction() {
     const r = Math.random();
+    // 吹き出しは歩行中も表示され続けるようになったので、動きの種類に関わらず話しかけられる
+    maybeSpeak();
     if (r < 0.55) {
       walkToRandom();
     } else if (r < 0.75) {
-      maybeSpeak();
       jumpInPlace();
     } else {
-      maybeSpeak();
       idlePause();
     }
   }
   function walkToRandom() {
-    hideBubble();
-    const { w } = spriteSize(speciesIndex);
+    const { w, h } = spriteSize(speciesIndex);
     const maxX = Math.max(0, window.innerWidth - w);
+    const maxY = Math.max(0, window.innerHeight - h - BOTTOM_MARGIN_PX);
     const targetX = Math.random() * maxX;
-    const distance = Math.abs(targetX - x);
+    const targetY = Math.random() * maxY;
+    const distance = Math.hypot(targetX - x, targetY - y);
     const durationSec = Math.max(0.8, distance / SPEED_PX_PER_SEC);
     const direction = targetX >= x ? 1 : -1;
     outer.style.transform = 'scaleX(' + direction + ')';
-    outer.style.transition = 'left ' + durationSec + 's linear';
+    outer.style.transition = 'left ' + durationSec + 's linear, top ' + durationSec + 's linear';
     inner.classList.add('walking');
     x = targetX;
+    y = targetY;
     outer.style.left = x + 'px';
+    outer.style.top = y + 'px';
     setTimeout(() => {
       inner.classList.remove('walking');
       scheduleNext(MIN_STOP_MS + Math.random() * (MAX_STOP_MS - MIN_STOP_MS));
@@ -221,9 +239,17 @@
   }
   function onResize() {
     if (!outer) return;
-    const { w } = spriteSize(speciesIndex);
+    const { w, h } = spriteSize(speciesIndex);
     const maxX = Math.max(0, window.innerWidth - w);
-    if (x > maxX) { x = maxX; outer.style.transition = 'none'; outer.style.left = x + 'px'; }
+    const maxY = Math.max(0, window.innerHeight - h - BOTTOM_MARGIN_PX);
+    let changed = false;
+    if (x > maxX) { x = maxX; changed = true; }
+    if (y > maxY) { y = maxY; changed = true; }
+    if (changed) {
+      outer.style.transition = 'none';
+      outer.style.left = x + 'px';
+      outer.style.top = y + 'px';
+    }
   }
 
   function createPet() {
@@ -243,9 +269,11 @@
     outer.appendChild(inner);
     document.body.appendChild(outer);
     applySpecies(speciesIndex);
-    const { w } = spriteSize(speciesIndex);
+    const { w, h } = spriteSize(speciesIndex);
     x = Math.random() * Math.max(0, window.innerWidth - w);
+    y = Math.max(0, window.innerHeight - h - BOTTOM_MARGIN_PX);
     outer.style.left = x + 'px';
+    outer.style.top = y + 'px';
     outer.addEventListener('click', onClickReact);
     scheduleNext(1000);
   }
@@ -272,7 +300,9 @@
     say: (text) => showBubble(text),
     BUBBLE_DURATION_OPTIONS_MS: BUBBLE_DURATION_OPTIONS_MS,
     getBubbleDurationMs: loadBubbleDurationMs,
-    setBubbleDurationMs: saveBubbleDurationMs
+    setBubbleDurationMs: saveBubbleDurationMs,
+    isBubbleEnabled: loadBubbleEnabled,
+    setBubbleEnabled: (enabled) => { saveBubbleEnabled(enabled); if (!enabled) hideBubble(); }
   };
 })();
 /* ▲▲▲ ドット絵のペット ここまで ▲▲▲ */

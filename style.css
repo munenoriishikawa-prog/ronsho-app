@@ -285,8 +285,7 @@ th {
 }
 .bodyCellArea.collapsedState:hover { background: #fdf2a3; }
 mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; padding: 0 1px; }
-#status { margin: 10px 0; color: #0c2340; font-weight: 600; min-height: 20px; opacity: 1; transition: opacity 1s ease; }
-#status.statusFading { opacity: 0; }
+#status { margin: 10px 0; color: #0c2340; font-weight: 600; min-height: 20px; }
 .homeStatsCard {
   background: #fff;
   border-radius: 16px;

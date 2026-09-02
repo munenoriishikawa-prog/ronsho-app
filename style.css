@@ -296,8 +296,8 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .topStatusRow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; }
 #overallProgressCardWrap { flex: 1; min-width: 260px; }
 #overallProgressCardWrap .progressCard { margin-bottom: 0; height: 100%; box-sizing: border-box; }
-.homeStatsCard .topStatusRow { padding: 14px 20px; border-top: 1px solid #e6edf7; }
-.homeStatsCard #overallProgressCardWrap .progressCard {
+#progressSummary .topStatusRow { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #e6edf7; }
+#overallProgressCardWrap .progressCard {
   background: transparent;
   box-shadow: none;
   padding: 0;

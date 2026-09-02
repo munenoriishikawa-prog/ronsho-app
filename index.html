@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v24.16（ペットが自由に移動・吹き出し設定を追加）</title>
+<title>論証集アプリ v24.17（引き継がれなかった学習記録を手動で救済）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.16</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.17</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -206,6 +206,12 @@
 <div class="dataIoSectionTitle">🕒 重複チェックの読込日時リセット</div>
 <div class="dupCheckIntro">重複チェックで使われる「読込日時」を全論証について不明表示に戻します。</div>
 <span class="clearEntriesLink" id="resetImportedAtBtn">🕒 読込日時をリセット（不明表示に戻す）</span>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🔗 引き継がれなかった学習記録</div>
+<div class="dupCheckIntro">Word再読み込み時、内容を大きく書き直した論証は自動での学習記録の引き継ぎに失敗することがあります。ここから引き継ぎ先の論証を選んで手動で引き継ぐか、不要であれば破棄できます（データが自動的に削除されることはありません）。</div>
+<span class="speechDictToggle" id="orphanedStudyLogToggleBtn">▶ 一覧を表示する</span>
+<div id="orphanedStudyLogWrap" class="speechDictListWrap"></div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🗄 全データのバックアップ</div>

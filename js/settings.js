@@ -77,9 +77,13 @@ function renderPetSettings() {
   const control = window.ronshoPetControl;
   const enabled = control.isEnabled();
   const speciesIdx = control.getSpeciesIndex();
+  const bubbleMs = control.getBubbleDurationMs();
   let html = '<label class="petEnableLabel"><input type="checkbox" id="petEnabledChk"' + (enabled ? ' checked' : '') + '> ペットを表示する</label>';
   html += '<div class="petSpeciesRow"><span>キャラクター：</span><select id="petSpeciesSelect"' + (enabled ? '' : ' disabled') + '>'
     + control.SPECIES_LABELS.map((label, idx) => '<option value="' + idx + '"' + (idx === speciesIdx ? ' selected' : '') + '>' + label + '</option>').join('')
+    + '</select></div>';
+  html += '<div class="petSpeciesRow"><span>吹き出しの表示時間：</span><select id="petBubbleDurationSelect"' + (enabled ? '' : ' disabled') + '>'
+    + control.BUBBLE_DURATION_OPTIONS_MS.map(ms => '<option value="' + ms + '"' + (ms === bubbleMs ? ' selected' : '') + '>' + (ms / 1000) + '秒</option>').join('')
     + '</select></div>';
   wrap.innerHTML = html;
   document.getElementById('petEnabledChk').addEventListener('change', (evt) => {
@@ -90,6 +94,10 @@ function renderPetSettings() {
   document.getElementById('petSpeciesSelect').addEventListener('change', (evt) => {
     control.setSpeciesIndex(Number(evt.target.value));
     status.textContent = '🐾 キャラクターを「' + control.SPECIES_LABELS[Number(evt.target.value)] + '」に変更しました。';
+  });
+  document.getElementById('petBubbleDurationSelect').addEventListener('change', (evt) => {
+    control.setBubbleDurationMs(Number(evt.target.value));
+    status.textContent = '🐾 吹き出しの表示時間を' + (Number(evt.target.value) / 1000) + '秒に変更しました。';
   });
 }
 document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderPetSettings);

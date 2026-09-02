@@ -1529,6 +1529,7 @@ table.pastMatrixTable th, table.pastMatrixTable td {
 .deskPetBubble {
   position: fixed;
   z-index: 502;
+  width: max-content;
   max-width: 220px;
   padding: 8px 12px;
   border-radius: 12px;
@@ -1546,7 +1547,7 @@ table.pastMatrixTable th, table.pastMatrixTable td {
 .deskPetBubble::after {
   content: "";
   position: absolute;
-  left: 50%;
+  left: var(--bubbleArrowLeft, 50%);
   bottom: -6px;
   width: 12px;
   height: 12px;

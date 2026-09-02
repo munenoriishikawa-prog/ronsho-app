@@ -1,3 +1,16 @@
+/* ▼▼▼ 新規追加：表示テーマ（ダークモード）設定 ここから ▼▼▼ */
+function renderThemeSettings() {
+  const sel = document.getElementById('themeSelect');
+  if (!sel || !window.ronshoThemeControl) return;
+  sel.value = window.ronshoThemeControl.getTheme();
+}
+document.getElementById('themeSelect').addEventListener('change', (evt) => {
+  window.ronshoThemeControl.setTheme(evt.target.value);
+  const labels = { system: '端末の設定に合わせる', light: 'ライト', dark: 'ダーク' };
+  status.textContent = '🌓 表示テーマを「' + labels[evt.target.value] + '」にしました。';
+});
+registerSettingsPageRenderer(renderThemeSettings);
+/* ▲▲▲ 表示テーマ（ダークモード）設定 ここまで ▲▲▲ */
 /* ▼▼▼ 新規追加：タブ切り替えショートカットキー機能 ここから ▼▼▼ */
 // タブ一覧はindex.htmlの.tabBtnと同じdata-page/ラベルを手動で対応させる。
 // このタブ自身（settingsPage）にも割り当てられるようにしておく。

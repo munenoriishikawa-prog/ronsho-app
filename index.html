@@ -3,16 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v24.21（内部リファクタリング：その他タブの再描画処理を集約）</title>
+<title>論証集アプリ v25.0（ダークモードに対応）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icon-192.png">
+<script>
+// ダークモード切り替え時に一瞬ライトのまま表示される「チラつき」を防ぐため、
+// CSS読み込み前にこの端末の保存済みテーマを反映しておく
+try {
+  var ronshoTheme = localStorage.getItem('ronshoThemeV1');
+  if (ronshoTheme === 'light' || ronshoTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', ronshoTheme);
+  }
+} catch (e) {}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.21</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v25.0</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -198,6 +208,15 @@
 <div id="settingsPage" class="page">
 <div id="badgesSection"></div>
 <div class="dataIoSection">
+<div class="dataIoSectionTitle">🌓 表示テーマ</div>
+<div class="dupCheckIntro">画面の配色を切り替えます。「端末の設定に合わせる」の場合、端末やブラウザ側のダークモード設定に自動で追従します。この設定はこの端末だけに保存されます。</div>
+<select id="themeSelect">
+<option value="system">端末の設定に合わせる</option>
+<option value="light">☀️ ライト</option>
+<option value="dark">🌙 ダーク</option>
+</select>
+</div>
+<div class="dataIoSection">
 <div class="dataIoSectionTitle">🗑 読み込みデータの削除</div>
 <div class="dupCheckIntro">読み込んだWordデータを全て削除し、最初からやり直します。</div>
 <span class="clearEntriesLink" id="clearEntriesBtn">🗑 読み込みデータを削除して最初からやり直す（学習記録・暗記度・苦手フラグなどは削除されません）。</span>
@@ -350,6 +369,7 @@
 <option value="実務基礎刑事"></option>
 </datalist>
 <script src="js/core.js"></script>
+<script src="js/theme.js"></script>
 <script src="js/duplicate-check.js"></script>
 <script src="js/entry-edit.js"></script>
 <script src="js/study-table.js"></script>

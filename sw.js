@@ -1,8 +1,9 @@
-const CACHE_NAME = 'ronsho-app-cache-v126';
+const CACHE_NAME = 'ronsho-app-cache-v127';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './js/core.js',
+  './js/theme.js',
   './js/duplicate-check.js',
   './js/entry-edit.js',
   './js/study-table.js',

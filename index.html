@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v24.14（ペットの吹き出し表示時間を設定可能に）</title>
+<title>論証集アプリ v24.15（読み方辞書をその他タブに移動）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.14</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.15</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -117,17 +117,6 @@
 <button type="button" id="speechNextBtn">⏭ 次へ</button>
 </div>
 <div id="speechCurrentCard" class="speechCurrentCard"></div>
-<div class="speechDictSection">
-<div class="speechDictTitle">🗣 読み方辞書（法律用語の誤読を修正）</div>
-<div class="speechDictIntro">読み上げ時に誤読されやすい用語を、正しい読み（ひらがな）に自動で置き換えます。</div>
-<div class="speechDictForm">
-<input type="text" id="speechDictWordInput" placeholder="例：瑕疵">
-<input type="text" id="speechDictReadingInput" placeholder="例：かし">
-<button type="button" id="speechDictAddBtn">＋ 追加</button>
-</div>
-<span class="speechDictToggle" id="speechDictToggleBtn">▶ 登録一覧を表示する</span>
-<div id="speechDictListWrap" class="speechDictListWrap"></div>
-</div>
 </div>
 <div id="calendarPage" class="page">
 <div id="trendWrap"></div>
@@ -279,6 +268,17 @@
 <div class="settingsInlineRow">
 <label><input type="checkbox" id="speechDefaultIncludeMemorizedChk"> 暗記済みも含める</label>
 </div>
+</div>
+<div class="dataIoSection">
+<div class="dataIoSectionTitle">🗣 読み方辞書（法律用語の誤読を修正）</div>
+<div class="dupCheckIntro">読み上げ時に誤読されやすい用語を、正しい読み（ひらがな）に自動で置き換えます。</div>
+<div class="speechDictForm">
+<input type="text" id="speechDictWordInput" placeholder="例：瑕疵">
+<input type="text" id="speechDictReadingInput" placeholder="例：かし">
+<button type="button" id="speechDictAddBtn">＋ 追加</button>
+</div>
+<span class="speechDictToggle" id="speechDictToggleBtn">▶ 登録一覧を表示する</span>
+<div id="speechDictListWrap" class="speechDictListWrap"></div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📝 問題演習のデフォルト設定</div>

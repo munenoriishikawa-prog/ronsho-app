@@ -63,7 +63,26 @@
     '「催告」は相手に行動を促すこと。放っておくと不利になることもあるよ',
     '判例を読むときは、まず結論とその理由づけを分けて整理すると分かりやすいよ'
   ];
-  const UNIT = 5;
+  const BASE_UNIT = 5;
+  // レベルが上がるにつれてペットも大きく成長し、節目では見た目にも
+  // 分かるアクセサリーが付く（学習データそのものには一切影響しない）
+  const PET_GROWTH_STAGES = [
+    { minLevel: 1, scale: 1, accessory: '' },
+    { minLevel: 5, scale: 1.3, accessory: '✨' },
+    { minLevel: 10, scale: 1.6, accessory: '👑' },
+    { minLevel: 20, scale: 2, accessory: '🌟' }
+  ];
+  function currentLevel() {
+    if (typeof getLevelInfo !== 'function' || typeof loadXp !== 'function') return 1;
+    try { return getLevelInfo(loadXp()).level; } catch (e) { return 1; }
+  }
+  function growthStageForLevel(level) {
+    let stage = PET_GROWTH_STAGES[0];
+    PET_GROWTH_STAGES.forEach(s => { if (level >= s.minLevel) stage = s; });
+    return stage;
+  }
+  let currentUnit = BASE_UNIT;
+  let lastGrowthStageIndex = -1;
   const MIN_STOP_MS = 1200;
   const MAX_STOP_MS = 4000;
   const SPEED_PX_PER_SEC = 45;
@@ -104,7 +123,7 @@
   }
 
   let speciesIndex = loadSpeciesIndex();
-  let outer = null, inner = null, x = 0, y = 0, pendingTimer = null;
+  let outer = null, inner = null, accessoryEl = null, x = 0, y = 0, pendingTimer = null;
   let bubble = null, bubbleHideTimer = null, bubbleFollowRaf = null;
 
   // ペットの移動中も吹き出しの位置が追従するよう、表示中は毎フレーム座標を更新する
@@ -161,21 +180,21 @@
 
   function spriteSize(idx) {
     const g = SPECIES[idx].grid;
-    return { w: g[0].length * UNIT, h: g.length * UNIT };
+    return { w: g[0].length * currentUnit, h: g.length * currentUnit };
   }
   function buildBoxShadow(idx) {
     const s = SPECIES[idx];
     const shadow = [];
     s.grid.forEach((row, y) => row.forEach((cell, colX) => {
-      if (cell) shadow.push(colX * UNIT + 'px ' + y * UNIT + 'px 0 0 ' + s.colors[cell]);
+      if (cell) shadow.push(colX * currentUnit + 'px ' + y * currentUnit + 'px 0 0 ' + s.colors[cell]);
     }));
     return shadow.join(',');
   }
   // box-shadowの各ピクセルは要素自身と同じ大きさの四角がコピーされる仕組み
-  // なので、1ピクセル分(UNIT×UNIT)の大きさのまま複数配置する。ただし
-  // 見た目(box-shadow)は要素自身のレイアウト上の高さには含まれず、outer側の
-  // 高さもUNIT分のままだと、position:fixedのbottom基準位置がスプライトの
-  // 上端付近になってしまい、大部分が画面外にはみ出して見えなくなる。
+  // なので、1ピクセル分(currentUnit×currentUnit)の大きさのまま複数配置する。
+  // ただし見た目(box-shadow)は要素自身のレイアウト上の高さには含まれず、
+  // outer側の高さもその分のままだと、position:fixedのbottom基準位置が
+  // スプライトの上端付近になってしまい、大部分が画面外にはみ出して見えなくなる。
   // outer側にスプライト全体のサイズを明示的に与え、innerはその左上(0,0)に
   // 絶対配置することで正しい位置に収める
   function applySpecies(idx) {
@@ -183,9 +202,26 @@
     localStorage.setItem(PET_SPECIES_KEY, String(idx));
     if (!inner) return;
     const { w, h } = spriteSize(idx);
+    inner.style.width = currentUnit + 'px';
+    inner.style.height = currentUnit + 'px';
     inner.style.boxShadow = buildBoxShadow(idx);
     outer.style.width = w + 'px';
     outer.style.height = h + 'px';
+  }
+  // レベルに応じてペットの大きさ・アクセサリーを更新する。学習操作のたびに
+  // 呼ばれるわけではないので、移動の切り替わりのタイミングで都度チェックする
+  function refreshPetGrowth(announce) {
+    if (!outer) return;
+    const stage = growthStageForLevel(currentLevel());
+    const stageIdx = PET_GROWTH_STAGES.indexOf(stage);
+    const changed = stageIdx !== lastGrowthStageIndex;
+    currentUnit = BASE_UNIT * stage.scale;
+    applySpecies(speciesIndex);
+    if (accessoryEl) accessoryEl.textContent = stage.accessory;
+    if (changed && announce && lastGrowthStageIndex !== -1 && stageIdx > lastGrowthStageIndex) {
+      showBubble('🎉 レベルアップでペットが成長したよ！');
+    }
+    lastGrowthStageIndex = stageIdx;
   }
 
   function scheduleNext(delayMs) {
@@ -195,6 +231,7 @@
   // 左右に歩くだけでなく、その場でジャンプしたり、立ち止まって
   // ひと息ついたりと、いくつかの動きをランダムに織り交ぜる
   function chooseNextAction() {
+    refreshPetGrowth(true);
     const r = Math.random();
     // 吹き出しは歩行中も表示され続けるようになったので、動きの種類に関わらず話しかけられる
     maybeSpeak();
@@ -282,11 +319,12 @@
     inner.style.position = 'absolute';
     inner.style.top = '0';
     inner.style.left = '0';
-    inner.style.width = UNIT + 'px';
-    inner.style.height = UNIT + 'px';
     outer.appendChild(inner);
+    accessoryEl = document.createElement('span');
+    accessoryEl.className = 'deskPetAccessory';
+    outer.appendChild(accessoryEl);
     document.body.appendChild(outer);
-    applySpecies(speciesIndex);
+    refreshPetGrowth(false);
     const { w, h } = spriteSize(speciesIndex);
     x = Math.random() * Math.max(0, window.innerWidth - w);
     y = Math.max(0, window.innerHeight - h - BOTTOM_MARGIN_PX);
@@ -298,7 +336,7 @@
   function destroyPet() {
     clearTimeout(pendingTimer);
     hideBubble();
-    if (outer) { outer.remove(); outer = null; inner = null; }
+    if (outer) { outer.remove(); outer = null; inner = null; accessoryEl = null; }
   }
 
   window.addEventListener('resize', onResize);
@@ -320,7 +358,9 @@
     getBubbleDurationMs: loadBubbleDurationMs,
     setBubbleDurationMs: saveBubbleDurationMs,
     isBubbleEnabled: loadBubbleEnabled,
-    setBubbleEnabled: (enabled) => { saveBubbleEnabled(enabled); if (!enabled) hideBubble(); }
+    setBubbleEnabled: (enabled) => { saveBubbleEnabled(enabled); if (!enabled) hideBubble(); },
+    getGrowthStage: () => growthStageForLevel(currentLevel()),
+    refreshGrowth: () => refreshPetGrowth(false)
   };
 })();
 /* ▲▲▲ ドット絵のペット ここまで ▲▲▲ */

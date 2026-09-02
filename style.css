@@ -1338,9 +1338,10 @@ table.pastMatrixTable th, table.pastMatrixTable td {
 .pastMatrixNote { font-size: 11px; color: #4a6a90; margin-top: 7px; line-height: 1.6; }
 /* ▲▲▲ 過去問ログ一覧マトリクス ここまで ▲▲▲ */
 /* ▼▼▼ その他タブ（ショートカットキー設定）用 ここから ▼▼▼ */
-.shortcutSettingsTable { width: 100%; max-width: 420px; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
-.shortcutSettingsTable th, .shortcutSettingsTable td { border: 1px solid #cfe3ff; padding: 6px 10px; text-align: left; }
-.shortcutSettingsTable th { background: #cfe3ff; }
+.shortcutSettingsGrid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(108px, 1fr); gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px; }
+.shortcutSettingsRow { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 6px 8px; border: 1px solid #cfe3ff; border-radius: 8px; background: #f7fafe; font-size: 12px; }
+.shortcutSettingsLabel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shortcutSettingsRow .shortcutKeySelect { width: 100%; }
 .petEnableLabel { display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 10px; }
 .petSpeciesRow { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .settingsInlineRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; margin-bottom: 8px; }

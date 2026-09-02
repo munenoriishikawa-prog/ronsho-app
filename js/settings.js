@@ -39,16 +39,16 @@ function renderShortcutSettings() {
   const wrap = document.getElementById('shortcutSettingsWrap');
   if (!wrap) return;
   const shortcuts = loadTabShortcuts();
-  let html = '<table class="shortcutSettingsTable"><thead><tr><th>タブ</th><th>ショートカットキー</th></tr></thead><tbody>';
+  let html = '<div class="shortcutSettingsGrid">';
   SHORTCUT_PAGE_LIST.forEach(page => {
     const assigned = Object.keys(shortcuts).find(k => shortcuts[k] === page.id) || '';
-    html += '<tr><td>' + page.label + '</td><td>'
+    html += '<div class="shortcutSettingsRow"><span class="shortcutSettingsLabel">' + page.label + '</span>'
       + '<select class="shortcutKeySelect" data-page-id="' + page.id + '">'
       + '<option value=""' + (assigned === '' ? ' selected' : '') + '>未設定</option>'
       + SHORTCUT_DIGITS.map(d => '<option value="' + d + '"' + (assigned === d ? ' selected' : '') + '>' + d + '</option>').join('')
-      + '</select></td></tr>';
+      + '</select></div>';
   });
-  html += '</tbody></table>';
+  html += '</div>';
   wrap.innerHTML = html;
   wrap.querySelectorAll('.shortcutKeySelect').forEach(sel => {
     sel.addEventListener('change', () => {

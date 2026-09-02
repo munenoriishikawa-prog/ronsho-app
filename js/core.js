@@ -804,7 +804,7 @@ async function handleFiles(files) {
         dupCheckPairs = findDuplicatePairs();
         if (typeof renderDuplicateResults === 'function') renderDuplicateResults();
         if (dupCheckPairs.length > 0) {
-          status.textContent += '／⚠️重複候補 ' + dupCheckPairs.length + '件（「データ読込み・出力」タブでご確認ください）';
+          status.textContent += '／⚠️重複候補 ' + dupCheckPairs.length + '件（「データ」タブでご確認ください）';
         }
         resumeSync();
       }, 30);

@@ -177,7 +177,7 @@ function buildSubjectItemHtml(s, st, compact) {
     + '</div>';
 }
 function renderProgressSummary() {
-  const el = document.getElementById('progressSummary');
+  const el = document.getElementById('subjectProgressBody');
   const overallEl = document.getElementById('overallProgressCardWrap');
   if (!el) return;
   if (entries.length === 0) {
@@ -220,10 +220,8 @@ function renderProgressSummary() {
       + '</div>'
       + '</div>';
   }
-  el.innerHTML = '<div class="subjectProgressCard">'
-    + '<div class="subjectProgressTitle">📚 科目別 暗記完了率・学習回数</div>'
-    + subjectHtml
-    + '</div>';
+  el.innerHTML = '<div class="subjectProgressTitle">📚 科目別 暗記完了率・学習回数</div>'
+    + subjectHtml;
 }
 document.getElementById('progressSummary').addEventListener('click', (e) => {
   const nameEl = e.target.closest('.subjectProgressName.clickable');
@@ -334,7 +332,7 @@ document.getElementById('clearEntriesBtn').addEventListener('click', () => {
   csvSubjectFilter.innerHTML = '';
   calendarWrap.innerHTML = '';
   trendWrap.innerHTML = '';
-  document.getElementById('progressSummary').innerHTML = '';
+  document.getElementById('subjectProgressBody').innerHTML = '';
   downloadBtn.style.display = 'none';
   downloadLogBtn.style.display = 'none';
   status.textContent = '読み込みデータを削除しました。新しくWordファイルを読み込んでください。';

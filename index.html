@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v24.5（ホームの2枚のカードを1枚に統合）</title>
+<title>論証集アプリ v24.6（サマリーを科目別暗記完了率カードのトップに移動）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.5</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v24.6</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -31,14 +31,16 @@
 <div id="homeStatsCard" class="homeStatsCard">
 <div id="homeSummaryRow" class="homeSummaryRow">
 <div id="countdownCard"></div>
-<div id="summarySection" class="summarySection"></div>
 </div>
 <div id="topStatusRow" class="topStatusRow">
 <div id="overallProgressCardWrap"></div>
 </div>
 <div id="gamificationRow" class="gamificationRow"></div>
 </div>
-<div id="progressSummary"></div>
+<div id="progressSummary">
+<div id="summarySection" class="summarySection"></div>
+<div id="subjectProgressBody"></div>
+</div>
 </div>
 <!-- ▼▼▼ 新規追加：論証一覧タブ（studyPageから論証テーブル部分を分離） ▼▼▼ -->
 <div id="entryListPage" class="page">

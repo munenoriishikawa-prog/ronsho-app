@@ -363,6 +363,20 @@ function findBestReimportMatch(oldE, newEntries, isNewEntryUsed) {
   });
   return bestScore >= REIMPORT_CARRY_OVER_THRESHOLD ? best : null;
 }
+// 引き継ぎ先に既存の学習記録がある場合の合体ルール（自動引き継ぎ・手動引き継ぎで共通）
+function mergeStudyLogForCarryOver(oldLog, newLog) {
+  if (!newLog) return oldLog;
+  return {
+    ...newLog,
+    history: dupMergeHistoryArrays(newLog.history, oldLog.history),
+    memorized: !!(newLog.memorized || oldLog.memorized),
+    starred: !!(newLog.starred || oldLog.starred),
+    bookmarked: !!(newLog.bookmarked || oldLog.bookmarked),
+    skipped: !!(newLog.skipped || oldLog.skipped),
+    confidence: newLog.confidence || oldLog.confidence || null,
+    memo: newLog.memo || oldLog.memo || ''
+  };
+}
 function carryOverStudyLogOnReimport(oldEntries, newEntries) {
   const newTitleSet = new Set(newEntries.map(e => e.title));
   const usedNewTitles = new Set();
@@ -374,22 +388,113 @@ function carryOverStudyLogOnReimport(oldEntries, newEntries) {
     const best = findBestReimportMatch(oldE, newEntries, newE => usedNewTitles.has(newE.title));
     if (!best) return;
     usedNewTitles.add(best.title);
-    const newLog = studyLog[best.title];
-    studyLog[best.title] = newLog ? {
-      ...newLog,
-      history: dupMergeHistoryArrays(newLog.history, oldLog.history),
-      memorized: !!(newLog.memorized || oldLog.memorized),
-      starred: !!(newLog.starred || oldLog.starred),
-      bookmarked: !!(newLog.bookmarked || oldLog.bookmarked),
-      skipped: !!(newLog.skipped || oldLog.skipped),
-      confidence: newLog.confidence || oldLog.confidence || null,
-      memo: newLog.memo || oldLog.memo || ''
-    } : oldLog;
+    studyLog[best.title] = mergeStudyLogForCarryOver(oldLog, studyLog[best.title]);
     delete studyLog[oldE.title];
     carriedCount++;
   });
   return carriedCount;
 }
+// 類似度が閾値未満で自動引き継ぎされなかった学習記録（宙に浮いたまま残っている
+// もの）を洗い出す。studyLogのキーのうち、現在のentriesのどのtitleとも
+// 一致しないものが対象。手動で引き継ぎ先を選べるようにするための一覧用
+function findOrphanedStudyLogTitles() {
+  const currentTitles = new Set(entries.map(e => e.title));
+  return Object.keys(studyLog).filter(title => !currentTitles.has(title));
+}
+// 「引き継がれなかった学習記録」を、ユーザーが選んだ現在の論証へ手動で引き継ぐ
+function manualCarryOverStudyLog(oldTitle, targetTitle) {
+  const oldLog = studyLog[oldTitle];
+  if (!oldLog) return false;
+  if (!entries.some(e => e.title === targetTitle)) return false;
+  studyLog[targetTitle] = mergeStudyLogForCarryOver(oldLog, studyLog[targetTitle]);
+  delete studyLog[oldTitle];
+  saveStudyLog();
+  return true;
+}
+// 引き継ぎ先が見つからない（そもそも該当する論証が無くなった等の）学習記録を破棄する
+function discardOrphanedStudyLog(oldTitle) {
+  if (!studyLog[oldTitle]) return false;
+  delete studyLog[oldTitle];
+  saveStudyLog();
+  return true;
+}
+// ▼▼▼ 新規追加：引き継がれなかった学習記録を、その他タブから手動で救済できるように ▼▼▼
+let orphanedStudyLogVisible = false;
+function renderOrphanedStudyLogToggle() {
+  const btn = document.getElementById('orphanedStudyLogToggleBtn');
+  if (!btn) return;
+  btn.textContent = (orphanedStudyLogVisible ? '▼ 一覧を隠す' : '▶ 一覧を表示する') + '（' + findOrphanedStudyLogTitles().length + '件）';
+}
+function renderOrphanedStudyLog() {
+  const wrap = document.getElementById('orphanedStudyLogWrap');
+  if (!wrap) return;
+  renderOrphanedStudyLogToggle();
+  wrap.style.display = orphanedStudyLogVisible ? '' : 'none';
+  const orphanTitles = findOrphanedStudyLogTitles();
+  if (orphanTitles.length === 0) {
+    wrap.innerHTML = '<div class="dupCheckEmpty">引き継がれなかった学習記録はありません。</div>';
+    return;
+  }
+  const datalistHtml = '<datalist id="orphanedStudyLogEntryList">'
+    + entries.map(e => '<option value="' + escapeHtml(e.title) + '">' + escapeHtml(e.subject || '') + '</option>').join('')
+    + '</datalist>';
+  const rowsHtml = orphanTitles.map(title => {
+    const log = studyLog[title];
+    const flags = [];
+    if (log && log.memorized) flags.push('✅ 暗記済み');
+    if (log && log.starred) flags.push('😰 苦手');
+    if (log && log.history && log.history.length) flags.push('学習' + log.history.length + '回');
+    return '<div class="dupArchiveRow orphanedStudyLogRow">'
+      + '<div class="dupArchiveInfo">'
+      + '<div class="dupArchiveTitle">' + escapeHtml(title) + '</div>'
+      + '<div class="dupArchiveMeta">' + (flags.length ? flags.join('／') : '記録なし') + '</div>'
+      + '</div>'
+      + '<div class="dupArchiveActions">'
+      + '<input type="text" class="orphanedStudyLogTargetInput" list="orphanedStudyLogEntryList" placeholder="引き継ぎ先の論証タイトル">'
+      + '<button type="button" class="dupArchiveRestoreBtn orphanedStudyLogLinkBtn" data-orphan-title="' + escapeHtml(title) + '">🔗 引き継ぐ</button>'
+      + '<button type="button" class="dupArchivePurgeBtn orphanedStudyLogDiscardBtn" data-orphan-title="' + escapeHtml(title) + '">🗑 破棄</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+  wrap.innerHTML = '<div class="dupCheckSummary">' + orphanTitles.length + '件、引き継ぎ先が見つからなかった学習記録があります。</div>' + datalistHtml + rowsHtml;
+}
+const orphanedStudyLogToggleBtnEl = document.getElementById('orphanedStudyLogToggleBtn');
+if (orphanedStudyLogToggleBtnEl) orphanedStudyLogToggleBtnEl.addEventListener('click', () => {
+  orphanedStudyLogVisible = !orphanedStudyLogVisible;
+  renderOrphanedStudyLog();
+});
+const orphanedStudyLogWrapEl = document.getElementById('orphanedStudyLogWrap');
+if (orphanedStudyLogWrapEl) {
+  orphanedStudyLogWrapEl.addEventListener('click', (e) => {
+    const linkBtn = e.target.closest('.orphanedStudyLogLinkBtn');
+    if (linkBtn) {
+      const row = linkBtn.closest('.orphanedStudyLogRow');
+      const input = row.querySelector('.orphanedStudyLogTargetInput');
+      const targetTitle = input.value.trim();
+      if (!targetTitle) { status.textContent = '⚠️ 引き継ぎ先の論証タイトルを入力してください。'; return; }
+      if (!entries.some(en => en.title === targetTitle)) { status.textContent = '⚠️ 「' + targetTitle + '」という論証が見つかりません。一覧から選んでください。'; return; }
+      const oldTitle = linkBtn.dataset.orphanTitle;
+      if (manualCarryOverStudyLog(oldTitle, targetTitle)) {
+        renderOrphanedStudyLog();
+        renderAll();
+        status.textContent = '🔗 「' + oldTitle + '」の学習記録を「' + targetTitle + '」に引き継ぎました。';
+      }
+      return;
+    }
+    const discardBtn = e.target.closest('.orphanedStudyLogDiscardBtn');
+    if (discardBtn) {
+      const oldTitle = discardBtn.dataset.orphanTitle;
+      if (!confirm('「' + oldTitle + '」の学習記録を破棄しますか？（元に戻せません）')) return;
+      if (discardOrphanedStudyLog(oldTitle)) {
+        renderOrphanedStudyLog();
+        status.textContent = '🗑 「' + oldTitle + '」の学習記録を破棄しました。';
+      }
+      return;
+    }
+  });
+}
+document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderOrphanedStudyLog);
+// ▲▲▲ 新規追加：引き継がれなかった学習記録の手動救済 ここまで ▲▲▲
 // ワードファイルの再読み込みで、論証の直接編集機能(entry-edit.js)を使って
 // 手動で色付け・太字にした文言が消えてしまわないよう、学習記録と同じ
 // 類似度判定(dupCombinedScore)で「同じ論証の書き直し」とみなせる相手を

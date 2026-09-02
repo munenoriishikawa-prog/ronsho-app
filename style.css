@@ -214,6 +214,8 @@ h1 {
 .dupArchiveActions { display: flex; gap: 8px; flex-shrink: 0; }
 .dupArchiveRestoreBtn { background: #e8f7ee; color: #1b7a3d; border: 1px solid #bfe6cc; font-size: 12px; padding: 5px 12px; border-radius: 999px; }
 .dupArchivePurgeBtn { background: #ffe4e4; color: #d32f2f; border: 1px solid #f0c2c2; font-size: 12px; padding: 5px 12px; border-radius: 999px; }
+.orphanedStudyLogRow { flex-wrap: wrap; }
+.orphanedStudyLogTargetInput { padding: 6px 10px; border-radius: 8px; border: 1px solid #9dc4f2; font-size: 12px; width: 220px; }
 .clearEntriesLink:hover { color: #0057e7; }
 table { border-collapse: collapse; width: 100%; background:#fff; font-size: 13px; table-layout: fixed; }
 th, td { border: 1px solid #cfe3ff; padding: 6px 8px; vertical-align: top; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; }

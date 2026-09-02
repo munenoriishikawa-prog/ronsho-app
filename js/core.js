@@ -180,8 +180,10 @@ function renderProgressSummary() {
   const el = document.getElementById('subjectProgressBody');
   const overallEl = document.getElementById('overallProgressCardWrap');
   if (!el) return;
+  const titleEl = document.getElementById('subjectProgressTitle');
   if (entries.length === 0) {
     el.innerHTML = '';
+    if (titleEl) titleEl.textContent = '';
     if (overallEl) overallEl.innerHTML = '';
     return;
   }
@@ -220,8 +222,8 @@ function renderProgressSummary() {
       + '</div>'
       + '</div>';
   }
-  el.innerHTML = '<div class="subjectProgressTitle">📚 科目別 暗記完了率・学習回数</div>'
-    + subjectHtml;
+  if (titleEl) titleEl.textContent = '📚 科目別 暗記完了率・学習回数';
+  el.innerHTML = subjectHtml;
 }
 document.getElementById('progressSummary').addEventListener('click', (e) => {
   const nameEl = e.target.closest('.subjectProgressName.clickable');

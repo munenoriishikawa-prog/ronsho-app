@@ -69,6 +69,9 @@
   const SPEED_PX_PER_SEC = 45;
   const PET_SPECIES_KEY = 'ronshoPetSpeciesV1';
   const PET_ENABLED_KEY = 'ronshoPetEnabledV1';
+  const PET_BUBBLE_DURATION_KEY = 'ronshoPetBubbleDurationV1';
+  const BUBBLE_DURATION_DEFAULT_MS = 8000;
+  const BUBBLE_DURATION_OPTIONS_MS = [4000, 8000, 12000, 16000, 20000];
 
   function loadSpeciesIndex() {
     // Number(null)は0になってしまう(NaNにならない)ため、未保存(null)を
@@ -83,6 +86,13 @@
   }
   function loadEnabled() {
     return localStorage.getItem(PET_ENABLED_KEY) !== '0'; // 未設定時はデフォルトで表示する
+  }
+  function loadBubbleDurationMs() {
+    const raw = Number(localStorage.getItem(PET_BUBBLE_DURATION_KEY));
+    return BUBBLE_DURATION_OPTIONS_MS.includes(raw) ? raw : BUBBLE_DURATION_DEFAULT_MS;
+  }
+  function saveBubbleDurationMs(ms) {
+    localStorage.setItem(PET_BUBBLE_DURATION_KEY, String(ms));
   }
 
   let speciesIndex = loadSpeciesIndex();
@@ -107,7 +117,7 @@
       if (!bubble) return;
       bubble.classList.add('fadeOut');
       setTimeout(hideBubble, 350);
-    }, 8000);
+    }, loadBubbleDurationMs());
   }
   // 移動・ジャンプ・小休止の合間に、ランダムでときどき豆知識をつぶやく
   function maybeSpeak() {
@@ -259,7 +269,10 @@
     },
     getSpeciesIndex: () => speciesIndex,
     setSpeciesIndex: (idx) => applySpecies(idx),
-    say: (text) => showBubble(text)
+    say: (text) => showBubble(text),
+    BUBBLE_DURATION_OPTIONS_MS: BUBBLE_DURATION_OPTIONS_MS,
+    getBubbleDurationMs: loadBubbleDurationMs,
+    setBubbleDurationMs: saveBubbleDurationMs
   };
 })();
 /* ▲▲▲ ドット絵のペット ここまで ▲▲▲ */

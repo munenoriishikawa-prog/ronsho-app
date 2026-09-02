@@ -19,7 +19,8 @@ const DEFAULT_TAB_SHORTCUTS = {
   '4': 'speechPage',
   '5': 'calendarPage',
   '6': 'csvPage',
-  '7': 'pastExamPage'
+  '7': 'pastExamPage',
+  '8': 'settingsPage'
 };
 // 同期対象ではなく、この端末だけのローカル設定として保存する
 // （キーボード配列は端末ごとに違いうるため、他端末と揃える意味が薄い）。

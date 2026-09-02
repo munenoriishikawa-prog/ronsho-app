@@ -6,8 +6,8 @@ const SHORTCUT_PAGE_LIST = [
   { id: 'entryListPage', label: '📚 論証一覧' },
   { id: 'quizPage', label: '📝 問題演習' },
   { id: 'speechPage', label: '🔊 読み上げ' },
-  { id: 'calendarPage', label: '📅 学習カレンダー・復習予定' },
-  { id: 'csvPage', label: '📥📤 データ読込み・出力' },
+  { id: 'calendarPage', label: '📅 カレンダー' },
+  { id: 'csvPage', label: '📥📤 データ' },
   { id: 'pastExamPage', label: '📝 過去問ログ' },
   { id: 'settingsPage', label: '⚙️ その他' }
 ];

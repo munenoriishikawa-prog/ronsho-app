@@ -258,7 +258,8 @@
       if (enabled) createPet(); else destroyPet();
     },
     getSpeciesIndex: () => speciesIndex,
-    setSpeciesIndex: (idx) => applySpecies(idx)
+    setSpeciesIndex: (idx) => applySpecies(idx),
+    say: (text) => showBubble(text)
   };
 })();
 /* ▲▲▲ ドット絵のペット ここまで ▲▲▲ */

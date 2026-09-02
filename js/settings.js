@@ -78,11 +78,13 @@ function renderPetSettings() {
   const enabled = control.isEnabled();
   const speciesIdx = control.getSpeciesIndex();
   const bubbleMs = control.getBubbleDurationMs();
+  const bubbleEnabled = control.isBubbleEnabled();
   let html = '<label class="petEnableLabel"><input type="checkbox" id="petEnabledChk"' + (enabled ? ' checked' : '') + '> ペットを表示する</label>';
   html += '<div class="petSpeciesRow"><span>キャラクター：</span><select id="petSpeciesSelect"' + (enabled ? '' : ' disabled') + '>'
     + control.SPECIES_LABELS.map((label, idx) => '<option value="' + idx + '"' + (idx === speciesIdx ? ' selected' : '') + '>' + label + '</option>').join('')
     + '</select></div>';
-  html += '<div class="petSpeciesRow"><span>吹き出しの表示時間：</span><select id="petBubbleDurationSelect"' + (enabled ? '' : ' disabled') + '>'
+  html += '<label class="petEnableLabel"><input type="checkbox" id="petBubbleEnabledChk"' + (bubbleEnabled ? ' checked' : '') + (enabled ? '' : ' disabled') + '> 吹き出しを表示する</label>';
+  html += '<div class="petSpeciesRow"><span>吹き出しの表示時間：</span><select id="petBubbleDurationSelect"' + (enabled && bubbleEnabled ? '' : ' disabled') + '>'
     + control.BUBBLE_DURATION_OPTIONS_MS.map(ms => '<option value="' + ms + '"' + (ms === bubbleMs ? ' selected' : '') + '>' + (ms / 1000) + '秒</option>').join('')
     + '</select></div>';
   wrap.innerHTML = html;
@@ -94,6 +96,11 @@ function renderPetSettings() {
   document.getElementById('petSpeciesSelect').addEventListener('change', (evt) => {
     control.setSpeciesIndex(Number(evt.target.value));
     status.textContent = '🐾 キャラクターを「' + control.SPECIES_LABELS[Number(evt.target.value)] + '」に変更しました。';
+  });
+  document.getElementById('petBubbleEnabledChk').addEventListener('change', (evt) => {
+    control.setBubbleEnabled(evt.target.checked);
+    renderPetSettings();
+    status.textContent = evt.target.checked ? '🐾 吹き出しを表示するようにしました。' : '🐾 吹き出しを表示しないようにしました。';
   });
   document.getElementById('petBubbleDurationSelect').addEventListener('change', (evt) => {
     control.setBubbleDurationMs(Number(evt.target.value));

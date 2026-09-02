@@ -4,10 +4,17 @@ loadManualLog();
 loadEntries();
 if (typeof migrateLegacyXpIfNeeded === 'function') migrateLegacyXpIfNeeded();
 if (entries.length > 0) {
-  status.textContent = '📂 前回読み込んだ ' + entries.length + '件のデータを復元しました。';
   downloadBtn.style.display = 'inline-block';
   downloadLogBtn.style.display = 'inline-block';
   renderAll();
+  // ペットの吹き出し（画面上のオーバーレイなので、消えてもレイアウトの高さに影響しない）で知らせる。
+  // ペットを非表示にしている場合は、従来どおりステータス欄に表示する。
+  const restoreMsg = '📂 前回読み込んだ ' + entries.length + '件のデータを復元しました。';
+  if (window.ronshoPetControl && window.ronshoPetControl.isEnabled()) {
+    window.ronshoPetControl.say(restoreMsg);
+  } else {
+    status.textContent = restoreMsg;
+  }
 }
 renderPastLogs();
 const dupArchiveToggleBtn = document.getElementById('dupArchiveToggleBtn');

@@ -565,7 +565,7 @@ if (orphanedStudyLogWrapEl) {
     }
   });
 }
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderOrphanedStudyLog);
+registerSettingsPageRenderer(renderOrphanedStudyLog);
 // ▲▲▲ 新規追加：引き継がれなかった学習記録の手動救済 ここまで ▲▲▲
 // ワードファイルの再読み込みで、論証の直接編集機能(entry-edit.js)を使って
 // 手動で色付け・太字にした文言が消えてしまわないよう、学習記録と同じ

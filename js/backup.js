@@ -93,7 +93,7 @@ document.getElementById('backupReminderBanner').addEventListener('click', (e) =>
     renderBackupReminderBanner();
   }
 });
-document.querySelector('.tabBtn[data-page="settingsPage"]').addEventListener('click', renderBackupLastInfo);
+registerSettingsPageRenderer(renderBackupLastInfo);
 
 // バックアップファイルからの復元（全データを上書き）。
 // 各データ種別は、既存の save*() 関数をそのまま呼ぶことで、都度同期の

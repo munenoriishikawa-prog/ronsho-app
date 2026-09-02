@@ -401,6 +401,13 @@ document.getElementById('importLogInput').addEventListener('change', async (e) =
   }
   e.target.value = '';
 });
+// ⚙️その他タブを開くたびに再描画が必要な設定UIの登録先。機能追加のたびに
+// 「その他」タブのクリックへ個別にリスナーを足すのではなく、ここにまとめて
+// 登録しておくことで、タブクリック時の処理を1箇所（下のタブ切り替え処理）に集約する
+const settingsPageRenderers = [];
+function registerSettingsPageRenderer(fn) {
+  settingsPageRenderers.push(fn);
+}
 document.querySelectorAll('.tabBtn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tabBtn').forEach(b => b.classList.remove('active'));
@@ -409,6 +416,7 @@ document.querySelectorAll('.tabBtn').forEach(btn => {
     document.getElementById(btn.dataset.page).classList.add('active');
     if (btn.dataset.page === 'calendarPage') { renderCalendar(); renderTrendChart(); }
     if (btn.dataset.page === 'quizPage') renderQuizPage();
+    if (btn.dataset.page === 'settingsPage') settingsPageRenderers.forEach(fn => fn());
     if (btn.dataset.page === 'speechPage') {
       renderSpeechSubjectSelect();
       speechQueue = buildSpeechQueue();

@@ -1454,6 +1454,10 @@ table.pastMatrixTable th, table.pastMatrixTable td {
 .pastMatrixLegendDot { display: inline-flex; align-items: center; gap: 5px; }
 .pastMatrixLegendSwatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
 .pastMatrixNote { font-size: 11px; color: var(--text-secondary); margin-top: 7px; line-height: 1.6; }
+/* ▼▼▼ 新規追加：判例一覧タブ ここから ▼▼▼ */
+.precedentTextarea { width: 100%; box-sizing: border-box; resize: vertical; font-family: inherit; }
+.precedentFormBody textarea.precedentTextarea { flex: 1 1 100%; }
+/* ▲▲▲ 判例一覧タブ ここまで ▲▲▲ */
 /* ▲▲▲ 過去問ログ一覧マトリクス ここまで ▲▲▲ */
 /* ▼▼▼ その他タブ（ショートカットキー設定）用 ここから ▼▼▼ */
 .shortcutSettingsGrid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(108px, 1fr); gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px; }

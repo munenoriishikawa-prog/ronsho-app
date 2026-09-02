@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v25.0（ダークモードに対応）</title>
+<title>論証集アプリ v26.0（判例一覧タブを追加）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -22,7 +22,7 @@ try {
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v25.0</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.0</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -35,6 +35,7 @@ try {
 <button class="tabBtn" data-page="calendarPage">📅 カレンダー</button>
 <button class="tabBtn" data-page="csvPage">📥 データ</button>
 <button class="tabBtn" data-page="pastExamPage">📝 過去問ログ</button>
+<button class="tabBtn" data-page="precedentPage">⚖️ 判例</button>
 <button class="tabBtn" data-page="settingsPage">⚙️ その他</button>
 </div>
 <div id="studyPage" class="page active">
@@ -204,6 +205,30 @@ try {
   </div>
 </div>
 <!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
+<!-- ▼▼▼ 新規追加：判例一覧タブ（既存タブ・既存機能には一切影響しません） ▼▼▼ -->
+<div id="precedentPage" class="page">
+<div class="dataIoSection oneLine">
+<select id="precedentSubjectFilter"></select>
+<button type="button" id="precedentAddToggleBtn" class="pastAddToggleBtn">＋ 判例を追加</button>
+</div>
+<div class="past-log-header" id="precedentForm">
+<input type="text" id="precedentNameInput" placeholder="判例名（任意）例：三菱樹脂事件" style="width:220px;">
+<input type="text" id="precedentDateInput" placeholder="判決日 例：最大判昭和48年12月12日" style="width:240px;">
+<span>科目：</span>
+<input type="text" id="precedentSubjectInput" placeholder="例：憲法" style="width:110px;" list="subjectSuggestions">
+</div>
+<div class="past-log-header precedentFormBody" id="precedentFormBody">
+<textarea id="precedentSummaryInput" class="editBodyArea precedentTextarea" placeholder="事案の概要"></textarea>
+<textarea id="precedentHoldingInput" class="editBodyArea precedentTextarea" placeholder="判旨"></textarea>
+</div>
+<div class="past-log-header" id="precedentFormActions">
+<button id="precedentSaveBtn">保存する</button>
+<span class="clearEntriesLink" id="precedentCancelEditBtn" style="display:none;">編集をやめる</span>
+</div>
+<div id="precedentProgress" class="quizProgress"></div>
+<div id="precedentArea"></div>
+</div>
+<!-- ▲▲▲ 新規追加：判例一覧タブ ここまで ▲▲▲ -->
 <!-- ▼▼▼ 新規追加：その他タブ（ショートカットキー設定） ▼▼▼ -->
 <div id="settingsPage" class="page">
 <div id="badgesSection"></div>
@@ -377,6 +402,7 @@ try {
 <script src="js/speech.js"></script>
 <script src="js/countdown.js"></script>
 <script src="js/past-exam.js"></script>
+<script src="js/precedent.js"></script>
 <script src="js/gamification.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/backup.js"></script>

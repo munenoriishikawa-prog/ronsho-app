@@ -416,6 +416,7 @@ document.querySelectorAll('.tabBtn').forEach(btn => {
     document.getElementById(btn.dataset.page).classList.add('active');
     if (btn.dataset.page === 'calendarPage') { renderCalendar(); renderTrendChart(); }
     if (btn.dataset.page === 'quizPage') renderQuizPage();
+    if (btn.dataset.page === 'precedentPage') renderPrecedentPage();
     if (btn.dataset.page === 'settingsPage') settingsPageRenderers.forEach(fn => fn());
     if (btn.dataset.page === 'speechPage') {
       renderSpeechSubjectSelect();

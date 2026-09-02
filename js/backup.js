@@ -107,6 +107,7 @@ function restoreFromBackupPayload(data) {
   dupResolvedSet = new Set(Array.isArray(data.dupResolved) ? data.dupResolved : []);
   if (Array.isArray(data.speechDict)) speechDict = data.speechDict;
   orphanEntryArchive = (data.orphanEntryArchive && typeof data.orphanEntryArchive === 'object') ? data.orphanEntryArchive : {};
+  precedents = Array.isArray(data.precedents) ? data.precedents : [];
   editingEntryTitle = null;
   compareList = [];
   compareModalOpen = false;
@@ -119,6 +120,7 @@ function restoreFromBackupPayload(data) {
   saveDupResolved();
   saveSpeechDict();
   saveOrphanEntryArchive();
+  savePrecedents();
   savePastExamLogs(Array.isArray(data.pastExamLogs) ? data.pastExamLogs : []);
   saveCountdowns(Array.isArray(data.countdowns) ? data.countdowns : []);
   if (data.dailyGoal) saveDailyGoal(data.dailyGoal);

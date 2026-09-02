@@ -8,6 +8,9 @@ if (entries.length > 0) {
   downloadBtn.style.display = 'inline-block';
   downloadLogBtn.style.display = 'inline-block';
   renderAll();
+  // 10秒後にフェードアウトさせる。テキストは消さずopacityだけ下げるので、
+  // バージョン表記と格言カードの間の余白は変わらない（他のステータス表示時は自動で復帰する）。
+  setTimeout(() => { status.classList.add('statusFading'); }, 10000);
 }
 renderPastLogs();
 const dupArchiveToggleBtn = document.getElementById('dupArchiveToggleBtn');

@@ -1,6 +1,8 @@
 const drop = document.getElementById('drop');
 const fileInput = document.getElementById('fileInput');
 const status = document.getElementById('status');
+// メッセージが切り替わった時に、フェードアウト中だった場合は表示を復帰させる
+new MutationObserver(() => status.classList.remove('statusFading')).observe(status, { childList: true, characterData: true, subtree: true });
 const tableWrap = document.getElementById('tableWrap');
 const csvTableWrap = document.getElementById('csvTableWrap');
 const csvSubjectFilter = document.getElementById('csvSubjectFilter');

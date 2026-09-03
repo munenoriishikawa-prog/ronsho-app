@@ -355,6 +355,11 @@ function dupMergeHistoryArrays(a, b) {
   const days = [...new Set([...Object.keys(ca), ...Object.keys(cb)])].sort();
   return days.flatMap(d => Array(Math.max(ca[d] || 0, cb[d] || 0)).fill(d));
 }
+// 暗記度の推移（confidenceHistory）は、日付+暗記度のペアなので単純な
+// 個数マージはできない。両者をつなげて日付順に並べ直すだけでよい
+function mergeConfidenceHistoryArrays(a, b) {
+  return [...(a || []), ...(b || [])].sort((x, y) => (x.date || '').localeCompare(y.date || ''));
+}
 function dupMergeStudyLogInto(keepEntry, dropEntry) {
   const keepTitle = keepEntry.title, dropTitle = dropEntry.title;
   if (keepTitle === dropTitle) return false;
@@ -364,6 +369,7 @@ function dupMergeStudyLogInto(keepEntry, dropEntry) {
   studyLog[keepTitle] = {
     ...keepLog,
     history: dupMergeHistoryArrays(keepLog.history, dropLog.history),
+    confidenceHistory: mergeConfidenceHistoryArrays(keepLog.confidenceHistory, dropLog.confidenceHistory),
     memorized: !!(keepLog.memorized || dropLog.memorized),
     starred: !!(keepLog.starred || dropLog.starred),
     bookmarked: !!(keepLog.bookmarked || dropLog.bookmarked),
@@ -404,6 +410,7 @@ function mergeStudyLogForCarryOver(oldLog, newLog) {
   return {
     ...newLog,
     history: dupMergeHistoryArrays(newLog.history, oldLog.history),
+    confidenceHistory: mergeConfidenceHistoryArrays(newLog.confidenceHistory, oldLog.confidenceHistory),
     memorized: !!(newLog.memorized || oldLog.memorized),
     starred: !!(newLog.starred || oldLog.starred),
     bookmarked: !!(newLog.bookmarked || oldLog.bookmarked),
@@ -449,6 +456,7 @@ function mergeStudyLogForManualCarryOver(oldLog, newLog) {
   return {
     ...newLog,
     history: [...(newLog.history || []), ...(oldLog.history || [])].sort(),
+    confidenceHistory: mergeConfidenceHistoryArrays(newLog.confidenceHistory, oldLog.confidenceHistory),
     memorized: !!(newLog.memorized || oldLog.memorized),
     starred: !!(newLog.starred || oldLog.starred),
     bookmarked: !!(newLog.bookmarked || oldLog.bookmarked),

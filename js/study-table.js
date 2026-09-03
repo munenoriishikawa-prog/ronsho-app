@@ -51,7 +51,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     + '<td>' + titleCellContent + '</td>'
     + '<td>' + bodyCellContent + '</td>'
     + '<td>' + buildYearHtml(e.year) + '</td>'
-    + '<td class="countCell">' + history.length + undoBtn + '</td>'
+    + '<td class="countCell">' + history.length + undoBtn + buildConfidenceTrendHtml(e.title) + '</td>'
     + '<td>' + (savedDate || '-') + '</td>'
     + '<td>' + reviewCell + '</td>'
     + '</tr>';
@@ -501,6 +501,10 @@ function setConfidence(idx, level, sourceEl) {
   if (hist[hist.length - 1] !== today) hist.push(today);
   const wasMemorized = !!studyLog[title].memorized;
   studyLog[title].confidence = level;
+  // 論証一覧に表示する「暗記度の推移」グラフ用に、日付と暗記度のペアを
+  // 積み上げておく（confidenceは最新の1件しか残らないため別で必要）
+  if (!studyLog[title].confidenceHistory) studyLog[title].confidenceHistory = [];
+  studyLog[title].confidenceHistory.push({ date: today, level });
   studyLog[title].memorized = (level === 'good' || level === 'perfect');
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';

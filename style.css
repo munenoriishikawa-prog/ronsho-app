@@ -387,6 +387,20 @@ th {
   display: inline-block;
 }
 .undoLastBtn2:hover { background: #ffe4e4; }
+.confidenceTrendRow {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 4px;
+}
+.trendDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
 .bodyCellArea {
   cursor: pointer;
   border-radius: 6px;

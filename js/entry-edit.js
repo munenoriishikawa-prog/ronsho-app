@@ -198,6 +198,7 @@ function saveEntryEdit(idx) {
         studyLog[newTitle] = {
           ...a,
           history: dupMergeHistoryArrays(a.history, b.history),
+          confidenceHistory: mergeConfidenceHistoryArrays(a.confidenceHistory, b.confidenceHistory),
           memorized: !!(a.memorized || b.memorized),
           starred: !!(a.starred || b.starred),
           bookmarked: !!(a.bookmarked || b.bookmarked),

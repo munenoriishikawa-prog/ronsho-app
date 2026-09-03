@@ -298,6 +298,56 @@ function initPastExamMatrixFeature() {
 initPastExamMatrixFeature();
 /* ▲▲▲ 新規追加：過去問ログ「年度×科目 一覧」マトリクス ここまで ▲▲▲ */
 
+/* ▼▼▼ 新規追加：頻出論点ランキング
+   専用のデータは一切持たず、entries[].year（既存の「出題年」欄。既に
+   出題頻度フィルタ／頻出順並び替えで使われているgetYearFrequency()と
+   同じ形式）を集計するだけ。論証一覧側の出題年入力（主にWord読込で
+   取り込まれる）を変えるだけで、ここのランキングも自動的に更新される */
+let examTrendSubjectFilter = 'all';
+function computeExamTrendRanking(subjectFilter) {
+  const list = entries.filter(e => getYearFrequency(e) >= 2);
+  const filtered = subjectFilter === 'all' ? list : list.filter(e => (e.subject || 'その他') === subjectFilter);
+  return filtered.slice().sort((a, b) => getYearFrequency(b) - getYearFrequency(a));
+}
+function renderExamTrendSubjectFilter() {
+  const sel = document.getElementById('examTrendSubjectFilter');
+  if (!sel) return;
+  const subjects = getUniqueSubjects();
+  const prev = examTrendSubjectFilter;
+  sel.innerHTML = '<option value="all">科目：すべて</option>'
+    + subjects.map(s => '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>').join('');
+  sel.value = subjects.includes(prev) || prev === 'all' ? prev : 'all';
+  examTrendSubjectFilter = sel.value;
+}
+function renderExamTrendRanking() {
+  renderExamTrendSubjectFilter();
+  const body = document.getElementById('examTrendBody');
+  if (!body) return;
+  const ranked = computeExamTrendRanking(examTrendSubjectFilter).slice(0, 15);
+  if (ranked.length === 0) {
+    body.innerHTML = '<div class="examTrendEmpty">出題年が2回以上登録されている論点はまだありません。論証の「出題年」欄に複数の年度が入っていると、ここに頻出順で表示されます。</div>';
+    return;
+  }
+  body.innerHTML = ranked.map((e, i) => {
+    const freq = getYearFrequency(e);
+    return '<div class="examTrendRow">'
+      + '<span class="examTrendRank">' + (i + 1) + '</span>'
+      + '<span class="examTrendSubject">' + escapeHtml(e.subject || 'その他') + '</span>'
+      + '<span class="examTrendEntryTitle">' + escapeHtml(e.title) + '</span>'
+      + '<span class="examTrendYears">' + buildYearHtml(e.year) + '</span>'
+      + '<span class="examTrendCount">' + freq + '回</span>'
+      + '</div>';
+  }).join('');
+}
+(() => {
+  const sel = document.getElementById('examTrendSubjectFilter');
+  if (sel) sel.addEventListener('change', () => {
+    examTrendSubjectFilter = sel.value;
+    renderExamTrendRanking();
+  });
+})();
+/* ▲▲▲ 新規追加：頻出論点ランキング ここまで ▲▲▲ */
+
 function initPastExamLogFeature() {
   const saveBtn = document.getElementById('pastSaveBtn');
   const table = document.getElementById('pastLogTable');

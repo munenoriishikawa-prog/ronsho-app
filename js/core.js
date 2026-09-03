@@ -998,6 +998,7 @@ function renderAll(preserveQuiz) {
   }
   renderQuizPage();
   renderPastLogs();
+  if (typeof renderExamTrendRanking === 'function') renderExamTrendRanking();
   renderCompareBar();
   renderSyncConflictBanner();
   if (typeof renderBackupReminderBanner === 'function') renderBackupReminderBanner();

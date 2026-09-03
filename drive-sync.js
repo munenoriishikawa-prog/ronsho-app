@@ -408,7 +408,21 @@
     }
   }
 
+  // オフライン中は無駄にfetchを試みて待たされることのないよう、事前に
+  // navigator.onLineで分かる範囲は早めに弾く（判定が不確実なブラウザもあるため、
+  // 最終的な保証はfetch失敗時のcatch側で行う。ここはあくまで高速化のための先読み）
+  function assertOnlineOrThrow() {
+    if (!navigator.onLine) {
+      const e = new Error('オフラインです');
+      e.isOffline = true;
+      throw e;
+    }
+  }
+  function isOfflineError(e) {
+    return !!(e && (e.isOffline || !navigator.onLine));
+  }
   async function pushToCloud() {
+    assertOnlineOrThrow();
     const data = snapshot();
     const r = await fetch(SYNC_URL, {
       method: 'POST',
@@ -430,6 +444,7 @@
   }
 
   async function pullFromCloud(isInitial) {
+    assertOnlineOrThrow();
     const r = await fetch(SYNC_URL, { cache: 'no-store' });
     if (!r.ok) throw new Error('クラウドからの取得に失敗しました');
     const remote = await r.json();
@@ -476,10 +491,23 @@
 
   // インポート処理などデータ変更中は自動同期を一時停止し、
   // 変更が確定する前の状態で上書き保存されるのを防ぐ（syncSuspendedはwindow.ronshoSuspendSyncで制御）
+  // オフライン中の変更も、この端末のlocalStorageには通常どおり即座に保存されて
+  // いる（save*()関数が同期とは無関係に必ず先に書き込む）。同期側の「キュー」は
+  // 専用の保存領域を持たず、hasUnsyncedLocalChanges()（最後に同期できた
+  // スナップショットとの差分）そのものが「まだ送れていない変更」を表す。
+  // オフライン時はここで分かりやすい状態表示に留め、オンライン復帰時の
+  // 'online'イベント・保険のポーリング(LOCAL_CHANGE_CHECK_INTERVAL_MS)が
+  // 自動的に再送を試みることで「復帰後に反映」を実現している
   const queue = () => {
     if (syncSuspended) return;
     clearTimeout(timer);
-    timer = setTimeout(() => syncNow().catch(e => state(e.message)), 1200);
+    timer = setTimeout(() => syncNow().catch(e => {
+      if (isOfflineError(e)) {
+        state('📴 オフラインのため同期を保留しています（変更はこの端末に保存済み。オンラインに戻ると自動的に同期します）');
+      } else {
+        state(e.message);
+      }
+    }), 1200);
   };
 
   // メインの変更検知は各save*()からの都度同期フック(ronshoSyncNotifyChange)が
@@ -528,10 +556,22 @@
     else if (row) row.appendChild(p);
     else status.after(p);
     document.getElementById('driveSyncBtn').onclick = () => {
-      syncNow().catch(e => state(e.message));
+      syncNow().catch(e => state(isOfflineError(e) ? '📴 オフラインです（変更はこの端末に保存されています）' : e.message));
     };
 
-    pullFromCloud(true).catch(e => state('オフラインで動作中（' + e.message + '）'));
+    pullFromCloud(true).catch(e => state(isOfflineError(e) ? '📴 オフラインで起動しました（この端末のデータで動作します。オンラインになると自動的に同期します）' : 'オフラインで動作中（' + e.message + '）'));
+
+    // オンラインに復帰した瞬間に、保険のポーリング（最大10秒）を待たず
+    // すぐに再送・再取得を試みる。オフラインに変わった瞬間は、進行中の
+    // fetchが失敗して上のqueue()/pullFromCloud()側のcatchが分かりやすい
+    // メッセージに置き換えるので、ここでは状態表示のみ更新する
+    window.addEventListener('online', () => {
+      if (hasUnsyncedLocalChanges()) queue();
+      else maybePullIfIdle();
+    });
+    window.addEventListener('offline', () => {
+      state('📴 オフラインです。変更はこの端末に保存され、オンラインに戻ると自動的に同期します。');
+    });
 
     // ローカル変更を検知したら短い遅延で自動アップロード（保険用のポーリング）。
     // タブが非表示の間・同期処理中・競合ポップアップの選択待ちの間はスキップし、

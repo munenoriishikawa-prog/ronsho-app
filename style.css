@@ -1263,6 +1263,18 @@ input[type=file] { display:none; }
 }
 .quizNavBtn:hover:not(:disabled) { background: var(--tint-10); }
 .quizNavBtn:disabled { opacity: 0.35; cursor: default; }
+/* スワイプ操作のヒントは、指で操作する端末（スマホ・タブレット）でだけ表示する。
+   マウス操作のPCでは常に非表示にして、UIを煩雑にしないようにしている */
+.quizSwipeHint { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .quizSwipeHint {
+    display: block;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin: -4px 0 12px;
+  }
+}
 .quizMeta { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
 .quizLastStudy {
   font-size: 12px;

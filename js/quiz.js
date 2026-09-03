@@ -175,6 +175,9 @@ function renderQuizPage() {
     + '<button type="button" class="quizNavBtn" id="quizPrevBtn"' + (quizIndex === 0 ? ' disabled' : '') + '>◀ 前の問題</button>'
     + '<button type="button" class="quizNavBtn" id="quizNextBtn"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>次の問題 ▶</button>'
     + '</div>';
+  // タッチ操作の端末（スマホ・タブレット）でだけCSSで表示されるヒント。
+  // マウス操作のPCでは常に非表示（style.cssの@media (hover:none)側で制御）
+  html += '<div class="quizSwipeHint">👉 カードを左右にスワイプでも切り替えられます</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
   html += buildQuizLastStudyHtml(e);
   if (isEditingThis) {
@@ -321,4 +324,49 @@ function renderQuizPage() {
     });
   }
 }
+
+// ▼▼▼ 新規追加：問題演習カードのスワイプ操作（スマホ向け）
+// quizAreaはrenderQuizPage()のたびにinnerHTMLだけ差し替わり要素自体は
+// 使い回されるため、リスナーはここで1回だけ登録すれば常に効く。
+// 編集中のテキスト選択やボタン操作を邪魔しないよう、contenteditable・
+// input・textarea・button・select・a・ナビゲーションボタンの上から
+// 始まったタッチはスワイプ判定の対象から外す
+(() => {
+  if (!quizArea) return;
+  const SWIPE_MIN_DISTANCE_PX = 60;
+  const SWIPE_MAX_VERTICAL_RATIO = 0.6; // 縦移動が横移動よりずっと大きい＝スクロール意図とみなして無視する
+  let touchStartX = null, touchStartY = null, touchIgnored = false;
+  quizArea.addEventListener('touchstart', (evt) => {
+    if (evt.touches.length !== 1) { touchIgnored = true; return; }
+    const target = evt.target;
+    if (target.closest && target.closest('[contenteditable="true"], input, textarea, button, select, a')) {
+      touchIgnored = true;
+      return;
+    }
+    touchIgnored = false;
+    touchStartX = evt.touches[0].clientX;
+    touchStartY = evt.touches[0].clientY;
+  }, { passive: true });
+  quizArea.addEventListener('touchend', (evt) => {
+    const startX = touchStartX, startY = touchStartY;
+    touchStartX = null;
+    touchStartY = null;
+    if (touchIgnored || startX === null || !quizStarted || quizPool.length === 0) return;
+    const touch = evt.changedTouches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    if (Math.abs(dx) < SWIPE_MIN_DISTANCE_PX) return;
+    if (Math.abs(dy) > Math.abs(dx) * SWIPE_MAX_VERTICAL_RATIO) return;
+    if (dx < 0) {
+      if (quizIndex >= quizPool.length - 1) return;
+      quizIndex++;
+    } else {
+      if (quizIndex <= 0) return;
+      quizIndex--;
+    }
+    quizRevealed = false;
+    renderQuizPage();
+  }, { passive: true });
+})();
+// ▲▲▲ 問題演習カードのスワイプ操作 ここまで ▲▲▲
 

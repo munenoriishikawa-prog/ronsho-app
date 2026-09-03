@@ -180,6 +180,9 @@ function renderProgressSummary() {
   const el = document.getElementById('subjectProgressBody');
   const overallEl = document.getElementById('overallProgressCardWrap');
   if (!el) return;
+  // 科目別の進捗を再描画するタイミングは、弱点診断の材料（暗記率・苦手フラグ・
+  // 復習期限超過）が変わるタイミングとほぼ同じなので、ここにまとめて呼ぶ
+  if (typeof renderWeaknessDiagnosis === 'function') renderWeaknessDiagnosis();
   const titleEl = document.getElementById('subjectProgressTitle');
   if (entries.length === 0) {
     el.innerHTML = '';
@@ -225,6 +228,68 @@ function renderProgressSummary() {
   if (titleEl) titleEl.textContent = '📚 科目別 暗記完了率・学習回数';
   el.innerHTML = subjectHtml;
 }
+// ▼▼▼ 新規追加：科目別の弱点自動診断
+// 専用のデータは持たず、既存のstudyLog（暗記済みフラグ・苦手フラグ）と
+// getNextReviewInfo()（復習期限超過の判定。問題演習の出題フィルタと同じ
+// ロジック）だけから、科目ごとの「弱点度」を毎回その場で計算する。
+// 判定材料が偏った1指標（暗記率だけ等）にならないよう、暗記率の低さ・
+// 苦手フラグの多さ・復習期限超過の多さの3つを重み付けして合成している
+const WEAKNESS_MIN_ENTRIES = 3; // 件数が少ない科目は数値がブレやすいので対象外にする
+const WEAKNESS_SHOW_THRESHOLD = 20; // このスコア未満の科目しかなければ「弱点なし」表示にする
+function computeSubjectWeakness(subjectEntries) {
+  const total = subjectEntries.length;
+  let memorized = 0, starred = 0, overdue = 0;
+  subjectEntries.forEach(e => {
+    const log = studyLog[e.title];
+    const isMemorized = !!(log && log.memorized);
+    if (isMemorized) memorized++;
+    if (log && log.starred) starred++;
+    if (!isMemorized) {
+      const info = getNextReviewInfo(e.title);
+      if (info && info.nextDateStr <= todayStr()) overdue++;
+    }
+  });
+  const memorizedRate = memorized / total;
+  const starredRate = starred / total;
+  const overdueRate = overdue / total;
+  const weaknessScore = Math.round((1 - memorizedRate) * 60 + starredRate * 25 + overdueRate * 15);
+  return { total: total, memorized: memorized, starred: starred, overdue: overdue, memorizedRate: memorizedRate, weaknessScore: weaknessScore };
+}
+function renderWeaknessDiagnosis() {
+  const el = document.getElementById('weaknessDiagnosisCard');
+  if (!el) return;
+  if (entries.length === 0) { el.innerHTML = ''; return; }
+  const subjectEntryMap = {};
+  entries.forEach(e => {
+    const s = e.subject || 'その他';
+    if (!subjectEntryMap[s]) subjectEntryMap[s] = [];
+    subjectEntryMap[s].push(e);
+  });
+  const ranked = Object.keys(subjectEntryMap)
+    .map(s => Object.assign({ subject: s }, computeSubjectWeakness(subjectEntryMap[s])))
+    .filter(r => r.total >= WEAKNESS_MIN_ENTRIES)
+    .sort((a, b) => b.weaknessScore - a.weaknessScore);
+  if (ranked.length === 0) { el.innerHTML = ''; return; }
+  const weakOnes = ranked.filter(r => r.weaknessScore >= WEAKNESS_SHOW_THRESHOLD).slice(0, 3);
+  if (weakOnes.length === 0) {
+    el.innerHTML = '<div class="weaknessCard"><div class="weaknessGood">🎉 現在、特に弱点となっている科目はありません。この調子で頑張りましょう！</div></div>';
+    return;
+  }
+  el.innerHTML = '<div class="weaknessCard">'
+    + '<div class="weaknessTitle">🎯 重点的に復習したい科目</div>'
+    + weakOnes.map(r => {
+      const statParts = ['暗記率' + Math.round(r.memorizedRate * 100) + '%'];
+      if (r.starred > 0) statParts.push('😰苦手' + r.starred + '件');
+      if (r.overdue > 0) statParts.push('⏰復習期限超過' + r.overdue + '件');
+      return '<div class="weaknessRow">'
+        + '<span class="weaknessSubject">' + getSubjectEmoji(r.subject) + ' ' + escapeHtml(r.subject) + '</span>'
+        + '<span class="weaknessStats">' + statParts.join(' ／ ') + '</span>'
+        + '</div>';
+    }).join('')
+    + '<div class="weaknessNote">暗記率・苦手フラグ・復習期限超過の状況から自動的に算出しています（対象は3件以上ある科目のみ）。</div>'
+    + '</div>';
+}
+// ▲▲▲ 科目別の弱点自動診断 ここまで ▲▲▲
 document.getElementById('progressSummary').addEventListener('click', (e) => {
   const nameEl = e.target.closest('.subjectProgressName.clickable');
   if (!nameEl) return;

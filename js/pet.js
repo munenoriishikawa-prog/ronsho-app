@@ -259,11 +259,16 @@
     const g = effectiveSprite(idx).grid;
     return { w: g[0].length * currentUnit, h: g.length * currentUnit };
   }
+  // 小数px（currentUnitは倍率によって2.5px等になる）だと、隣り合うマス同士の
+  // 境界がブラウザの端数丸めでわずかにズレ、ドットの間に薄い隙間が見えて
+  // しまうことがある。spread（box-shadowの4つ目の値）を少しだけプラスにして
+  // 各マスを四方にごくわずかはみ出させ、境界を重ねて隙間を埋めている
+  const PIXEL_OVERLAP = 0.5;
   function buildBoxShadow(idx) {
     const { grid, colors } = effectiveSprite(idx);
     const shadow = [];
     grid.forEach((row, y) => row.forEach((cell, colX) => {
-      if (cell) shadow.push(colX * currentUnit + 'px ' + y * currentUnit + 'px 0 0 ' + colors[cell]);
+      if (cell) shadow.push(colX * currentUnit + 'px ' + y * currentUnit + 'px 0 ' + PIXEL_OVERLAP + 'px ' + colors[cell]);
     }));
     return shadow.join(',');
   }

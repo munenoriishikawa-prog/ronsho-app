@@ -1473,6 +1473,35 @@ table.pastMatrixTable th, table.pastMatrixTable td {
 .precedentFormBody textarea.precedentTextarea { flex: 1 1 100%; }
 /* ▲▲▲ 判例一覧タブ ここまで ▲▲▲ */
 /* ▲▲▲ 過去問ログ一覧マトリクス ここまで ▲▲▲ */
+/* ▼▼▼ 新規追加：頻出論点ランキング ここから ▼▼▼ */
+.examTrendCard {
+  background: var(--card-bg); border: 1px solid #dbe6f2; border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.examTrendHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.examTrendHeader select { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 13px; }
+.examTrendTitle { font-size: 15px; font-weight: 800; color: var(--text); }
+.examTrendNote { font-size: 11px; color: var(--text-secondary); margin: 4px 0 10px; line-height: 1.6; }
+.examTrendRow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 4px; border-bottom: 1px solid var(--border);
+}
+.examTrendRow:last-child { border-bottom: none; }
+.examTrendRank {
+  flex: 0 0 22px; text-align: center; font-weight: 800; color: #0057e7; font-size: 13px;
+}
+.examTrendSubject {
+  flex: 0 0 auto; font-size: 11.5px; color: var(--text-secondary); background: var(--tint-6);
+  border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+}
+.examTrendEntryTitle { flex: 1 1 auto; min-width: 0; font-size: 13.5px; color: var(--text); overflow-wrap: anywhere; }
+.examTrendYears { flex: 0 0 auto; font-size: 11.5px; color: var(--text-secondary); white-space: nowrap; }
+.examTrendCount {
+  flex: 0 0 auto; font-size: 12px; font-weight: 800; color: #fff; background: #ff9800;
+  border-radius: 999px; padding: 2px 10px; white-space: nowrap;
+}
+.examTrendEmpty { font-size: 13px; color: var(--text-secondary); padding: 10px 4px; }
+/* ▲▲▲ 頻出論点ランキング ここまで ▲▲▲ */
 /* ▼▼▼ その他タブ（ショートカットキー設定）用 ここから ▼▼▼ */
 .shortcutSettingsGrid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(108px, 1fr); gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px; }
 .shortcutSettingsRow { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--tint-4); font-size: 12px; }

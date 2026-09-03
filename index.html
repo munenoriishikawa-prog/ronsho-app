@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v26.6（論証一覧に暗記度の推移を表示）</title>
+<title>論証集アプリ v26.7（頻出論点ランキングを追加）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -22,7 +22,7 @@ try {
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.6</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.7</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -203,6 +203,17 @@ try {
       </div>
     </div>
   </div>
+  <!-- ▼▼▼ 新規追加：頻出論点ランキング（論証の「出題年」欄の登録件数を集計するだけで、
+       専用データは持たない。既存の出題頻度フィルタ(getYearFrequency)をそのまま流用） ▼▼▼ -->
+  <div class="examTrendCard">
+    <div class="examTrendHeader">
+      <span class="examTrendTitle">📊 頻出論点ランキング</span>
+      <select id="examTrendSubjectFilter"></select>
+    </div>
+    <div class="examTrendNote">論証の「出題年」欄をもとに、複数回出題されている論点を頻出順に表示します。</div>
+    <div id="examTrendBody"></div>
+  </div>
+  <!-- ▲▲▲ 新規追加：頻出論点ランキング ここまで ▲▲▲ -->
 </div>
 <!-- ▲▲▲ 新規追加：過去問ログ タブ ここまで ▲▲▲ -->
 <!-- ▼▼▼ 新規追加：判例一覧タブ（既存タブ・既存機能には一切影響しません） ▼▼▼ -->

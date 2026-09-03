@@ -1033,6 +1033,19 @@ function buildImportanceStarsHtml(importance) {
   if (n <= 0) return '';
   return '<span class="importanceStars">' + '⭐'.repeat(n) + '</span>';
 }
+const CONFIDENCE_TREND_COLORS = { perfect: '#22c55e', good: '#38bdf8', unsure: '#fbbf24', bad: '#f87171' };
+const CONFIDENCE_TREND_LABELS = { perfect: '◎ 完璧', good: '○ できた', unsure: '△ あやしい', bad: '✕ ダメ' };
+// 論証一覧の「学習回数」列に、暗記度の推移を小さな色付きドットで表示する
+// （左が古く、右が新しい）。1論証1カードの詳細画面を新たに作らずとも、
+// 一覧をざっと眺めるだけで定着度の変化に気づけるようにするための軽量表示
+function buildConfidenceTrendHtml(title) {
+  const log = studyLog[title];
+  const hist = (log && log.confidenceHistory) || [];
+  if (hist.length === 0) return '';
+  const recent = hist.slice(-12);
+  const dots = recent.map(h => '<span class="trendDot" style="background:' + (CONFIDENCE_TREND_COLORS[h.level] || '#cbd5e1') + ';" title="' + escapeHtml(h.date || '') + '：' + (CONFIDENCE_TREND_LABELS[h.level] || '') + '"></span>').join('');
+  return '<div class="confidenceTrendRow" title="直近' + recent.length + '件の暗記度の推移（右が新しい）">' + dots + '</div>';
+}
 function buildConfidenceGroupHtml(idx, confidence) {
   return '<div class="confidenceGroup" data-idx="' + idx + '">'
     + '<span class="confBtn confPerfect' + (confidence === 'perfect' ? ' active' : '') + '" data-level="perfect" data-idx="' + idx + '" title="完璧">◎</span>'

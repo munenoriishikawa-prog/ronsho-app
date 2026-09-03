@@ -1482,15 +1482,6 @@ table.pastMatrixTable th, table.pastMatrixTable td {
   position: absolute;
   transform-origin: bottom center;
 }
-.deskPetAccessory {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  transform: translate(-50%, -120%);
-  font-size: 14px;
-  line-height: 1;
-  pointer-events: none;
-}
 .deskPetSprite.walking {
   animation: deskPetBob 0.4s steps(2) infinite;
 }

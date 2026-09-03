@@ -64,14 +64,54 @@
     '判例を読むときは、まず結論とその理由づけを分けて整理すると分かりやすいよ'
   ];
   const BASE_UNIT = 5;
-  // レベルが上がるにつれてペットも大きく成長し、節目では見た目にも
-  // 分かるアクセサリーが付く（学習データそのものには一切影響しない）
+  // レベルが上がるにつれてペットは大きくなるだけでなく、見た目のドット絵
+  // そのものも段階的に変化する（頬の赤み→冠の飾り→キラキラ）。
+  // 学習データそのものには一切影響しない、見た目だけの演出
   const PET_GROWTH_STAGES = [
-    { minLevel: 1, scale: 1, accessory: '' },
-    { minLevel: 5, scale: 1.3, accessory: '✨' },
-    { minLevel: 10, scale: 1.6, accessory: '👑' },
-    { minLevel: 20, scale: 2, accessory: '🌟' }
+    { minLevel: 1, scale: 1 },
+    { minLevel: 5, scale: 1.2 },
+    { minLevel: 10, scale: 1.45 },
+    { minLevel: 20, scale: 1.75 }
   ];
+  // 全種族共通で使う成長演出の色（各種族のgrid内では1〜3番台の色番号しか
+  // 使っていないため、7〜9番台を使えば衝突しない）
+  const GROWTH_BLUSH_COLOR = '#ff9eb5';
+  const GROWTH_CROWN_COLOR = '#ffd700';
+  const GROWTH_SPARKLE_COLOR = '#00e5ff';
+  // ステージごとに、種族本来のgridへ演出用のピクセルを重ねて返す。
+  // 元のSPECIES側のgrid/colorsは書き換えない（毎回コピーしてから加工する）
+  function buildGrowthGrid(baseGrid, baseColors, stageIdx) {
+    let grid = baseGrid.map(row => row.slice());
+    const colors = Object.assign({}, baseColors);
+    const cols = grid[0].length;
+    if (stageIdx >= 1) {
+      colors[9] = GROWTH_BLUSH_COLOR;
+      const cheekRow = grid[grid.length - 2];
+      if (cheekRow) {
+        cheekRow[1] = 9;
+        cheekRow[cols - 2] = 9;
+      }
+    }
+    if (stageIdx >= 2) {
+      colors[8] = GROWTH_CROWN_COLOR;
+      const crownRow = new Array(cols).fill(0);
+      // 左右対称になるよう、中央の2マスと左右それぞれ1マスの計4マスを
+      // 王冠の突起として置く（列数が偶数の場合、中央は1マスに揃えられない）
+      const mid = cols / 2;
+      const spike = Math.max(1, Math.round(cols * 0.25) - 1);
+      crownRow[spike] = 8;
+      crownRow[cols - 1 - spike] = 8;
+      crownRow[Math.floor(mid) - 1] = 8;
+      crownRow[Math.floor(mid)] = 8;
+      grid = [crownRow].concat(grid);
+    }
+    if (stageIdx >= 3) {
+      colors[7] = GROWTH_SPARKLE_COLOR;
+      grid[0][0] = 7;
+      grid[0][grid[0].length - 1] = 7;
+    }
+    return { grid, colors };
+  }
   function currentLevel() {
     if (typeof getLevelInfo !== 'function' || typeof loadXp !== 'function') return 1;
     try { return getLevelInfo(loadXp()).level; } catch (e) { return 1; }
@@ -82,6 +122,7 @@
     return stage;
   }
   let currentUnit = BASE_UNIT;
+  let currentStageIdx = 0;
   let lastGrowthStageIndex = -1;
   const MIN_STOP_MS = 1200;
   const MAX_STOP_MS = 4000;
@@ -123,7 +164,7 @@
   }
 
   let speciesIndex = loadSpeciesIndex();
-  let outer = null, inner = null, accessoryEl = null, x = 0, y = 0, pendingTimer = null;
+  let outer = null, inner = null, x = 0, y = 0, pendingTimer = null;
   let bubble = null, bubbleHideTimer = null, bubbleFollowRaf = null;
 
   // ペットの移動中も吹き出しの位置が追従するよう、表示中は毎フレーム座標を更新する
@@ -178,15 +219,19 @@
     showBubble(text);
   }
 
+  function effectiveSprite(idx) {
+    const s = SPECIES[idx];
+    return buildGrowthGrid(s.grid, s.colors, currentStageIdx);
+  }
   function spriteSize(idx) {
-    const g = SPECIES[idx].grid;
+    const g = effectiveSprite(idx).grid;
     return { w: g[0].length * currentUnit, h: g.length * currentUnit };
   }
   function buildBoxShadow(idx) {
-    const s = SPECIES[idx];
+    const { grid, colors } = effectiveSprite(idx);
     const shadow = [];
-    s.grid.forEach((row, y) => row.forEach((cell, colX) => {
-      if (cell) shadow.push(colX * currentUnit + 'px ' + y * currentUnit + 'px 0 0 ' + s.colors[cell]);
+    grid.forEach((row, y) => row.forEach((cell, colX) => {
+      if (cell) shadow.push(colX * currentUnit + 'px ' + y * currentUnit + 'px 0 0 ' + colors[cell]);
     }));
     return shadow.join(',');
   }
@@ -216,8 +261,8 @@
     const stageIdx = PET_GROWTH_STAGES.indexOf(stage);
     const changed = stageIdx !== lastGrowthStageIndex;
     currentUnit = BASE_UNIT * stage.scale;
+    currentStageIdx = stageIdx;
     applySpecies(speciesIndex);
-    if (accessoryEl) accessoryEl.textContent = stage.accessory;
     if (changed && announce && lastGrowthStageIndex !== -1 && stageIdx > lastGrowthStageIndex) {
       showBubble('🎉 レベルアップでペットが成長したよ！');
     }
@@ -320,9 +365,6 @@
     inner.style.top = '0';
     inner.style.left = '0';
     outer.appendChild(inner);
-    accessoryEl = document.createElement('span');
-    accessoryEl.className = 'deskPetAccessory';
-    outer.appendChild(accessoryEl);
     document.body.appendChild(outer);
     refreshPetGrowth(false);
     const { w, h } = spriteSize(speciesIndex);
@@ -336,7 +378,7 @@
   function destroyPet() {
     clearTimeout(pendingTimer);
     hideBubble();
-    if (outer) { outer.remove(); outer = null; inner = null; accessoryEl = null; }
+    if (outer) { outer.remove(); outer = null; inner = null; }
   }
 
   window.addEventListener('resize', onResize);

@@ -161,10 +161,8 @@ registerSettingsPageRenderer(renderSpeechRateSettings);
 /* ▼▼▼ 新規追加：問題演習のデフォルト設定 ここから ▼▼▼ */
 const QUIZ_SETTINGS_CHK_MAP = {
   quizDefaultRandomChk: 'random',
-  quizDefaultHideMemorizedChk: 'hideMemorized',
   quizDefaultOverdueOnlyChk: 'overdueOnly',
   quizDefaultExcludeTodayChk: 'excludeToday',
-  quizDefaultWeakOnlyChk: 'weakOnly',
   quizDefaultSkippedOnlyChk: 'skippedOnly'
 };
 function renderQuizDefaultFilterSettings() {
@@ -192,10 +190,8 @@ document.getElementById('quizDefaultImportanceSelect').addEventListener('change'
 });
 const QUIZ_SETTINGS_LIVE_CHK_ID = {
   random: 'quizRandomChk',
-  hideMemorized: 'quizHideMemorizedChk',
   overdueOnly: 'quizOverdueOnlyChk',
   excludeToday: 'quizExcludeTodayChk',
-  weakOnly: 'quizWeakOnlyChk',
   skippedOnly: 'quizSkippedOnlyChk'
 };
 Object.keys(QUIZ_SETTINGS_CHK_MAP).forEach(id => {

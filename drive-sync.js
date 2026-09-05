@@ -15,6 +15,21 @@
   const XP_KEY = 'ronshoXpV1';
   const ORPHANENTRYARCHIVE_KEY = 'ronshoOrphanEntryArchiveV1';
   const PRECEDENT_KEY = 'ronshoPrecedentsV1';
+  // 論証・学習記録以外の項目（カウントダウン・重複チェックのアーカイブなど）。
+  // これらは1件ずつの個別選択までは対応せず、競合時は「その他の項目」として
+  // まとめて📱／☁️のどちらかを選んでもらう
+  const OTHER_FIELD_LABELS = {
+    manualLog: '📝 手動学習ログ',
+    pastExamLogs: '📄 過去問ログ',
+    countdowns: '⏳ カウントダウン',
+    dupArchive: '🗑 重複チェックのアーカイブ',
+    dupResolved: '✅ 重複チェックの「両方残す」記録',
+    speechDict: '🗣 読み方辞書',
+    dailyGoal: '🎯 今日の目標値',
+    xp: '🏆 経験値・レベル',
+    precedents: '⚖️ 判例',
+    orphanEntryArchive: '🔗 引き継がれなかった学習記録の内容'
+  };
 
   let revision = Number(localStorage.getItem(REVISION_KEY) || 0);
   // 「最後に同期が完了した時点のローカルの状態」。ページを再読み込みしても
@@ -199,27 +214,19 @@
     const localLog = (localData && localData.studyLog) || {};
     const remoteLog = (remoteData && remoteData.studyLog) || {};
     const allLogTitles = new Set([...Object.keys(localLog), ...Object.keys(remoteLog)]);
-    const memorizedDiffTitles = [], historyDiffTitles = [];
+    // 暗記済みフラグ・学習回数のどちらかでも違えば、その論証の学習記録
+    // まるごとを1つの選択対象にする（片方だけ選ばせると、暗記済みは📱・
+    // 学習回数は☁️のような矛盾した記録になってしまうため）
+    const studyLogDiffTitles = [];
     allLogTitles.forEach(t => {
       const a = localLog[t] || {}, b = remoteLog[t] || {};
-      if (!!a.memorized !== !!b.memorized) memorizedDiffTitles.push(t);
-      if ((a.history || []).length !== (b.history || []).length) historyDiffTitles.push(t);
+      const memorizedDiffers = !!a.memorized !== !!b.memorized;
+      const historyDiffers = (a.history || []).length !== (b.history || []).length;
+      if (memorizedDiffers || historyDiffers) studyLogDiffTitles.push(t);
     });
 
     // 論証・学習記録以外の項目（カウントダウン・重複チェックのアーカイブなど）も、
     // 「違いが無い」と誤解させないよう、変わっている項目名だけ拾っておく
-    const OTHER_FIELD_LABELS = {
-      manualLog: '📝 手動学習ログ',
-      pastExamLogs: '📄 過去問ログ',
-      countdowns: '⏳ カウントダウン',
-      dupArchive: '🗑 重複チェックのアーカイブ',
-      dupResolved: '✅ 重複チェックの「両方残す」記録',
-      speechDict: '🗣 読み方辞書',
-      dailyGoal: '🎯 今日の目標値',
-      xp: '🏆 経験値・レベル',
-      precedents: '⚖️ 判例',
-      orphanEntryArchive: '🔗 引き継がれなかった学習記録の内容'
-    };
     const otherFieldLabels = Object.keys(OTHER_FIELD_LABELS).filter(k => {
       return canonicalJSON((localData || {})[k]) !== canonicalJSON((remoteData || {})[k]);
     }).map(k => OTHER_FIELD_LABELS[k]);
@@ -230,12 +237,27 @@
         { kind: 'onlyLocal', icon: '📱', label: 'この端末にしかない論証', titles: onlyLocalTitles },
         { kind: 'onlyRemote', icon: '☁️', label: 'クラウドにしかない論証', titles: onlyRemoteTitles },
         { kind: 'edited', icon: '✏️', label: '同じタイトルで本文の内容が違う論証', titles: [...editedTitles] },
-        { kind: 'memorized', icon: '✅', label: '暗記済みフラグが違う論証', titles: memorizedDiffTitles },
-        { kind: 'history', icon: '📊', label: '学習回数が違う論証', titles: historyDiffTitles }
+        { kind: 'studyLog', icon: '📊', label: '学習記録（暗記済み・学習回数など）が違う論証', titles: studyLogDiffTitles }
       ].filter(g => g.titles.length > 0)
     };
   }
   const DIFF_ROWS_SHOWN_MAX = 20;
+  // 種類ごとに「何も選ばなかった場合」の既定側を決める。onlyLocal/onlyRemoteは
+  // 「片方にしかない論証をなるべく残す」方向（＝両端末の内容を合わせた集合）を
+  // 既定にし、本当に内容が競合しているedited/studyLogだけ「この端末」を暫定の
+  // 既定にしている（どちらが新しいかを判定する手段が無いための便宜上の選択）
+  function defaultSideForKind(kind) {
+    if (kind === 'onlyLocal') return 'local';
+    if (kind === 'onlyRemote') return 'cloud';
+    return 'local';
+  }
+  function diffChoiceHtml(kind, title) {
+    const def = defaultSideForKind(kind);
+    return '<span class="driveSyncDiffChoice">'
+      + '<button type="button" class="diffChoiceBtn' + (def === 'local' ? ' active' : '') + '" data-side="local" title="この端末の内容を採用">📱</button>'
+      + '<button type="button" class="diffChoiceBtn' + (def === 'cloud' ? ' active' : '') + '" data-side="cloud" title="クラウドの内容を採用">☁️</button>'
+      + '</span>';
+  }
   function diffSummaryHtml(diff) {
     if (diff.groups.length === 0) {
       if (diff.otherFieldLabels.length === 0) {
@@ -247,11 +269,14 @@
     return diff.groups.map(g => {
       const shown = g.titles.slice(0, DIFF_ROWS_SHOWN_MAX);
       const rows = shown.map(t => '<div class="driveSyncDiffRow" data-diff-kind="' + g.kind + '" data-diff-title="' + escHtml(t) + '">'
-        + '<span class="driveSyncDiffCaret">▶</span> ' + escHtml(t || '(タイトルなし)')
+        + '<span class="driveSyncDiffCaret">▶</span> <span class="driveSyncDiffRowTitle">' + escHtml(t || '(タイトルなし)') + '</span>'
+        + diffChoiceHtml(g.kind, t)
         + '</div><div class="driveSyncDiffDetail" hidden></div>').join('');
-      const more = g.titles.length > shown.length ? '<div class="driveSyncDiffMoreNote">他' + (g.titles.length - shown.length) + '件</div>' : '';
+      const more = g.titles.length > shown.length
+        ? '<div class="driveSyncDiffMoreNote">他' + (g.titles.length - shown.length) + '件（' + (defaultSideForKind(g.kind) === 'local' ? '📱この端末' : '☁️クラウド') + 'を採用します）</div>'
+        : '';
       return '<div class="driveSyncConflictDiffGroup">'
-        + '<div class="driveSyncConflictDiffGroupTitle">' + g.icon + ' ' + g.label + ': <strong>' + g.titles.length + '件</strong>（クリックで内容を表示）</div>'
+        + '<div class="driveSyncConflictDiffGroupTitle">' + g.icon + ' ' + g.label + ': <strong>' + g.titles.length + '件</strong>（行をクリックで内容を表示。📱☁️ボタンでこの項目だけ採用する側を選べます）</div>'
         + rows + more
         + '</div>';
     }).join('') + (diff.otherFieldLabels.length
@@ -287,7 +312,7 @@
         + entryDetailHtml('☁️ クラウド', diff.remoteByTitle.get(title))
         + '</div>';
     }
-    // memorized / history
+    // studyLog（暗記済み・学習回数などが違う論証）
     return '<div class="driveSyncDiffDetailCols">'
       + logDetailHtml('📱 この端末', diff.localLog[title])
       + logDetailHtml('☁️ クラウド', diff.remoteLog[title])
@@ -308,60 +333,73 @@
     }
     const localData = snapshot();
     const diff = computeSyncDiff(localData, remoteData);
+    // 行ごとの選択状態。キーは「種類|タイトル」、値は'local'または'cloud'。
+    // 何も触っていない項目はdefaultSideForKind()の既定値がそのまま使われる
+    const selections = new Map();
+    let otherFieldsSide = 'local';
+    const otherFieldsRowHtml = diff.otherFieldLabels.length
+      ? '<div class="driveSyncConflictOtherRow">'
+        + '<span>📦 その他の項目（' + diff.otherFieldLabels.map(l => escHtml(l)).join('・') + '）</span>'
+        + '<span class="driveSyncDiffChoice" id="driveSyncOtherFieldsChoice">'
+        + '<button type="button" class="diffChoiceBtn active" data-side="local">📱</button>'
+        + '<button type="button" class="diffChoiceBtn" data-side="cloud">☁️</button>'
+        + '</span>'
+        + '</div>'
+      : '';
     root.innerHTML = '<div class="driveSyncConflictOverlay">'
       + '<div class="driveSyncConflictBox">'
       + '<div class="driveSyncConflictHeader">⚠️ 同期の競合</div>'
       + '<div class="driveSyncConflictBody">'
-      + '<p>この端末とクラウドの両方でデータが更新されているため、自動では統合できません。どちらのデータを使うか選んでください。</p>'
-      + '<div class="driveSyncConflictDiffTitle">🔍 主な違い</div>'
+      + '<p>この端末とクラウドの両方でデータが更新されているため、自動では統合できません。以下の項目ごとに、📱この端末／☁️クラウドのどちらの内容を使うか選んでください（初期状態は、なるべく両方のデータを活かせるように選ばれています）。</p>'
+      + '<div class="driveSyncConflictQuickRow">🚀 まとめて選ぶ：'
+      + '<button type="button" id="driveSyncQuickAllLocalBtn" class="driveSyncQuickBtn">📱 すべてこの端末</button>'
+      + '<button type="button" id="driveSyncQuickAllCloudBtn" class="driveSyncQuickBtn">☁️ すべてクラウド</button>'
+      + '</div>'
+      + '<div class="driveSyncConflictDiffTitle">🔍 項目ごとの選択（<span id="driveSyncLocalMeta">論証 ' + entryCountOf(localData) + '件 ／ 暗記済み ' + memorizedCountOf(localData) + '件</span>　vs　<span id="driveSyncCloudMeta">論証 ' + entryCountOf(remoteData) + '件 ／ 暗記済み ' + memorizedCountOf(remoteData) + '件（最終更新: ' + formatUpdatedAt(remoteUpdatedAt) + '）</span>）</div>'
       + diffSummaryHtml(diff)
-      + '<div class="driveSyncConflictCols">'
-      + '<div class="driveSyncConflictCol">'
-      + '<div class="driveSyncConflictColTitle">📱 この端末</div>'
-      + '<div class="driveSyncConflictColMeta">論証 ' + entryCountOf(localData) + '件 ／ 暗記済み ' + memorizedCountOf(localData) + '件</div>'
-      + '<div class="driveSyncConflictColMeta">今この端末の状態</div>'
-      + '<button type="button" id="driveSyncKeepLocalBtn">この端末のデータを使う</button>'
-      + '</div>'
-      + '<div class="driveSyncConflictCol">'
-      + '<div class="driveSyncConflictColTitle">☁️ クラウド</div>'
-      + '<div class="driveSyncConflictColMeta">論証 ' + entryCountOf(remoteData) + '件 ／ 暗記済み ' + memorizedCountOf(remoteData) + '件</div>'
-      + '<div class="driveSyncConflictColMeta">最終更新: ' + formatUpdatedAt(remoteUpdatedAt) + '</div>'
-      + '<button type="button" id="driveSyncKeepCloudBtn">クラウドのデータを使う</button>'
-      + '</div>'
-      + '</div>'
-      + '<div class="driveSyncConflictHint">選んだ方の内容で、もう片方が上書きされます（学習記録・論証データともに）。あとで「重複チェック」から個別に復元することもできます。</div>'
+      + otherFieldsRowHtml
+      + '<div class="driveSyncConflictHint">選ばなかった項目・「他N件」に含まれる項目は、それぞれの初期選択（📱／☁️）がそのまま適用されます。あとで「重複チェック」から個別に復元することもできます。</div>'
+      + '<div class="driveSyncConflictConfirmRow">'
+      + '<button type="button" id="driveSyncConfirmMergeBtn">✅ 選んだ内容でマージする</button>'
       + '<span class="driveSyncConflictLaterBtn" id="driveSyncConflictLaterBtn">あとで決める</span>'
       + '</div>'
       + '</div>'
+      + '</div>'
       + '</div>';
-    const keepLocalBtn = document.getElementById('driveSyncKeepLocalBtn');
-    const keepCloudBtn = document.getElementById('driveSyncKeepCloudBtn');
-    // この端末のデータをアップロードする処理は、全データ(約1MB規模になりうる)を
-    // 送信するため数秒かかることがある。押した直後にボタンを無効化して
+    const confirmBtn = document.getElementById('driveSyncConfirmMergeBtn');
+    // マージしたデータのアップロードは、全データ(約1MB規模になりうる)を送信
+    // するため数秒かかることがある。押した直後にボタンを無効化して
     // 「処理中」と分かるようにし、連打による二重送信も防ぐ。失敗してモーダルが
     // まだ残っている場合だけ、再度押せる状態に戻す
-    keepLocalBtn.onclick = async () => {
-      if (keepLocalBtn.disabled) return;
-      keepLocalBtn.disabled = true;
-      keepCloudBtn.disabled = true;
-      keepLocalBtn.textContent = '⏳ アップロード中…';
-      await resolveConflictKeepLocal();
+    confirmBtn.onclick = async () => {
+      if (confirmBtn.disabled) return;
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '⏳ マージ中…';
+      const merged = buildManualMergeSnapshot(diff, localData, remoteData, selections, otherFieldsSide);
+      await resolveConflictManualMerge(merged, remoteRevision);
       if (isConflictModalOpen()) {
-        keepLocalBtn.disabled = false;
-        keepCloudBtn.disabled = false;
-        keepLocalBtn.textContent = 'この端末のデータを使う';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '✅ 選んだ内容でマージする';
       }
     };
-    keepCloudBtn.onclick = async () => {
-      if (keepCloudBtn.disabled) return;
-      keepLocalBtn.disabled = true;
-      keepCloudBtn.disabled = true;
-      keepCloudBtn.textContent = '⏳ 取り込み中…';
-      await resolveConflictKeepCloud(remoteData, remoteRevision);
-    };
     document.getElementById('driveSyncConflictLaterBtn').onclick = () => hideSyncConflictModal();
-    // 差分の各行をクリックすると、その論証・学習記録の中身を開閉できるようにする
+    document.getElementById('driveSyncQuickAllLocalBtn').onclick = () => setAllDiffChoices(diff, root, selections, 'local');
+    document.getElementById('driveSyncQuickAllCloudBtn').onclick = () => setAllDiffChoices(diff, root, selections, 'cloud');
+    // 差分の各行をクリックすると、その論証・学習記録の中身を開閉できるようにする。
+    // 📱☁️ボタンは行のクリックとは別扱いにし、押した項目だけの選択を切り替える
     root.onclick = (e) => {
+      const choiceBtn = e.target.closest ? e.target.closest('.diffChoiceBtn') : null;
+      if (choiceBtn) {
+        const otherWrap = choiceBtn.closest('#driveSyncOtherFieldsChoice');
+        if (otherWrap) {
+          otherFieldsSide = choiceBtn.getAttribute('data-side');
+        } else {
+          const row = choiceBtn.closest('.driveSyncDiffRow');
+          if (row) selections.set(row.getAttribute('data-diff-kind') + '|' + row.getAttribute('data-diff-title'), choiceBtn.getAttribute('data-side'));
+        }
+        choiceBtn.parentElement.querySelectorAll('.diffChoiceBtn').forEach(b => b.classList.toggle('active', b === choiceBtn));
+        return;
+      }
       const row = e.target.closest ? e.target.closest('.driveSyncDiffRow') : null;
       if (!row) return;
       const detail = row.nextElementSibling;
@@ -405,6 +443,85 @@
       }
     } catch (e) {
       state('保存に失敗しました: ' + e.message);
+    }
+  }
+  // 表示中の全ての差分行（省略されている「他N件」も含む）の選択を、
+  // 一括でlocal/cloudどちらかに揃える。「まとめて選ぶ」ボタン用
+  function setAllDiffChoices(diff, root, selections, side) {
+    diff.groups.forEach(g => g.titles.forEach(t => selections.set(g.kind + '|' + t, side)));
+    // 自動テスト(tools/sync-test)ではDOM操作を簡易スタブで済ませているため
+    // querySelectorAllが無く、その場合は見た目の更新（ボタンの色）だけ省略する
+    if (typeof root.querySelectorAll !== 'function') return;
+    root.querySelectorAll('.driveSyncDiffRow .diffChoiceBtn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-side') === side);
+    });
+  }
+  // 競合モーダルで項目ごとに選んだ内容から、実際に保存するスナップショットを組み立てる。
+  // ベースは常にこの端末の現在のデータとし、選択に応じて該当タイトルだけを
+  // クラウド側の内容に差し替える／削除する（＝「全部乗せ or 全部差し替え」ではなく、
+  // 選んだ項目だけがクラウド優先になる）
+  function buildManualMergeSnapshot(diff, localData, remoteData, selections, otherFieldsSide) {
+    const finalEntries = (localData.entries || []).slice();
+    const sideOf = (kind, title) => selections.get(kind + '|' + title) || defaultSideForKind(kind);
+    diff.groups.forEach(g => {
+      if (g.kind === 'onlyLocal') {
+        g.titles.forEach(t => {
+          if (sideOf('onlyLocal', t) !== 'cloud') return;
+          const idx = finalEntries.findIndex(e => e.title === t);
+          if (idx !== -1) finalEntries.splice(idx, 1);
+        });
+      } else if (g.kind === 'onlyRemote') {
+        g.titles.forEach(t => {
+          if (sideOf('onlyRemote', t) !== 'cloud') return;
+          const re = diff.remoteByTitle.get(t);
+          if (re && !finalEntries.some(e => e.title === t)) finalEntries.push(re);
+        });
+      } else if (g.kind === 'edited') {
+        g.titles.forEach(t => {
+          if (sideOf('edited', t) !== 'cloud') return;
+          const re = diff.remoteByTitle.get(t);
+          const idx = finalEntries.findIndex(e => e.title === t);
+          if (re && idx !== -1) finalEntries[idx] = re;
+        });
+      }
+    });
+    const finalStudyLog = Object.assign({}, localData.studyLog || {});
+    const studyLogGroup = diff.groups.find(g => g.kind === 'studyLog');
+    if (studyLogGroup) {
+      studyLogGroup.titles.forEach(t => {
+        if (sideOf('studyLog', t) !== 'cloud') return;
+        if (diff.remoteLog[t]) finalStudyLog[t] = diff.remoteLog[t];
+        else delete finalStudyLog[t];
+      });
+    }
+    const otherBase = otherFieldsSide === 'cloud' ? (remoteData || {}) : localData;
+    const merged = Object.assign({}, localData, { entries: finalEntries, studyLog: finalStudyLog });
+    Object.keys(OTHER_FIELD_LABELS).forEach(k => { merged[k] = otherBase[k]; });
+    return merged;
+  }
+  async function resolveConflictManualMerge(mergedData, remoteRevision) {
+    try {
+      // 選択の間に更に更新されている可能性があるため、最新のrevisionを取り直してから保存する
+      const r = await fetch(SYNC_URL, { cache: 'no-store' });
+      const remote = await r.json();
+      const r2 = await fetch(SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ revision: remote.revision || 0, data: mergedData })
+      });
+      const result = await r2.json();
+      if (result.ok) {
+        revision = result.result.revision;
+        localStorage.setItem(REVISION_KEY, String(revision));
+        applyRemoteData(mergedData);
+        markSynced(mergedData);
+        hideSyncConflictModal();
+        state('🔀 選んだ内容でマージしました（' + new Date().toLocaleTimeString() + '）');
+      } else if (result.latest) {
+        showSyncConflictModal(result.latest.data, result.latest.revision || 0, result.latest.updatedAt);
+      }
+    } catch (e) {
+      state(isOfflineError(e) ? '📴 オフラインのため保存できません（オンラインになってからもう一度お試しください）' : ('保存に失敗しました: ' + e.message));
     }
   }
 
@@ -537,6 +654,7 @@
   window.__ronshoSyncTest = {
     pushToCloud, pullFromCloud, snapshot, applyRemoteData, adoptRemoteWholesale,
     hasUnsyncedLocalChanges, computeSyncDiff, canonicalJSON,
+    showSyncConflictModal, hideSyncConflictModal, buildManualMergeSnapshot,
     getRevision: () => revision,
     setRevision: (v) => { revision = v; localStorage.setItem(REVISION_KEY, String(v)); },
     getLast: () => last,

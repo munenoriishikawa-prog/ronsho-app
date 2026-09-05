@@ -948,6 +948,9 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 }
 .driveSyncConflictDiffGroupTitle { font-size: 12px; color: var(--text-secondary2); margin-bottom: 6px; }
 .driveSyncDiffRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
   color: var(--text-secondary2);
   cursor: pointer;
@@ -955,8 +958,34 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
   border-radius: 6px;
 }
 .driveSyncDiffRow:hover { background: rgba(0, 87, 231, 0.08); }
-.driveSyncDiffCaret { display: inline-block; width: 12px; color: #8a9db8; font-size: 10px; }
+.driveSyncDiffCaret { display: inline-block; width: 12px; color: #8a9db8; font-size: 10px; flex-shrink: 0; }
+.driveSyncDiffRowTitle { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .driveSyncDiffMoreNote { font-size: 11px; color: #8a9db8; margin-top: 2px; }
+/* 項目ごとの📱／☁️選択ボタン。行のクリック（詳細の開閉）とは独立して
+   動作させるため、JS側でクリックを別扱いにしている */
+.driveSyncDiffChoice { display: inline-flex; flex-shrink: 0; border-radius: 999px; overflow: hidden; border: 1px solid var(--border-strong); }
+.diffChoiceBtn {
+  font-size: 12px; padding: 3px 8px; border: none; background: var(--card-bg); color: var(--text-secondary);
+  cursor: pointer; line-height: 1.4;
+}
+.diffChoiceBtn.active { background: linear-gradient(135deg, #0057e7, #00c2ff); color: #fff; }
+.driveSyncConflictQuickRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+.driveSyncQuickBtn {
+  border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; border: 1px solid var(--border-strong);
+  background: var(--tint-6); color: var(--text); cursor: pointer;
+}
+.driveSyncQuickBtn:hover { background: var(--tint-10); }
+.driveSyncConflictOtherRow {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; color: var(--text-secondary2); background: var(--tint-5);
+  border-radius: 10px; padding: 8px 14px; margin-bottom: 10px;
+}
+.driveSyncConflictConfirmRow { display: flex; align-items: center; gap: 16px; margin-top: 6px; }
+#driveSyncConfirmMergeBtn {
+  border-radius: 999px; padding: 10px 20px; font-size: 13px; font-weight: 800; border: none;
+  background: linear-gradient(135deg, #0057e7, #00c2ff); color: #fff; cursor: pointer;
+}
+#driveSyncConfirmMergeBtn:disabled { opacity: 0.6; cursor: default; }
 .driveSyncDiffDetail { padding: 8px 6px 8px 20px; }
 .driveSyncDiffDetailCols { display: flex; gap: 10px; flex-wrap: wrap; }
 .driveSyncDiffDetailSide {
@@ -971,29 +1000,6 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .driveSyncDiffDetailMeta { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
 .driveSyncDiffDetailText { font-size: 12px; color: var(--text-secondary2); line-height: 1.6; max-height: 160px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
 .driveSyncDiffDetailNone { font-size: 12px; color: #8a9db8; }
-.driveSyncConflictCols { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-.driveSyncConflictCol {
-  flex: 1;
-  min-width: 200px;
-  background: var(--tint-5);
-  border-radius: 12px;
-  padding: 14px 16px;
-  text-align: center;
-}
-.driveSyncConflictColTitle { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 6px; }
-.driveSyncConflictColMeta { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
-.driveSyncConflictCol button {
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  border: none;
-  background: linear-gradient(135deg, #0057e7, #00c2ff);
-  color: #fff;
-  cursor: pointer;
-  width: 100%;
-}
-.driveSyncConflictCol button:disabled { opacity: 0.6; cursor: default; }
 .driveSyncConflictHint { font-size: 11px; color: #8a9db8; line-height: 1.6; margin-bottom: 10px; }
 .driveSyncConflictLaterBtn { display: inline-block; font-size: 12px; color: var(--text-secondary); cursor: pointer; text-decoration: underline; }
 .driveSyncConflictLaterBtn:hover { color: var(--text); }

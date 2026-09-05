@@ -96,6 +96,7 @@ function loadDevice(gas, opts) {
   const sandbox = {
     console,
     localStorage: storage,
+    navigator: { onLine: true },
     window: { addEventListener: () => {} },
     document: {
       getElementById: opts.withDom === false ? (() => null) : getEl,
@@ -190,7 +191,7 @@ async function e2e() {
     check('クラウドの内容がそのまま反映される', dev.getLocal(K.entries, []).some(e => e.title === '民法C（他端末で追加）'));
   }
 
-  console.log('\n■ E4: 両方で変更＝本当の競合 → 自動統合せず確認ポップアップを出す');
+  console.log('\n■ E4: 両方で変更＝本当の競合 → 自動統合せず、項目ごとに選べる確認ポップアップを出す');
   {
     const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法'), mkEntry('クラウド側の新規', '本文cloud', '民法')], 11);
     const gas = makeMockGas(cloud);
@@ -202,14 +203,52 @@ async function e2e() {
     dev.setLocal(K.entries, [mkEntry('民法A', '本文A', '民法'), mkEntry('端末側の新規', '本文local', '民法')]);
     await dev.api.pullFromCloud(false);
     const modalHtml = dev.getEl('driveSyncConflictModal').innerHTML;
-    check('確認ポップアップが表示される', modalHtml.includes('この端末のデータを使う') && modalHtml.includes('クラウドのデータを使う'));
+    check('確認ポップアップが表示される（項目ごとの選択ボタン・まとめて選ぶボタン・確定ボタンがある）',
+      modalHtml.includes('diffChoiceBtn') && modalHtml.includes('driveSyncQuickAllLocalBtn') && modalHtml.includes('driveSyncConfirmMergeBtn'));
     check('まだ自動では上書きされない（revisionは据え置き）', dev.api.getRevision() === 10);
 
-    console.log('\n  ▶ E4-a: 「この端末のデータを使う」を選ぶ → 端末の内容でクラウドを上書き');
-    const localBtn = dev.getEl('driveSyncKeepLocalBtn');
-    await localBtn.onclick();
+    console.log('\n  ▶ E4-a: 「すべてこの端末」→ 確定 を選ぶ → 端末の内容でクラウドを上書き');
+    dev.getEl('driveSyncQuickAllLocalBtn').onclick();
+    await dev.getEl('driveSyncConfirmMergeBtn').onclick();
     check('revisionがクラウドに確定する', dev.api.getRevision() === gas.store.revision);
     check('クラウドが端末側の内容になる', gas.store.data.entries.some(e => e.title === '端末側の新規') && !gas.store.data.entries.some(e => e.title === 'クラウド側の新規'));
+  }
+
+  console.log('\n■ E4c: 競合時の既定選択は、一括で片方を捨てるのではなく、なるべく両方の内容を残す');
+  {
+    const dev = loadDevice(null);
+    const local = { entries: [mkEntry('端末側だけの新規', '本文local', '民法'), mkEntry('共通A', '同じ本文', '民法'), mkEntry('編集された論点', 'ローカル版', '民法')], studyLog: {} };
+    const remote = { entries: [mkEntry('クラウド側だけの新規', '本文cloud', '民法'), mkEntry('共通A', '同じ本文', '民法'), mkEntry('編集された論点', 'クラウド版', '民法')], studyLog: {} };
+    const diff = dev.api.computeSyncDiff(local, remote);
+    // 何も選ばない（selectionsが空）＝各グループの既定値のまま確定した場合
+    const merged = dev.api.buildManualMergeSnapshot(diff, local, remote, new Map(), 'local');
+    check('既定では、端末にしかない論証も残る', merged.entries.some(e => e.title === '端末側だけの新規'));
+    check('既定では、クラウドにしかない論証も取り込まれる', merged.entries.some(e => e.title === 'クラウド側だけの新規'));
+    check('共通の論証は重複しない', merged.entries.filter(e => e.title === '共通A').length === 1);
+    check('本文が競合する論証は、既定でこの端末の内容になる', merged.entries.find(e => e.title === '編集された論点').body === 'ローカル版');
+  }
+
+  console.log('\n■ E4d: 項目ごとに個別選択できる（この論証だけクラウドを採用し、他はこの端末のまま）');
+  {
+    const dev = loadDevice(null);
+    const local = {
+      entries: [mkEntry('論点1（ローカルのまま）', 'ローカル版1', '民法'), mkEntry('論点2（クラウドを採用）', 'ローカル版2', '民法')],
+      studyLog: { '論点3': { memorized: false, history: ['2026-08-20'] } }
+    };
+    const remote = {
+      entries: [mkEntry('論点1（ローカルのまま）', 'クラウド版1', '民法'), mkEntry('論点2（クラウドを採用）', 'クラウド版2', '民法')],
+      studyLog: { '論点3': { memorized: true, history: ['2026-08-20', '2026-08-21', '2026-08-22'] } }
+    };
+    const diff = dev.api.computeSyncDiff(local, remote);
+    check('本文が違う論証が2件、学習記録が違う論証が1件、それぞれ別項目として検出される',
+      diff.groups.find(g => g.kind === 'edited').titles.length === 2 && diff.groups.find(g => g.kind === 'studyLog').titles.length === 1);
+    // 「論点2」の本文だけクラウドを選び、「論点3」の学習記録もクラウドを選ぶ。
+    // 「論点1」はあえて選択せず、既定（この端末）のままにする
+    const selections = new Map([['edited|論点2（クラウドを採用）', 'cloud'], ['studyLog|論点3', 'cloud']]);
+    const merged = dev.api.buildManualMergeSnapshot(diff, local, remote, selections, 'local');
+    check('選ばなかった論点1は、この端末の内容のまま', merged.entries.find(e => e.title === '論点1（ローカルのまま）').body === 'ローカル版1');
+    check('選んだ論点2だけ、クラウドの内容に差し替わる', merged.entries.find(e => e.title === '論点2（クラウドを採用）').body === 'クラウド版2');
+    check('選んだ論点3の学習記録だけ、クラウドの内容になる', merged.studyLog['論点3'].memorized === true && merged.studyLog['論点3'].history.length === 3);
   }
 
   console.log('\n■ E4b: 論証・学習記録は同じでも、他の項目（カウントダウン等）が違う場合はそれを案内する（「違いなし」と誤解させない）');
@@ -224,7 +263,7 @@ async function e2e() {
     check('カウントダウンの差は検出される', diff.otherFieldLabels.some(l => l.includes('カウントダウン')));
   }
 
-  console.log('\n■ E5: 競合ポップアップで「クラウドのデータを使う」を選ぶ → 端末側がクラウドの内容で上書きされる');
+  console.log('\n■ E5: 競合ポップアップで「すべてクラウド」→ 確定 を選ぶ → 端末側がクラウドの内容で上書きされる');
   {
     const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法'), mkEntry('クラウド側の新規', '本文cloud', '民法')], 11);
     const gas = makeMockGas(cloud);
@@ -234,10 +273,12 @@ async function e2e() {
     dev.api.markSynced(dev.api.snapshot());
     dev.setLocal(K.entries, [mkEntry('民法A', '本文A', '民法'), mkEntry('端末側の新規', '本文local', '民法')]);
     await dev.api.pullFromCloud(false);
-    const cloudBtn = dev.getEl('driveSyncKeepCloudBtn');
-    cloudBtn.onclick();
+    dev.getEl('driveSyncQuickAllCloudBtn').onclick();
+    await dev.getEl('driveSyncConfirmMergeBtn').onclick();
     check('端末側の未同期の変更は破棄され、クラウドの内容になる', dev.getLocal(K.entries, []).some(e => e.title === 'クラウド側の新規') && !dev.getLocal(K.entries, []).some(e => e.title === '端末側の新規'));
-    check('revisionがクラウドに追従する', dev.api.getRevision() === 11);
+    // 「すべてクラウド」を選んでも、内部的には選んだ内容を改めて保存し直す
+    // （マージ）ため、押す前と中身が同じでもrevisionは1つ進む
+    check('revisionがクラウドに確定する', dev.api.getRevision() === gas.store.revision);
   }
 
   console.log('\n■ E6: push時のレース（送信直前に他がpush済み）でも自動統合せず確認ポップアップを出す');
@@ -320,7 +361,10 @@ function loadDupCheck(initialArchive, initialEntries) {
     escapeHtml: s => String(s == null ? '' : s),
     formatLocalDate: () => '2026-08-25',
     buildYearHtml: () => '',
-    getYearTokensPlain: () => []
+    getYearTokensPlain: () => [],
+    // 「その他」タブの再描画リスナー登録先(js/core.js)。このテストでは
+    // タブUI自体を検証しないため、登録だけ受け付けて何もしないスタブでよい
+    registerSettingsPageRenderer: () => {}
   };
   vm.createContext(sandbox);
   vm.runInContext(dupCheckCode, sandbox, { filename: 'duplicate-check.js' });

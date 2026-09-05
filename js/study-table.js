@@ -766,6 +766,25 @@ document.addEventListener('change', (e) => {
     renderQuizPage();
     return;
   }
+  const starTabSelect = e.target.closest('.starTabSelect');
+  if (starTabSelect) {
+    starFilterMode = starTabSelect.value;
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
+  const importanceTabSelect = e.target.closest('.importanceTabSelect');
+  if (importanceTabSelect) {
+    const v = importanceTabSelect.value;
+    selectedImportance = (v === 'all') ? 'all' : Number(v);
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
 });
 document.addEventListener('click', (e) => {
   const studyLoadMoreBtn = e.target.closest('#studyLoadMoreBtn');
@@ -778,25 +797,6 @@ document.addEventListener('click', (e) => {
   if (trendToggleBtn) {
     trendMode = trendToggleBtn.dataset.trend;
     renderTrendChart();
-    return;
-  }
-  const starTabBtn = e.target.closest('.starFilterBtn[data-star]');
-  if (starTabBtn) {
-    starFilterMode = starTabBtn.dataset.star;
-    renderSubjectTabs();
-    renderStudyTable(entries);
-    quizStarted = false;
-    renderQuizPage();
-    return;
-  }
-  const importanceTabBtn = e.target.closest('.starFilterBtn[data-importance]');
-  if (importanceTabBtn) {
-    const v = importanceTabBtn.dataset.importance;
-    selectedImportance = (v === 'all') ? 'all' : Number(v);
-    renderSubjectTabs();
-    renderStudyTable(entries);
-    quizStarted = false;
-    renderQuizPage();
     return;
   }
   const freqTabBtn = e.target.closest('.starFilterBtn[data-freq]');

@@ -844,6 +844,9 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .compareToggle.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.6)); }
 .deleteToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .deleteToggle:hover { opacity: 0.85; transform: scale(1.2); }
+/* クリック操作は無く、ホバー／タップでWord読込日時を確認できるだけの表示用アイコン */
+.importedAtIcon { cursor: default; font-size: 15px; flex-shrink: 0; opacity: 0.3; }
+.importedAtIcon:hover { opacity: 0.7; }
 .compareBar {
   display: none;
   position: fixed;
@@ -1325,7 +1328,8 @@ input[type=file] { display:none; }
 }
 .quizBody { text-align: left; font-size: 14px; line-height: 1.8; background: var(--tint-4); border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
 .quizYear { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
-.quizSource { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+.quizSource { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.quizImportedAt { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
 .quizSourceEditBtn { cursor: pointer; opacity: 0.5; }
 .quizSourceEditBtn:hover { opacity: 1; }
 .quizJudgeRow { display: flex; gap: 12px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }

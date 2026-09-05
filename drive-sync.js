@@ -441,7 +441,7 @@
       + '<button type="button" id="driveSyncQuickAllLocalBtn" class="driveSyncQuickBtn">📱 すべてこの端末</button>'
       + '<button type="button" id="driveSyncQuickAllCloudBtn" class="driveSyncQuickBtn">☁️ すべてクラウド</button>'
       + '</div>'
-      + '<div class="driveSyncConflictDiffTitle">🔍 項目ごとの選択（<span id="driveSyncLocalMeta">論証 ' + entryCountOf(localData) + '件 ／ 暗記済み ' + memorizedCountOf(localData) + '件</span>　vs　<span id="driveSyncCloudMeta">論証 ' + entryCountOf(remoteData) + '件 ／ 暗記済み ' + memorizedCountOf(remoteData) + '件（最終更新: ' + formatUpdatedAt(remoteUpdatedAt) + '）</span>）</div>'
+      + '<div class="driveSyncConflictDiffTitle">🔍 項目ごとの選択（<span id="driveSyncLocalMeta">📱この端末：論証 ' + entryCountOf(localData) + '件 ／ 暗記済み ' + memorizedCountOf(localData) + '件（確認時刻: ' + formatUpdatedAt(new Date().toISOString()) + '）</span>　vs　<span id="driveSyncCloudMeta">☁️クラウド：論証 ' + entryCountOf(remoteData) + '件 ／ 暗記済み ' + memorizedCountOf(remoteData) + '件（最終更新: ' + formatUpdatedAt(remoteUpdatedAt) + '）</span>）</div>'
       + diffSummaryHtml(diff)
       + otherFieldsRowHtml
       + '<div class="driveSyncConflictHint">選ばなかった項目・「他N件」に含まれる項目は、それぞれの初期選択（📱／☁️）がそのまま適用されます。あとで「重複チェック」から個別に復元することもできます。</div>'

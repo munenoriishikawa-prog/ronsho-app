@@ -91,11 +91,22 @@
   // 通常の同期用ファイル(revisionで管理)とは別に、GAS側で日付入りの
   // バックアップファイルとして専用フォルダに保存される。同期のrevisionには影響しない
   window.ronshoUploadBackupToDrive = async (payload, fileName) => {
-    const r = await fetch(SYNC_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'backup', data: payload, fileName: fileName })
-    });
+    assertOnlineOrThrow();
+    let r;
+    try {
+      r = await fetch(SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'backup', data: payload, fileName: fileName })
+      });
+    } catch (e) {
+      // fetch自体の失敗（オフライン・通信の不安定・ページ移動等）は、Safariでは
+      // "Load failed"、Chromeでは"Failed to fetch"のような生のブラウザメッセージに
+      // なり分かりにくいため、他の同期処理（pushToCloud等）と同じ言い回しに揃える
+      throw new Error(isOfflineError(e)
+        ? 'オフラインです（オンラインになってからもう一度お試しください）'
+        : '通信エラーが発生しました。通信状況を確認してもう一度お試しください（' + e.message + '）');
+    }
     if (!r.ok) throw new Error('アップロードに失敗しました（通信エラー）');
     const result = await r.json();
     if (!result.ok) throw new Error('アップロードに失敗しました');

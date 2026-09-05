@@ -1207,6 +1207,7 @@ input[type=file] { display:none; }
 .relatedEntriesRow { margin-top: 6px; font-size: 11px; color: var(--text-secondary); line-height: 1.7; }
 .relatedEntriesLabel { font-weight: 700; margin-right: 4px; }
 .relatedEntryLink { color: #0057e7; cursor: pointer; text-decoration: underline; }
+.entrySourceRow { margin-top: 6px; font-size: 11px; color: var(--text-secondary); }
 .relatedEntryLink:hover { color: #003ea6; }
 .editTagsRow { display: flex; flex-direction: column; gap: 4px; }
 .editTagsRow label { font-size: 11px; color: var(--text-secondary); }

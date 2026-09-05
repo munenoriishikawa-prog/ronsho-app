@@ -248,6 +248,109 @@ function renderSpeechStatus(text) {
   const el = document.getElementById('speechStatus');
   if (el) el.textContent = text;
 }
+// ▼▼▼ 新規追加：読み上げ中の文章を読み仮名カードで表示・直接編集する機能
+// 表示中の論証（タイトル・本文）を、辞書登録済みの単語は「読み」に、
+// まだ辞書に無い漢字のかたまりは「そのままの表記」に置き換えた断片列に
+// 分解する。カード側では断片ごとに編集可能なspanとして表示し、そこを
+// 直接編集すると読み方辞書（speechDict）にそのまま反映される
+let speechFuriganaVisible = false;
+function isKanjiChar(ch) {
+  return /[一-鿿々〆〤]/.test(ch);
+}
+function buildFuriganaSegments(text) {
+  if (!text) return [];
+  const sorted = [...speechDict].filter(d => d.word).sort((a, b) => b.word.length - a.word.length);
+  const dictStartsAt = (pos) => sorted.some(d => text.startsWith(d.word, pos));
+  const segments = [];
+  let i = 0;
+  while (i < text.length) {
+    const matched = sorted.find(d => text.startsWith(d.word, i));
+    if (matched) {
+      segments.push({ type: 'dict', word: matched.word, reading: matched.reading });
+      i += matched.word.length;
+      continue;
+    }
+    if (isKanjiChar(text[i])) {
+      let j = i + 1;
+      while (j < text.length && isKanjiChar(text[j]) && !dictStartsAt(j)) j++;
+      segments.push({ type: 'kanji', word: text.slice(i, j) });
+      i = j;
+      continue;
+    }
+    let j = i + 1;
+    while (j < text.length && !isKanjiChar(text[j]) && !dictStartsAt(j)) j++;
+    segments.push({ type: 'plain', text: text.slice(i, j) });
+    i = j;
+  }
+  return segments;
+}
+function buildFuriganaHtml(text) {
+  return buildFuriganaSegments(text).map(seg => {
+    if (seg.type === 'dict') {
+      return '<span class="speechFuriganaWord" contenteditable="true" data-word="' + escapeHtml(seg.word)
+        + '" title="「' + escapeHtml(seg.word) + '」の読み方（編集すると辞書に反映されます）">' + escapeHtml(seg.reading) + '</span>';
+    }
+    if (seg.type === 'kanji') {
+      return '<span class="speechFuriganaWord speechFuriganaUnregistered" contenteditable="true" data-word="' + escapeHtml(seg.word)
+        + '" title="まだ読み方辞書に無い単語です。読み方を入力すると登録されます">' + escapeHtml(seg.word) + '</span>';
+    }
+    return escapeHtml(seg.text).replace(/\n/g, '<br>');
+  }).join('');
+}
+function renderSpeechFuriganaCard(e) {
+  const wrap = document.getElementById('speechFuriganaCard');
+  if (!wrap) return;
+  if (!speechFuriganaVisible || !e) {
+    wrap.innerHTML = '';
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = '';
+  wrap.innerHTML = '<div class="speechFuriganaNote">💡 読み方が違う単語はタップして直接修正できます。点線の単語はまだ読み方辞書に登録されていない漢字です（読み方を入力すると登録されます）。</div>'
+    + '<div class="speechFuriganaText">' + buildFuriganaHtml(e.title) + '</div>'
+    + '<div class="speechFuriganaText speechFuriganaBody">' + buildFuriganaHtml(e.body) + '</div>';
+}
+function saveFuriganaWordEdit(span) {
+  const word = span.getAttribute('data-word');
+  const newReading = span.textContent.trim();
+  if (!word || !newReading) return;
+  const wasUnregistered = span.classList.contains('speechFuriganaUnregistered');
+  if (wasUnregistered && newReading === word) return; // 未編集のまま外れた場合は何もしない
+  const idx = speechDict.findIndex(d => d.word === word);
+  if (idx !== -1) {
+    if (speechDict[idx].reading === newReading) return;
+    speechDict[idx].reading = newReading;
+  } else {
+    speechDict.push({ word: word, reading: newReading });
+  }
+  saveSpeechDict();
+  status.textContent = '🔤 「' + word + '」の読み方を「' + newReading + '」として読み方辞書に反映しました。';
+  renderSpeechDictList();
+  // 同じ単語が文章中の別の箇所にも出てくる場合、そちらの表示にも反映されるよう再描画する
+  if (speechQueue.length > 0) renderSpeechFuriganaCard(speechQueue[speechIndex]);
+}
+const speechCurrentCardEl = document.getElementById('speechCurrentCard');
+if (speechCurrentCardEl) {
+  speechCurrentCardEl.addEventListener('focusout', (evt) => {
+    const span = evt.target.closest ? evt.target.closest('.speechFuriganaWord') : null;
+    if (span) saveFuriganaWordEdit(span);
+  });
+  speechCurrentCardEl.addEventListener('keydown', (evt) => {
+    if (evt.key !== 'Enter') return;
+    const span = evt.target.closest ? evt.target.closest('.speechFuriganaWord') : null;
+    if (!span) return;
+    evt.preventDefault();
+    span.blur();
+  });
+  speechCurrentCardEl.addEventListener('click', (evt) => {
+    const btn = evt.target.closest ? evt.target.closest('#speechFuriganaToggleBtn') : null;
+    if (!btn) return;
+    speechFuriganaVisible = !speechFuriganaVisible;
+    btn.classList.toggle('active', speechFuriganaVisible);
+    renderSpeechFuriganaCard(speechQueue[speechIndex]);
+  });
+}
+// ▲▲▲ 読み仮名カード ここまで ▲▲▲
 function renderSpeechCurrentCard() {
   const el = document.getElementById('speechCurrentCard');
   if (!el) return;
@@ -258,8 +361,13 @@ function renderSpeechCurrentCard() {
   const e = speechQueue[speechIndex];
   el.innerHTML = '<div class="speechProgress">' + (speechIndex + 1) + ' / ' + speechQueue.length + '問</div>'
     + '<div class="speechMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>'
+    + '<div class="speechTitleRow">'
     + '<div class="speechTitle">' + escapeHtml(e.title) + '</div>'
-    + '<div class="speechBody">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>';
+    + '<span class="speechFuriganaToggleBtn' + (speechFuriganaVisible ? ' active' : '') + '" id="speechFuriganaToggleBtn" title="読み仮名を表示・編集">🔤 読み仮名</span>'
+    + '</div>'
+    + '<div class="speechBody">' + (e.bodyHtml || escapeHtml(e.body || '')) + '</div>'
+    + '<div id="speechFuriganaCard" class="speechFuriganaCard"></div>';
+  renderSpeechFuriganaCard(e);
 }
 function advanceSpeechAfterEntry() {
   if (!speechIsPlaying) return;

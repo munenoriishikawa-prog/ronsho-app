@@ -1363,6 +1363,27 @@ input[type=file] { display:none; }
 .speechMeta { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
 .speechTitle { font-size: 20px; font-weight: 800; color: var(--text); margin: 12px 0 20px; line-height: 1.5; }
 .speechBody { text-align: left; font-size: 14px; line-height: 1.8; background: var(--tint-4); border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
+.speechTitleRow { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.speechFuriganaToggleBtn {
+  display: inline-block; font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  background: var(--tint-6); border: 1px solid var(--border-strong); border-radius: 999px;
+  padding: 4px 12px; cursor: pointer; white-space: nowrap;
+}
+.speechFuriganaToggleBtn:hover { background: var(--tint-10); }
+.speechFuriganaToggleBtn.active { background: linear-gradient(135deg, #0057e7, #00c2ff); color: #fff; border-color: transparent; }
+.speechFuriganaCard {
+  text-align: left; background: var(--tint-5); border-radius: 12px; padding: 14px 18px; margin: 0 0 16px;
+}
+.speechFuriganaNote { font-size: 11px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.6; }
+.speechFuriganaText { font-size: 15px; line-height: 2.2; color: var(--text); margin-bottom: 10px; }
+.speechFuriganaBody { margin-bottom: 0; }
+.speechFuriganaWord {
+  display: inline-block; min-width: 1.4em; padding: 1px 4px; margin: 0 1px; border-radius: 4px;
+  background: var(--card-bg); border: 1px solid var(--border-strong); color: #0057e7;
+  cursor: text; outline: none;
+}
+.speechFuriganaWord:focus { border-color: #0057e7; box-shadow: 0 0 0 2px rgba(0, 87, 231, 0.2); }
+.speechFuriganaWord.speechFuriganaUnregistered { color: var(--text-secondary); border-style: dashed; }
 .speechEmpty { color: var(--text-secondary); font-size: 14px; padding: 30px; }
 .speechDictForm { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .speechDictForm input { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 13px; }

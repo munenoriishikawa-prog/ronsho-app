@@ -335,6 +335,31 @@ async function e2e() {
     const diff = dev.api.computeSyncDiff(local, remote);
     check('実際に中身が違う場合はotherFieldLabelsで検知される', diff.otherFieldLabels.some(l => l.includes('カウントダウン')));
   }
+
+  console.log('\n■ E9: 表示テーマ・ペット設定・各画面の既定フィルタなど、新たに同期対象へ追加した端末設定も同期される');
+  {
+    const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法')], 10);
+    const gas = makeMockGas(cloud);
+    const devA = loadDevice(gas);
+    devA.setLocal(K.entries, [mkEntry('民法A', '本文A', '民法')]);
+    devA.api.setRevision(cloud.revision);
+    // これらは生の文字列・数値のまま保存される項目なので、setLocal（JSON.stringify）
+    // ではなくstorage.setItemで直接、実際のアプリと同じ形式で入れる
+    devA.storage.setItem('ronshoThemeV1', 'dark');
+    devA.storage.setItem('ronshoPetSpeciesV1', '2');
+    devA.storage.setItem('ronshoStarFilterDefaultV1', 'weak');
+    devA.storage.setItem('ronshoPastExamDefaultTypeV1', '新司法試験');
+    devA.storage.setItem('ronshoQuizDefaultFiltersV1', JSON.stringify({ random: true, hideMemorized: true }));
+    await devA.api.pushToCloud();
+
+    const devB = loadDevice(gas);
+    await devB.api.pullFromCloud(true);
+    check('表示テーマ（生の文字列）がそのまま同期される', devB.storage.getItem('ronshoThemeV1') === 'dark');
+    check('ペットの種類（生の文字列）がそのまま同期される', devB.storage.getItem('ronshoPetSpeciesV1') === '2');
+    check('苦手フィルタの既定（生の文字列）がそのまま同期される', devB.storage.getItem('ronshoStarFilterDefaultV1') === 'weak');
+    check('過去問ログの既定種別（日本語の生の文字列）がそのまま同期される', devB.storage.getItem('ronshoPastExamDefaultTypeV1') === '新司法試験');
+    check('問題演習の既定フィルタ（JSON）が同期される', JSON.parse(devB.storage.getItem('ronshoQuizDefaultFiltersV1')).hideMemorized === true);
+  }
 }
 
 // ---- duplicate-check.js の関数試験 ----

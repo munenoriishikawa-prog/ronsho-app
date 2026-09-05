@@ -15,6 +15,27 @@
   const XP_KEY = 'ronshoXpV1';
   const ORPHANENTRYARCHIVE_KEY = 'ronshoOrphanEntryArchiveV1';
   const PRECEDENT_KEY = 'ronshoPrecedentsV1';
+  // 以下は各画面（テーマ・ペット・問題演習/読み上げ/苦手フィルタ/過去問ログの
+  // 既定値・ショートカット・バックアップ催促）の「この端末だけのローカル設定」
+  // だったものを、同期対象に加えたキー群。値の形式は元のファイルにそのまま
+  // 合わせている（JSON化されているものはread/write、生の文字列・数値の
+  // ものはreadRaw/writeRawを使う）
+  const THEME_KEY = 'ronshoThemeV1';
+  const PET_ENABLED_KEY = 'ronshoPetEnabledV1';
+  const PET_SPECIES_KEY = 'ronshoPetSpeciesV1';
+  const PET_BUBBLE_ENABLED_KEY = 'ronshoPetBubbleEnabledV1';
+  const PET_BUBBLE_DURATION_KEY = 'ronshoPetBubbleDurationV1';
+  const QUIZ_DEFAULT_FILTERS_KEY = 'ronshoQuizDefaultFiltersV1';
+  const SPEECH_DEFAULT_RATE_KEY = 'ronshoSpeechDefaultRateV1';
+  const SPEECH_DEFAULT_IMPORTANCE_KEY = 'ronshoSpeechDefaultImportanceV1';
+  const SPEECH_DEFAULT_LOOP_KEY = 'ronshoSpeechDefaultLoopV1';
+  const SPEECH_DEFAULT_INCLUDE_MEMORIZED_KEY = 'ronshoSpeechDefaultIncludeMemorizedV1';
+  const STAR_FILTER_DEFAULT_KEY = 'ronshoStarFilterDefaultV1';
+  const TAB_SHORTCUTS_KEY = 'ronshoTabShortcutsV1';
+  const PAST_EXAM_DEFAULT_TYPE_KEY = 'ronshoPastExamDefaultTypeV1';
+  const BACKUP_REMINDER_DAYS_KEY = 'ronshoBackupReminderDaysV1';
+  const BACKUP_LAST_AT_KEY = 'ronshoLastBackupAtV1';
+  const BACKUP_SNOOZE_AT_KEY = 'ronshoBackupSnoozeAtV1';
   // 論証・学習記録以外の項目（カウントダウン・重複チェックのアーカイブなど）。
   // これらは1件ずつの個別選択までは対応せず、競合時は「その他の項目」として
   // まとめて📱／☁️のどちらかを選んでもらう
@@ -28,7 +49,23 @@
     dailyGoal: '🎯 今日の目標値',
     xp: '🏆 経験値・レベル',
     precedents: '⚖️ 判例',
-    orphanEntryArchive: '🔗 引き継がれなかった学習記録の内容'
+    orphanEntryArchive: '🔗 引き継がれなかった学習記録の内容',
+    theme: '🌓 表示テーマ',
+    petEnabled: '🐾 ペット表示設定',
+    petSpecies: '🐾 ペットの種類',
+    petBubbleEnabled: '💬 ペットの吹き出し設定',
+    petBubbleDuration: '💬 ペットの吹き出し表示時間',
+    quizDefaultFilters: '📝 問題演習の既定フィルタ',
+    speechDefaultRate: '🔊 読み上げの速さ設定',
+    speechDefaultImportance: '🔊 読み上げの重要度設定',
+    speechDefaultLoop: '🔊 読み上げのループ設定',
+    speechDefaultIncludeMemorized: '🔊 読み上げの暗記済み設定',
+    starFilterDefault: '😰 苦手フィルタの既定',
+    tabShortcuts: '⌨️ ショートカット設定',
+    pastExamDefaultType: '📄 過去問ログの既定種別',
+    backupReminderDays: '📦 バックアップ催促の間隔',
+    lastBackupAt: '📦 最終バックアップ日',
+    backupSnoozeAt: '📦 バックアップ催促のスヌーズ状態'
   };
 
   let revision = Number(localStorage.getItem(REVISION_KEY) || 0);
@@ -67,11 +104,16 @@
 
   const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch (_) { return d } };
   const write = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  // JSON化されていない生の文字列・数値（例:'0'/'1'や'dark'のような単純な値）を
+  // そのまま読み書きするための版。read/write（JSON.parse/stringify前提）を
+  // 通すと、単語だけの文字列などはJSON.parseでエラーになってしまうため分けている
+  const readRaw = (k, d) => { const v = localStorage.getItem(k); return v === null ? d : v; };
+  const writeRaw = (k, v) => { if (v === null || v === undefined || v === '') localStorage.removeItem(k); else localStorage.setItem(k, String(v)); };
   const getEntries = () => read(ENTRY_KEY, []);
   const state = t => { const e = document.getElementById('driveSyncState'); if (e) e.textContent = t };
 
   const snapshot = () => ({
-    schemaVersion: 6,
+    schemaVersion: 7,
     entries: getEntries(),
     studyLog: read(STUDYLOG_KEY, {}),
     manualLog: read(MANUALLOG_KEY, {}),
@@ -84,7 +126,23 @@
     dailyGoal: read(DAILYGOAL_KEY, null),
     xp: read(XP_KEY, 0),
     orphanEntryArchive: read(ORPHANENTRYARCHIVE_KEY, {}),
-    precedents: read(PRECEDENT_KEY, [])
+    precedents: read(PRECEDENT_KEY, []),
+    theme: readRaw(THEME_KEY, ''),
+    petEnabled: readRaw(PET_ENABLED_KEY, ''),
+    petSpecies: readRaw(PET_SPECIES_KEY, ''),
+    petBubbleEnabled: readRaw(PET_BUBBLE_ENABLED_KEY, ''),
+    petBubbleDuration: readRaw(PET_BUBBLE_DURATION_KEY, ''),
+    quizDefaultFilters: read(QUIZ_DEFAULT_FILTERS_KEY, {}),
+    speechDefaultRate: readRaw(SPEECH_DEFAULT_RATE_KEY, ''),
+    speechDefaultImportance: readRaw(SPEECH_DEFAULT_IMPORTANCE_KEY, ''),
+    speechDefaultLoop: readRaw(SPEECH_DEFAULT_LOOP_KEY, ''),
+    speechDefaultIncludeMemorized: readRaw(SPEECH_DEFAULT_INCLUDE_MEMORIZED_KEY, ''),
+    starFilterDefault: readRaw(STAR_FILTER_DEFAULT_KEY, ''),
+    tabShortcuts: read(TAB_SHORTCUTS_KEY, {}),
+    pastExamDefaultType: readRaw(PAST_EXAM_DEFAULT_TYPE_KEY, ''),
+    backupReminderDays: readRaw(BACKUP_REMINDER_DAYS_KEY, ''),
+    lastBackupAt: readRaw(BACKUP_LAST_AT_KEY, ''),
+    backupSnoozeAt: readRaw(BACKUP_SNOOZE_AT_KEY, '')
   });
 
   const hasLocalData = () => {
@@ -141,6 +199,34 @@
       write(XP_KEY, data.xp || 0);
       write(ORPHANENTRYARCHIVE_KEY, data.orphanEntryArchive || {});
       write(PRECEDENT_KEY, data.precedents || []);
+      writeRaw(THEME_KEY, data.theme);
+      writeRaw(PET_ENABLED_KEY, data.petEnabled);
+      writeRaw(PET_SPECIES_KEY, data.petSpecies);
+      writeRaw(PET_BUBBLE_ENABLED_KEY, data.petBubbleEnabled);
+      writeRaw(PET_BUBBLE_DURATION_KEY, data.petBubbleDuration);
+      write(QUIZ_DEFAULT_FILTERS_KEY, data.quizDefaultFilters || {});
+      writeRaw(SPEECH_DEFAULT_RATE_KEY, data.speechDefaultRate);
+      writeRaw(SPEECH_DEFAULT_IMPORTANCE_KEY, data.speechDefaultImportance);
+      writeRaw(SPEECH_DEFAULT_LOOP_KEY, data.speechDefaultLoop);
+      writeRaw(SPEECH_DEFAULT_INCLUDE_MEMORIZED_KEY, data.speechDefaultIncludeMemorized);
+      writeRaw(STAR_FILTER_DEFAULT_KEY, data.starFilterDefault);
+      write(TAB_SHORTCUTS_KEY, data.tabShortcuts || {});
+      writeRaw(PAST_EXAM_DEFAULT_TYPE_KEY, data.pastExamDefaultType);
+      writeRaw(BACKUP_REMINDER_DAYS_KEY, data.backupReminderDays);
+      writeRaw(BACKUP_LAST_AT_KEY, data.lastBackupAt);
+      writeRaw(BACKUP_SNOOZE_AT_KEY, data.backupSnoozeAt);
+      // テーマ・ペットは、専用の公開APIがあれば呼んで見た目にもすぐ反映する。
+      // それ以外の設定（既定フィルタ等）は、次にその画面を開いたときに
+      // 反映される（他の同期項目と同様、都度の即時反映までは行わない）
+      if (window.ronshoThemeControl && typeof window.ronshoThemeControl.setTheme === 'function') {
+        window.ronshoThemeControl.setTheme(data.theme === 'light' || data.theme === 'dark' ? data.theme : 'system');
+      }
+      if (window.ronshoPetControl) {
+        if (typeof window.ronshoPetControl.setEnabled === 'function') window.ronshoPetControl.setEnabled(data.petEnabled !== '0');
+        if (typeof window.ronshoPetControl.setSpeciesIndex === 'function' && data.petSpecies !== '' && data.petSpecies != null) window.ronshoPetControl.setSpeciesIndex(Number(data.petSpecies));
+        if (typeof window.ronshoPetControl.setBubbleEnabled === 'function') window.ronshoPetControl.setBubbleEnabled(data.petBubbleEnabled !== '0');
+        if (typeof window.ronshoPetControl.setBubbleDurationMs === 'function' && data.petBubbleDuration) window.ronshoPetControl.setBubbleDurationMs(Number(data.petBubbleDuration));
+      }
       try { entries = data.entries || [] } catch (_) {}
       try { studyLog = data.studyLog || {} } catch (_) {}
       try { manualLog = data.manualLog || {} } catch (_) {}

@@ -3,7 +3,7 @@
    保存先も専用のキー 'ronshoPastExamLogs_v1' のみを使用します。 */
 const PAST_EXAM_LOG_KEY = 'ronshoPastExamLogs_v1';
 // 「過去問ログ」タブを開いたときに最初から選ばれている種別を、設定画面
-// (js/settings.js)から変更できるようにする。この端末だけのローカル設定
+// (js/settings.js)から変更できるようにする（drive-sync.jsで同期対象）
 const PAST_EXAM_DEFAULT_TYPE_KEY = 'ronshoPastExamDefaultTypeV1';
 const PAST_EXAM_TYPE_OPTIONS = ['予備試験', '新司法試験'];
 function loadPastExamDefaultType() {

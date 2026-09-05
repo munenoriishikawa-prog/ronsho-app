@@ -1,13 +1,18 @@
 // --- 問題演習モード ---
 // 「問題演習」タブを開いたときに最初からチェックされている項目を、設定画面
-// (js/settings.js)から変更できるようにする。この端末だけのローカル設定
+// (js/settings.js)から変更できるようにする（drive-sync.jsで同期対象）
 const QUIZ_DEFAULT_FILTERS_KEY = 'ronshoQuizDefaultFiltersV1';
 const QUIZ_DEFAULT_FILTER_FIELDS = ['random', 'hideMemorized', 'overdueOnly', 'excludeToday', 'weakOnly', 'skippedOnly'];
+// 重要度は他のチェックボックス項目と違い真偽値ではなく('all'/'2'/'1'/'0')、
+// かつ論証一覧・問題演習の両方で共有しているselectedImportance（js/core.js）に
+// 反映するため、他のQUIZ_DEFAULT_FILTER_FIELDSとは別に扱う
+const QUIZ_IMPORTANCE_DEFAULT_OPTIONS = ['all', '2', '1', '0'];
 function loadQuizDefaultFilters() {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(QUIZ_DEFAULT_FILTERS_KEY)) || {}; } catch (e) { saved = {}; }
   const out = {};
   QUIZ_DEFAULT_FILTER_FIELDS.forEach(f => { out[f] = !!saved[f]; });
+  out.importance = QUIZ_IMPORTANCE_DEFAULT_OPTIONS.includes(saved.importance) ? saved.importance : 'all';
   return out;
 }
 function saveQuizDefaultFilters(defaults) {
@@ -21,6 +26,7 @@ function saveQuizDefaultFilters(defaults) {
   if (quizExcludeTodayChk) quizExcludeTodayChk.checked = defaults.excludeToday;
   if (quizWeakOnlyChk) quizWeakOnlyChk.checked = defaults.weakOnly;
   if (quizSkippedOnlyChk) quizSkippedOnlyChk.checked = defaults.skippedOnly;
+  selectedImportance = defaults.importance === 'all' ? 'all' : Number(defaults.importance);
 })();
 function shuffleArray(arr) {
   const a = arr.slice();

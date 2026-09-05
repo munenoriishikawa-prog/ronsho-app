@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v26.17（読み上げに読み仮名カードを追加）</title>
+<title>論証集アプリ v26.18（問題演習に穴埋め問題を追加）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -22,7 +22,7 @@ try {
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.17</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.18</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -79,6 +79,8 @@ try {
 <div id="starTabsQuiz" class="starFilterTabs"></div>
 <div id="importanceTabsQuiz" class="starFilterTabs"></div>
 <div class="quizControls">
+<label><input type="radio" name="quizMode" id="quizModeNormalRadio" value="normal" checked> 📖 通常</label>
+<label><input type="radio" name="quizMode" id="quizModeBlankRadio" value="blank"> ✏️ 穴埋め</label>
 <label><input type="checkbox" id="quizRandomChk"> 🔀 ランダム</label>
 <label><input type="checkbox" id="quizHideMemorizedChk"> 🙈 暗記済みを非表示にする</label>
 <label><input type="checkbox" id="quizOverdueOnlyChk"> ⏰ 復習期限が来ているものだけ出題</label>

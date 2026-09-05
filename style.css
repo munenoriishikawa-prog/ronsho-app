@@ -1327,6 +1327,30 @@ input[type=file] { display:none; }
   display: inline-block;
 }
 .quizBody { text-align: left; font-size: 14px; line-height: 1.8; background: var(--tint-4); border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
+.quizBlank {
+  display: inline-block;
+  min-width: 2.4em;
+  background: var(--tint-10);
+  color: transparent;
+  border-radius: 4px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.quizBlank.revealed { background: transparent; color: inherit; cursor: default; }
+.quizBlankToolsRow { text-align: center; margin: -8px 0 16px; }
+.quizBlankRevealAllBtn {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--tint-6);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 4px 14px;
+  cursor: pointer;
+}
+.quizBlankRevealAllBtn:hover { background: var(--tint-10); }
+.quizBlankNote { font-size: 11px; color: var(--text-secondary); margin: -8px 0 16px; line-height: 1.6; }
 .quizYear { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
 .quizSource { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
 .quizImportedAt { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }

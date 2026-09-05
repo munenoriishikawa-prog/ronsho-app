@@ -103,14 +103,48 @@ function saveSpeechDict() {
   if (typeof window !== 'undefined' && typeof window.ronshoSyncNotifyChange === 'function') window.ronshoSyncNotifyChange();
 }
 loadSpeechDict();
+function isKanjiChar(ch) {
+  return /[一-鿿々〆〤]/.test(ch);
+}
+// 連続する漢字のかたまり（例:「金曜日」）を、登録済みの単語だけで
+// 過不足なく端から端まで埋められる場合に限って分割する。「金」だけが
+// 単独で登録されているからといって「金曜日」の頭だけをそれに置き換えて
+// しまうと、別の場所の「お金」（かね）と読みを共有してしまい、片方を
+// 直すともう片方も変わってしまう（同じ漢字でも組み合わせで読みが
+// 変わることに対応できない）ため、埋めきれない場合はそのかたまり
+// 全体を1つの未登録語として扱う
+function tileKanjiRun(text, start, end, sortedDict) {
+  const segs = [];
+  let i = start;
+  while (i < end) {
+    const matched = sortedDict.find(d => i + d.word.length <= end && text.startsWith(d.word, i));
+    if (!matched) return null;
+    segs.push(matched);
+    i += matched.word.length;
+  }
+  return segs;
+}
 function applySpeechDict(text) {
   if (!text) return '';
-  const sorted = [...speechDict].sort((a, b) => b.word.length - a.word.length);
-  let out = text;
-  sorted.forEach(({ word, reading }) => {
-    if (!word) return;
-    out = out.split(word).join(reading);
-  });
+  const sorted = [...speechDict].filter(d => d.word).sort((a, b) => b.word.length - a.word.length);
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    if (isKanjiChar(text[i])) {
+      let j = i + 1;
+      while (j < text.length && isKanjiChar(text[j])) j++;
+      const tiled = tileKanjiRun(text, i, j, sorted);
+      if (tiled) {
+        tiled.forEach(d => { out += d.reading; });
+      } else {
+        out += text.slice(i, j);
+      }
+      i = j;
+      continue;
+    }
+    out += text[i];
+    i++;
+  }
   return out;
 }
 let speechDictListVisible = false;
@@ -254,31 +288,29 @@ function renderSpeechStatus(text) {
 // 分解する。カード側では断片ごとに編集可能なspanとして表示し、そこを
 // 直接編集すると読み方辞書（speechDict）にそのまま反映される
 let speechFuriganaVisible = false;
-function isKanjiChar(ch) {
-  return /[一-鿿々〆〤]/.test(ch);
-}
 function buildFuriganaSegments(text) {
   if (!text) return [];
   const sorted = [...speechDict].filter(d => d.word).sort((a, b) => b.word.length - a.word.length);
-  const dictStartsAt = (pos) => sorted.some(d => text.startsWith(d.word, pos));
   const segments = [];
   let i = 0;
   while (i < text.length) {
-    const matched = sorted.find(d => text.startsWith(d.word, i));
-    if (matched) {
-      segments.push({ type: 'dict', word: matched.word, reading: matched.reading });
-      i += matched.word.length;
-      continue;
-    }
     if (isKanjiChar(text[i])) {
       let j = i + 1;
-      while (j < text.length && isKanjiChar(text[j]) && !dictStartsAt(j)) j++;
-      segments.push({ type: 'kanji', word: text.slice(i, j) });
+      while (j < text.length && isKanjiChar(text[j])) j++;
+      // [i, j)は連続する漢字のかたまり。applySpeechDictと同じ理由で、
+      // このかたまり全体を登録済みの単語だけで埋めきれる場合に限って
+      // 分割し、埋めきれない場合はかたまり全体を1つの未登録語として扱う
+      const tiled = tileKanjiRun(text, i, j, sorted);
+      if (tiled) {
+        tiled.forEach(d => segments.push({ type: 'dict', word: d.word, reading: d.reading }));
+      } else {
+        segments.push({ type: 'kanji', word: text.slice(i, j) });
+      }
       i = j;
       continue;
     }
     let j = i + 1;
-    while (j < text.length && !isKanjiChar(text[j]) && !dictStartsAt(j)) j++;
+    while (j < text.length && !isKanjiChar(text[j])) j++;
     segments.push({ type: 'plain', text: text.slice(i, j) });
     i = j;
   }

@@ -379,10 +379,14 @@
   }
   function logDetailHtml(label, log) {
     const l = log || {};
+    // 「直近」の学習日は日付までしか記録が無い（同日中に複数回操作すると
+    // 両端末で同じ日付になり得る）ため、区別できるようupdatedAt（変更の
+    // たびに記録している時刻）があれば時刻まで併記する
+    const updatedAtHtml = l.updatedAt ? '（更新時刻: ' + formatUpdatedAt(l.updatedAt) + '）' : '';
     return '<div class="driveSyncDiffDetailSide">'
       + '<div class="driveSyncDiffDetailLabel">' + label + '</div>'
       + '<div class="driveSyncDiffDetailMeta">暗記済み: ' + (l.memorized ? '○' : '×') + ' ／ 学習回数: ' + ((l.history || []).length) + '回'
-      + (l.history && l.history.length ? '（直近: ' + l.history[l.history.length - 1] + '）' : '') + '</div>'
+      + (l.history && l.history.length ? '（直近: ' + l.history[l.history.length - 1] + '）' : '') + updatedAtHtml + '</div>'
       + '</div>';
   }
   function renderDiffDetail(diff, kind, title) {

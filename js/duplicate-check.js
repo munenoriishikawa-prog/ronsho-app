@@ -360,6 +360,14 @@ function dupMergeHistoryArrays(a, b) {
 function mergeConfidenceHistoryArrays(a, b) {
   return [...(a || []), ...(b || [])].sort((x, y) => (x.date || '').localeCompare(y.date || ''));
 }
+// 学習記録を合体させるとき、updatedAt（同期の競合チェックで時刻を表示する
+// ための更新時刻）は単純なスプレッドだと片方の値しか残らないため、
+// より新しい方を明示的に選ぶ
+function latestUpdatedAt(a, b) {
+  if (!a) return b || undefined;
+  if (!b) return a;
+  return a > b ? a : b;
+}
 function dupMergeStudyLogInto(keepEntry, dropEntry) {
   const keepTitle = keepEntry.title, dropTitle = dropEntry.title;
   if (keepTitle === dropTitle) return false;
@@ -370,6 +378,7 @@ function dupMergeStudyLogInto(keepEntry, dropEntry) {
     ...keepLog,
     history: dupMergeHistoryArrays(keepLog.history, dropLog.history),
     confidenceHistory: mergeConfidenceHistoryArrays(keepLog.confidenceHistory, dropLog.confidenceHistory),
+    updatedAt: latestUpdatedAt(keepLog.updatedAt, dropLog.updatedAt),
     memorized: !!(keepLog.memorized || dropLog.memorized),
     starred: !!(keepLog.starred || dropLog.starred),
     bookmarked: !!(keepLog.bookmarked || dropLog.bookmarked),
@@ -411,6 +420,7 @@ function mergeStudyLogForCarryOver(oldLog, newLog) {
     ...newLog,
     history: dupMergeHistoryArrays(newLog.history, oldLog.history),
     confidenceHistory: mergeConfidenceHistoryArrays(newLog.confidenceHistory, oldLog.confidenceHistory),
+    updatedAt: latestUpdatedAt(newLog.updatedAt, oldLog.updatedAt),
     memorized: !!(newLog.memorized || oldLog.memorized),
     starred: !!(newLog.starred || oldLog.starred),
     bookmarked: !!(newLog.bookmarked || oldLog.bookmarked),
@@ -457,6 +467,7 @@ function mergeStudyLogForManualCarryOver(oldLog, newLog) {
     ...newLog,
     history: [...(newLog.history || []), ...(oldLog.history || [])].sort(),
     confidenceHistory: mergeConfidenceHistoryArrays(newLog.confidenceHistory, oldLog.confidenceHistory),
+    updatedAt: latestUpdatedAt(newLog.updatedAt, oldLog.updatedAt),
     memorized: !!(newLog.memorized || oldLog.memorized),
     starred: !!(newLog.starred || oldLog.starred),
     bookmarked: !!(newLog.bookmarked || oldLog.bookmarked),

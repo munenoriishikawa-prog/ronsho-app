@@ -459,6 +459,9 @@ function recordStudy(idx, sourceEl) {
   studyLog[title].history.push(today);
   studyLog[title].category = ent.category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  // 同期の競合チェックで「どちらが新しいか」を日付だけでなく時刻まで
+  // 判断できるよう、変更のたびに更新時刻を記録しておく
+  studyLog[title].updatedAt = new Date().toISOString();
   saveStudyLog();
   const newCount = studyLog[title].history.length;
   if (sourceEl) {
@@ -476,6 +479,7 @@ function undoLastStudy(idx) {
   const title = ent.title;
   if (studyLog[title] && studyLog[title].history && studyLog[title].history.length > 0) {
     studyLog[title].history.pop();
+    studyLog[title].updatedAt = new Date().toISOString();
     saveStudyLog();
     const newCount = studyLog[title].history.length;
     status.textContent = '「' + title + '」の直前の学習記録を取り消しました（学習回数：' + newCount + '回）';
@@ -508,6 +512,7 @@ function setConfidence(idx, level, sourceEl) {
   studyLog[title].memorized = (level === 'good' || level === 'perfect');
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  studyLog[title].updatedAt = new Date().toISOString();
   saveStudyLog();
   // 暗記度に応じてXPを加算する（どの暗記度でも必ず増える）。
   // 新たに暗記済みになった回だけボーナスXPも加える
@@ -546,6 +551,7 @@ function toggleStar(idx) {
   studyLog[title].starred = !studyLog[title].starred;
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  studyLog[title].updatedAt = new Date().toISOString();
   saveStudyLog();
   status.textContent = studyLog[title].starred ? '😰 「' + title + '」を苦手フラグに追加しました。' : '「' + title + '」の苦手フラグを外しました。';
   renderStudyTable(entries);
@@ -558,6 +564,7 @@ function toggleSkip(idx) {
   studyLog[title].skipped = !studyLog[title].skipped;
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  studyLog[title].updatedAt = new Date().toISOString();
   saveStudyLog();
   status.textContent = studyLog[title].skipped ? '⏭️ 「' + title + '」をスキップしました（問題演習から除外）。' : '「' + title + '」のスキップを解除しました。';
   renderStudyTable(entries);
@@ -598,6 +605,7 @@ function editMemo(idx) {
   studyLog[ent.title].memo = trimmed;
   studyLog[ent.title].category = ent.category || studyLog[ent.title].category || '';
   studyLog[ent.title].subject = ent.subject || studyLog[ent.title].subject || '';
+  studyLog[ent.title].updatedAt = new Date().toISOString();
   saveStudyLog();
   status.textContent = trimmed ? '📝 「' + ent.title + '」にメモを保存しました。' : '「' + ent.title + '」のメモを削除しました。';
   renderStudyTable(entries);

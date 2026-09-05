@@ -757,6 +757,15 @@ document.addEventListener('change', (e) => {
     renderQuizPage();
     return;
   }
+  const tagTabSelect = e.target.closest('.tagTabSelect');
+  if (tagTabSelect) {
+    selectedTag = tagTabSelect.value;
+    renderSubjectTabs();
+    renderStudyTable(entries);
+    quizStarted = false;
+    renderQuizPage();
+    return;
+  }
 });
 document.addEventListener('click', (e) => {
   const studyLoadMoreBtn = e.target.closest('#studyLoadMoreBtn');
@@ -802,15 +811,6 @@ document.addEventListener('click', (e) => {
   const freqSortBtn = e.target.closest('#freqSortBtn');
   if (freqSortBtn) {
     sortByFrequency = !sortByFrequency;
-    renderSubjectTabs();
-    renderStudyTable(entries);
-    quizStarted = false;
-    renderQuizPage();
-    return;
-  }
-  const tagFilterBtn = e.target.closest('.tagFilterBtn');
-  if (tagFilterBtn) {
-    selectedTag = tagFilterBtn.dataset.tag;
     renderSubjectTabs();
     renderStudyTable(entries);
     quizStarted = false;

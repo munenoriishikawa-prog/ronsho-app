@@ -742,6 +742,9 @@ document.addEventListener('change', (e) => {
   if (subjectTabSelect) {
     selectedSubject = subjectTabSelect.value;
     selectedCategory = 'all';
+    // タグは科目・分野に応じて絞り込んでいるため、科目を切り替えたときに
+    // 別の科目のタグが選択されたまま残らないようリセットする
+    selectedTag = 'all';
     renderSubjectTabs();
     renderStudyTable(entries);
     quizStarted = false;
@@ -751,6 +754,7 @@ document.addEventListener('change', (e) => {
   const categoryTabSelect = e.target.closest('.categoryTabSelect');
   if (categoryTabSelect) {
     selectedCategory = categoryTabSelect.value;
+    selectedTag = 'all';
     renderSubjectTabs();
     renderStudyTable(entries);
     quizStarted = false;

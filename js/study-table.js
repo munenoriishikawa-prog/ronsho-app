@@ -31,9 +31,12 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const isCompareSelected = compareList.includes(e.title);
   const compareToggleHtml = '<span class="compareToggle' + (isCompareSelected ? ' active' : '') + '" data-title="' + escapeHtml(e.title) + '" title="比較に追加／解除">⚖️</span>';
   const deleteToggleHtml = '<span class="deleteToggle" data-idx="' + idx + '" title="この論証を削除">🗑️</span>';
+  // その科目のWordファイルをいつ読み込んだものかが分かるよう、常時表示の
+  // アイコンにツールチップで日時を出す（読込日時が無い古いデータは「不明」表示）
+  const importedAtHtml = '<span class="importedAtIcon" title="📥 読込日時: ' + escapeHtml(formatImportedAt(e.importedAt)) + '">📥</span>';
   const titleCellContent = isEditing
     ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
-    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + skipHtml + deleteToggleHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
+    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + skipHtml + deleteToggleHtml + importedAtHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
   let bodyCellContent;
   if (isEditing) {
     bodyCellContent = buildBodyEditorHtml(e, idx);

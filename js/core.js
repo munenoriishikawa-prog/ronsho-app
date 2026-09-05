@@ -1002,10 +1002,12 @@ function jumpToEntryByTitle(title) {
 function renderTagTabsHtml() {
   const tags = getUniqueTags();
   if (tags.length === 0) return '';
-  let html = '<button type="button" class="tagFilterBtn' + (selectedTag === 'all' ? ' active' : '') + '" data-tag="all">🏷 タグすべて</button>';
+  let html = '<select class="tagTabSelect">';
+  html += '<option value="all"' + (selectedTag === 'all' ? ' selected' : '') + '>🏷 タグすべて</option>';
   tags.forEach(t => {
-    html += '<button type="button" class="tagFilterBtn' + (selectedTag === t ? ' active' : '') + '" data-tag="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
+    html += '<option value="' + escapeHtml(t) + '"' + (selectedTag === t ? ' selected' : '') + '>' + escapeHtml(t) + '</option>';
   });
+  html += '</select>';
   return html;
 }
 function filterEntries(data, searchQuery) {

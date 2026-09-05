@@ -1172,25 +1172,18 @@ input[type=file] { display:none; }
   font-weight: 700;
   box-shadow: 0 3px 8px rgba(255, 159, 28, 0.35);
 }
-.tagFilterBtn {
-  padding: 3px 12px;
-  margin-right: 6px;
-  margin-bottom: 6px;
+.tagTabSelect {
+  padding: 6px 12px;
   cursor: pointer;
   border: 1px solid rgba(124, 58, 237, 0.25);
   background: #f5f0ff;
   border-radius: 999px;
-  font-size: 11px;
-  color: #5b21b6;
-}
-.tagFilterBtn:hover { background: #ece2ff; }
-.tagFilterBtn.active {
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
-  color: #fff;
-  border-color: transparent;
+  font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 3px 8px rgba(124, 58, 237, 0.35);
+  color: #5b21b6;
+  max-width: 100%;
 }
+.tagTabSelect:hover { background: #ece2ff; }
 .entryTagsRow { margin-top: 8px; }
 .entryTagChip {
   display: inline-block;

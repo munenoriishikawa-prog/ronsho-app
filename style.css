@@ -1172,6 +1172,18 @@ input[type=file] { display:none; }
   font-weight: 700;
   box-shadow: 0 3px 8px rgba(255, 159, 28, 0.35);
 }
+.starTabSelect, .importanceTabSelect {
+  padding: 6px 12px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 159, 28, 0.3);
+  background: #fff4e6;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b45309;
+  max-width: 100%;
+}
+.starTabSelect:hover, .importanceTabSelect:hover { background: #ffe8c8; }
 .tagTabSelect {
   padding: 6px 12px;
   cursor: pointer;

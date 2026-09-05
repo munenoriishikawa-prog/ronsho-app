@@ -941,15 +941,20 @@ function renderStarTabsHtml() {
   // 「すべて表示」は文字通り暗記済みも含めて全件を表示する（デフォルト）。
   // 苦手のみ／暗記済みを除く／暗記済みのみ、は互いに排他的な4択。
   const modeLabels = { all: 'すべて表示', weak: '😰 苦手のみ', hideMemorized: '🙈 暗記済みを除く', memorizedOnly: '✅ 暗記済みのみ' };
-  return STAR_FILTER_MODES.map(m => {
-    return '<button type="button" class="starFilterBtn' + (starFilterMode === m ? ' active' : '') + '" data-star="' + m + '">' + modeLabels[m] + '</button>';
-  }).join('');
+  let html = '<select class="starTabSelect">';
+  STAR_FILTER_MODES.forEach(m => {
+    html += '<option value="' + m + '"' + (starFilterMode === m ? ' selected' : '') + '>' + modeLabels[m] + '</option>';
+  });
+  html += '</select>';
+  return html;
 }
 function renderImportanceTabsHtml() {
-  let html = '<button type="button" class="starFilterBtn' + (selectedImportance === 'all' ? ' active' : '') + '" data-importance="all">重要度すべて</button>';
-  html += '<button type="button" class="starFilterBtn' + (selectedImportance === 2 ? ' active' : '') + '" data-importance="2">⭐⭐</button>';
-  html += '<button type="button" class="starFilterBtn' + (selectedImportance === 1 ? ' active' : '') + '" data-importance="1">⭐</button>';
-  html += '<button type="button" class="starFilterBtn' + (selectedImportance === 0 ? ' active' : '') + '" data-importance="0">なし</button>';
+  let html = '<select class="importanceTabSelect">';
+  html += '<option value="all"' + (selectedImportance === 'all' ? ' selected' : '') + '>重要度すべて</option>';
+  html += '<option value="2"' + (selectedImportance === 2 ? ' selected' : '') + '>⭐⭐</option>';
+  html += '<option value="1"' + (selectedImportance === 1 ? ' selected' : '') + '>⭐</option>';
+  html += '<option value="0"' + (selectedImportance === 0 ? ' selected' : '') + '>なし</option>';
+  html += '</select>';
   return html;
 }
 function renderFreqTabsHtml() {

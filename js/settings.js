@@ -36,8 +36,6 @@ const DEFAULT_TAB_SHORTCUTS = {
   '7': 'pastExamPage',
   '8': 'settingsPage'
 };
-// 同期対象ではなく、この端末だけのローカル設定として保存する
-// （キーボード配列は端末ごとに違いうるため、他端末と揃える意味が薄い）。
 const TAB_SHORTCUTS_KEY = 'ronshoTabShortcutsV1';
 function loadTabShortcuts() {
   try {
@@ -176,7 +174,22 @@ function renderQuizDefaultFilterSettings() {
     const chk = document.getElementById(id);
     if (chk) chk.checked = defaults[QUIZ_SETTINGS_CHK_MAP[id]];
   });
+  const importanceSel = document.getElementById('quizDefaultImportanceSelect');
+  if (importanceSel) importanceSel.value = defaults.importance;
 }
+document.getElementById('quizDefaultImportanceSelect').addEventListener('change', (evt) => {
+  const defaults = loadQuizDefaultFilters();
+  defaults.importance = evt.target.value;
+  saveQuizDefaultFilters(defaults);
+  // 重要度は論証一覧・問題演習で共有しているselectedImportanceそのものなので、
+  // 今すぐ両方の表示にも反映する（他のチェックボックス項目は次回タブを
+  // 開いたときの初期値としてのみ使うのに対し、ここは即時反映する扱いにする）
+  selectedImportance = evt.target.value === 'all' ? 'all' : Number(evt.target.value);
+  renderSubjectTabs();
+  renderStudyTable(entries);
+  if (typeof renderQuizPage === 'function') renderQuizPage();
+  status.textContent = '📝 問題演習のデフォルト設定（重要度）を変更しました。';
+});
 const QUIZ_SETTINGS_LIVE_CHK_ID = {
   random: 'quizRandomChk',
   hideMemorized: 'quizHideMemorizedChk',

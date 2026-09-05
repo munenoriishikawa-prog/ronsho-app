@@ -7,8 +7,8 @@ const BACKUP_LAST_AT_KEY = 'ronshoLastBackupAtV1';
 const BACKUP_SNOOZE_AT_KEY = 'ronshoBackupSnoozeAtV1';
 const BACKUP_REMINDER_DAYS_KEY = 'ronshoBackupReminderDaysV1';
 const BACKUP_REMINDER_DAYS_DEFAULT = 7;
-// 通知までの日数は、設定タブ（⚙️ その他）から変更できるようにする。
-// この端末だけのローカル設定
+// 通知までの日数は、設定タブ（⚙️ その他）から変更できるようにする
+// （drive-sync.jsで同期対象）
 function loadBackupReminderDays() {
   const n = Number(localStorage.getItem(BACKUP_REMINDER_DAYS_KEY));
   return Number.isInteger(n) && n > 0 ? n : BACKUP_REMINDER_DAYS_DEFAULT;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v26.14（学習記録の比較にも更新時刻を表示）</title>
+<title>論証集アプリ v26.15（問題演習の既定設定に重要度を追加）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -22,7 +22,7 @@ try {
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.14</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.15</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -246,7 +246,7 @@ try {
 <div id="badgesSection"></div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🌓 表示テーマ</div>
-<div class="dupCheckIntro">画面の配色を切り替えます。「端末の設定に合わせる」の場合、端末やブラウザ側のダークモード設定に自動で追従します。この設定はこの端末だけに保存されます。</div>
+<div class="dupCheckIntro">画面の配色を切り替えます。「端末の設定に合わせる」の場合、端末やブラウザ側のダークモード設定に自動で追従します。</div>
 <select id="themeSelect">
 <option value="system">端末の設定に合わせる</option>
 <option value="light">☀️ ライト</option>
@@ -287,18 +287,18 @@ try {
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">⌨️ タブ切り替えショートカットキー</div>
-<div class="dupCheckIntro">入力欄にフォーカスしていない状態で数字キーを押すと、割り当てたタブに直接移動できます。同じ数字は1つのタブにしか割り当てられません（別のタブに割り当て直すと、元のタブは「未設定」になります）。この設定はこの端末だけに保存され、他の端末とは同期されません。</div>
+<div class="dupCheckIntro">入力欄にフォーカスしていない状態で数字キーを押すと、割り当てたタブに直接移動できます。同じ数字は1つのタブにしか割り当てられません（別のタブに割り当て直すと、元のタブは「未設定」になります）。</div>
 <div id="shortcutSettingsWrap"></div>
 <span class="clearEntriesLink" id="resetShortcutsBtn">↺ 初期設定に戻す</span>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🐾 デスクトップペット</div>
-<div class="dupCheckIntro">画面の下を歩き回る、癒し用のドット絵のペットです。学習データには一切影響しません。この設定はこの端末だけに保存されます。</div>
+<div class="dupCheckIntro">画面の下を歩き回る、癒し用のドット絵のペットです。学習データには一切影響しません。</div>
 <div id="petSettingsWrap"></div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🔊 読み上げのデフォルト設定</div>
-<div class="dupCheckIntro">「読み上げ」タブを開いたときに最初から選ばれている内容です。この設定はこの端末だけに保存されます。</div>
+<div class="dupCheckIntro">「読み上げ」タブを開いたときに最初から選ばれている内容です。</div>
 <div class="settingsInlineRow">
 <label for="speechDefaultRateSelect">速さ：</label>
 <select id="speechDefaultRateSelect">
@@ -344,7 +344,7 @@ try {
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📝 問題演習のデフォルト設定</div>
-<div class="dupCheckIntro">「問題演習」タブを開いたときに最初からチェックされている項目です。この設定はこの端末だけに保存されます。</div>
+<div class="dupCheckIntro">「問題演習」タブを開いたときに最初からチェックされている項目です。</div>
 <div class="settingsInlineRow">
 <label><input type="checkbox" id="quizDefaultRandomChk"> 🔀 ランダム</label>
 <label><input type="checkbox" id="quizDefaultHideMemorizedChk"> 🙈 暗記済みを非表示にする</label>
@@ -355,10 +355,18 @@ try {
 <label><input type="checkbox" id="quizDefaultWeakOnlyChk"> 😰 苦手のみ出題</label>
 <label><input type="checkbox" id="quizDefaultSkippedOnlyChk"> ⏭️ スキップしたものだけ出題</label>
 </div>
+<div class="settingsInlineRow">
+<label>重要度：<select id="quizDefaultImportanceSelect">
+<option value="all">すべて</option>
+<option value="2">⭐⭐</option>
+<option value="1">⭐</option>
+<option value="0">なし</option>
+</select></label>
+</div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🏠 ホーム・問題演習の絞り込みのデフォルト</div>
-<div class="dupCheckIntro">「すべて表示／😰苦手のみ／🙈暗記済みを除く／✅暗記済みのみ」のうち、最初から選ばれているものです。この設定はこの端末だけに保存されます。</div>
+<div class="dupCheckIntro">「すべて表示／😰苦手のみ／🙈暗記済みを除く／✅暗記済みのみ」のうち、最初から選ばれているものです。</div>
 <select id="starFilterDefaultSelect">
 <option value="all">すべて表示</option>
 <option value="weak">😰 苦手のみ</option>
@@ -368,7 +376,7 @@ try {
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📝 過去問ログのデフォルト種別</div>
-<div class="dupCheckIntro">「過去問ログ」タブを開いたときに最初から選ばれている種別です。この設定はこの端末だけに保存されます。</div>
+<div class="dupCheckIntro">「過去問ログ」タブを開いたときに最初から選ばれている種別です。</div>
 <select id="pastExamDefaultTypeSelect">
 <option value="予備試験">予備試験</option>
 <option value="新司法試験">新司法試験</option>
@@ -376,14 +384,14 @@ try {
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">📦 バックアップのお知らせ日数</div>
-<div class="dupCheckIntro">最後にバックアップしてから何日経ったらお知らせを表示するかです。この設定はこの端末だけに保存されます。</div>
+<div class="dupCheckIntro">最後にバックアップしてから何日経ったらお知らせを表示するかです。</div>
 <div class="settingsInlineRow">
 <input type="number" id="backupReminderDaysInput" min="1" max="90" style="width:70px;"> 日
 </div>
 </div>
 <div class="dataIoSection">
 <div class="dataIoSectionTitle">🎯 今日の目標</div>
-<div class="dupCheckIntro">ホーム画面の「🎯 今日の目標」で目安にする、1日あたりの問題数です。この設定はこの端末だけに保存されます。</div>
+<div class="dupCheckIntro">ホーム画面の「🎯 今日の目標」で目安にする、1日あたりの問題数です。</div>
 <div class="settingsInlineRow">
 <input type="number" id="dailyGoalInput" min="1" max="999" style="width:70px;"> 問
 </div>

@@ -7,7 +7,7 @@ let speechGapTimer = null;
 const SPEECH_TITLE_BODY_PAUSE_MS = 700;
 const SPEECH_ENTRY_PAUSE_MS = 1400;
 // 「読み上げ」タブを開いたときに最初から選ばれている内容を、設定画面
-// (js/settings.js)から変更できるようにする。この端末だけのローカル設定
+// (js/settings.js)から変更できるようにする（drive-sync.jsで同期対象）
 const SPEECH_DEFAULT_RATE_KEY = 'ronshoSpeechDefaultRateV1';
 const SPEECH_RATE_OPTIONS = ['0.75', '1', '1.15', '1.25', '1.5', '2'];
 function loadSpeechDefaultRate() {

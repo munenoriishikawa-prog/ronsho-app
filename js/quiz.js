@@ -58,6 +58,24 @@ function isWeakEntry(e) {
 function isSkippedEntry(e) {
   return !!(studyLog[e.title] && studyLog[e.title].skipped);
 }
+// 穴埋め問題モード：本文中の太字強調（<b>...</b>、buildBodyHtmlで色付き太字にした
+// 部分）を空欄にし、タップで個別に答え合わせできるようにする。太字強調が
+// 無い論証はそもそも穴埋め対象が無いので、通常表示にフォールバックする。
+const quizModeNormalRadio = document.getElementById('quizModeNormalRadio');
+const quizModeBlankRadio = document.getElementById('quizModeBlankRadio');
+function isQuizBlankMode() {
+  return !!(quizModeBlankRadio && quizModeBlankRadio.checked);
+}
+if (quizModeNormalRadio) quizModeNormalRadio.addEventListener('change', () => { if (quizStarted) renderQuizPage(); });
+if (quizModeBlankRadio) quizModeBlankRadio.addEventListener('change', () => { if (quizStarted) renderQuizPage(); });
+function buildQuizBlankHtml(bodyHtml) {
+  let count = 0;
+  const html = bodyHtml.replace(/<b>([\s\S]*?)<\/b>/g, (m, inner) => {
+    count++;
+    return '<span class="quizBlank" data-idx="' + count + '">' + inner + '</span>';
+  });
+  return { html, count };
+}
 const QUIZ_CONFIDENCE_LABELS = { perfect: '◎ 完璧', good: '○ できた', unsure: '△ あやしい', bad: '✕ ダメ' };
 function daysAgoLabel(dateStr) {
   const diff = Math.round((new Date(todayStr() + 'T00:00:00') - new Date(dateStr + 'T00:00:00')) / 86400000);
@@ -194,7 +212,18 @@ function renderQuizPage() {
   if (!quizRevealed) {
     html += '<div class="quizShowBtn" id="quizShowBtn">📖 本文を表示</div>';
   } else {
-    html += '<div class="quizBody">' + e.bodyHtml + '</div>';
+    const blankMode = isQuizBlankMode();
+    const blankResult = blankMode ? buildQuizBlankHtml(e.bodyHtml) : null;
+    const noBlankTargets = blankMode && blankResult.count === 0;
+    if (blankMode && !noBlankTargets) {
+      html += '<div class="quizBody quizBodyBlank">' + blankResult.html + '</div>';
+      html += '<div class="quizBlankToolsRow"><span class="quizBlankRevealAllBtn" id="quizBlankRevealAllBtn">👁 すべて表示／隠す</span></div>';
+    } else {
+      html += '<div class="quizBody">' + e.bodyHtml + '</div>';
+      if (noBlankTargets) {
+        html += '<div class="quizBlankNote">💡 この論証には穴埋め対象（太字の強調）が無いため、通常表示にしています。編集画面で太字にすると穴埋め対象にできます。</div>';
+      }
+    }
     html += buildEntryTagsBlockHtml(e);
     html += '<div class="quizYear">出題年：' + (buildYearHtml(e.year) || 'なし') + '</div>';
     html += '<div class="quizSource" id="quizSourceRow">出典：' + (e.source ? escapeHtml(e.source) : 'なし')
@@ -212,6 +241,18 @@ function renderQuizPage() {
   }
   html += '</div>';
   quizArea.innerHTML = html;
+  const blankSpans = quizArea.querySelectorAll('.quizBlank');
+  blankSpans.forEach(span => span.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    span.classList.toggle('revealed');
+  }));
+  const blankRevealAllBtn = document.getElementById('quizBlankRevealAllBtn');
+  if (blankRevealAllBtn) blankRevealAllBtn.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    const spans = quizArea.querySelectorAll('.quizBlank');
+    const allRevealed = Array.from(spans).every(s => s.classList.contains('revealed'));
+    spans.forEach(s => s.classList.toggle('revealed', !allRevealed));
+  });
   const showBtn = document.getElementById('quizShowBtn');
   if (showBtn) {
     showBtn.addEventListener('click', () => {

@@ -1034,7 +1034,7 @@ function filterEntries(data, searchQuery) {
   }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    result = result.filter(e => (e.title || '').toLowerCase().includes(q) || (e.body || '').toLowerCase().includes(q));
+    result = result.filter(e => (e.title || '').toLowerCase().includes(q) || (e.body || '').toLowerCase().includes(q) || (e.source || '').toLowerCase().includes(q));
   }
   if (sortByFrequency) {
     result = result.slice().sort((a, b) => getYearFrequency(b) - getYearFrequency(a));

@@ -6,3 +6,7 @@
   - `index.html` の `<title>` タグと `<h1>` タグの両方にある `v21.xx` の表記を更新する。
   - `sw.js` の `CACHE_NAME`（例: `ronsho-app-cache-v5`）も更新し、Service Workerのキャッシュを確実に更新させる。
   - タイトルの括弧書きは、その回の変更内容を簡潔に表す説明に差し替える。
+- 新しいlocalStorageキー（新機能のデータ・設定）を追加する際は、`drive-sync.js`の`snapshot()`・`applyRemoteData()`・`OTHER_FIELD_LABELS`（競合時の表示用ラベル）に同期対象として追加すること。端末固有で他端末と揃える意味が薄いもの（同期の内部管理用の値そのもの＝revision・最終同期スナップショットなど）だけ例外とする。
+  - localStorageの値がJSON形式（配列・オブジェクト）なら既存の`read()`/`write()`ヘルパーを使う。
+  - 値が生の文字列・数値（JSON化されていない、例: `'0'`/`'1'`や`'dark'`のような単純な文字列）の場合は`readRaw()`/`writeRaw()`ヘルパーを使う（`JSON.parse`に通すとエラーになるため）。
+  - `js/backup.js`の`restoreFromBackupPayload()`にも、手動バックアップからの復元で同じ項目を復元する処理を追加する。

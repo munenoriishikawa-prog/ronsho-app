@@ -125,6 +125,33 @@ function restoreFromBackupPayload(data) {
   saveCountdowns(Array.isArray(data.countdowns) ? data.countdowns : []);
   if (data.dailyGoal) saveDailyGoal(data.dailyGoal);
   if (data.dailyStats && typeof data.dailyStats === 'object') saveDailyStats(data.dailyStats);
+  // 表示テーマ・ペット・各画面の既定フィルタなど、以前は端末ごとのローカル設定
+  // だったものも同期対象になったため、バックアップの復元でも合わせて復元する。
+  // 値は元のファイルと同じ形式（生の文字列・数値）でそのまま保存する
+  const RAW_STRING_RESTORE_KEYS = {
+    theme: 'ronshoThemeV1',
+    petEnabled: 'ronshoPetEnabledV1',
+    petSpecies: 'ronshoPetSpeciesV1',
+    petBubbleEnabled: 'ronshoPetBubbleEnabledV1',
+    petBubbleDuration: 'ronshoPetBubbleDurationV1',
+    speechDefaultRate: 'ronshoSpeechDefaultRateV1',
+    speechDefaultImportance: 'ronshoSpeechDefaultImportanceV1',
+    speechDefaultLoop: 'ronshoSpeechDefaultLoopV1',
+    speechDefaultIncludeMemorized: 'ronshoSpeechDefaultIncludeMemorizedV1',
+    starFilterDefault: 'ronshoStarFilterDefaultV1',
+    pastExamDefaultType: 'ronshoPastExamDefaultTypeV1',
+    backupReminderDays: 'ronshoBackupReminderDaysV1',
+    lastBackupAt: 'ronshoLastBackupAtV1',
+    backupSnoozeAt: 'ronshoBackupSnoozeAtV1'
+  };
+  Object.keys(RAW_STRING_RESTORE_KEYS).forEach(field => {
+    const v = data[field];
+    const key = RAW_STRING_RESTORE_KEYS[field];
+    if (v === undefined || v === null || v === '') localStorage.removeItem(key);
+    else localStorage.setItem(key, String(v));
+  });
+  if (data.quizDefaultFilters && typeof data.quizDefaultFilters === 'object') localStorage.setItem('ronshoQuizDefaultFiltersV1', JSON.stringify(data.quizDefaultFilters));
+  if (data.tabShortcuts && typeof data.tabShortcuts === 'object') localStorage.setItem('ronshoTabShortcutsV1', JSON.stringify(data.tabShortcuts));
   if (entries.length > 0) {
     downloadBtn.style.display = 'inline-block';
     downloadLogBtn.style.display = 'inline-block';

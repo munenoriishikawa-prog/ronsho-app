@@ -983,9 +983,16 @@ function renderSubjectTabs() {
   if (tagTabsStudy) tagTabsStudy.innerHTML = tagHtml;
   if (tagTabsQuiz) tagTabsQuiz.innerHTML = tagHtml;
 }
+// getUniqueCategories()と同じく、選択中の科目・分野に絞ってからタグを
+// 集める。「準共有株主」のように特定の科目でしか使わないタグが、
+// 無関係な科目を選んでいるときにも並んでしまうのを防ぐため
 function getUniqueTags() {
+  let scoped = selectedSubject === 'all' ? entries : entries.filter(e => (e.subject || 'その他') === selectedSubject);
+  if (selectedCategory !== 'all') {
+    scoped = scoped.filter(e => (e.category || '未分類') === selectedCategory);
+  }
   const seen = [];
-  entries.forEach(e => {
+  scoped.forEach(e => {
     (e.tags || []).forEach(t => { if (t && !seen.includes(t)) seen.push(t); });
   });
   return seen.sort((a, b) => a.localeCompare(b, 'ja'));

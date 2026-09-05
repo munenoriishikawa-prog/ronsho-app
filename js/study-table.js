@@ -37,15 +37,19 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const titleCellContent = isEditing
     ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
     : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + skipHtml + deleteToggleHtml + importedAtHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
+  // 出典も検索対象(filterEntries)になっているため、検索結果に出典しか
+  // 一致していない行があっても「なぜ表示されているか」が分かるよう、
+  // 出典が設定されている場合はここに表示する（ハイライトも適用する）
+  const sourceHtml = e.source ? '<div class="entrySourceRow">📚 出典：' + highlightSearch(escapeHtml(e.source), searchQuery) + '</div>' : '';
   let bodyCellContent;
   if (isEditing) {
     bodyCellContent = buildBodyEditorHtml(e, idx);
   } else if (collapseBody && !expandedBodySet.has(e.title)) {
-    bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>' + buildEntryTagsBlockHtml(e);
+    bodyCellContent = '<div class="bodyCellArea collapsedState" data-idx="' + idx + '">📝 タップして表示</div>' + buildEntryTagsBlockHtml(e) + sourceHtml;
   } else if (collapseBody) {
-    bodyCellContent = '<div class="bodyCellArea" data-idx="' + idx + '">' + highlightSearch(e.bodyHtml, searchQuery) + '</div>' + buildEntryTagsBlockHtml(e);
+    bodyCellContent = '<div class="bodyCellArea" data-idx="' + idx + '">' + highlightSearch(e.bodyHtml, searchQuery) + '</div>' + buildEntryTagsBlockHtml(e) + sourceHtml;
   } else {
-    bodyCellContent = highlightSearch(e.bodyHtml, searchQuery) + buildEntryTagsBlockHtml(e);
+    bodyCellContent = highlightSearch(e.bodyHtml, searchQuery) + buildEntryTagsBlockHtml(e) + sourceHtml;
   }
   return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + '" data-idx="' + idx + '">'
     + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'

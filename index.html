@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v26.23（読み方辞書の漢字の組み合わせ誤変換を修正）</title>
+<title>論証集アプリ v26.24（論証一覧の検索に出典を追加）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -22,7 +22,7 @@ try {
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.23</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.24</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -59,7 +59,7 @@ try {
 <div id="entryListPage" class="page">
 <div class="legendNote"><span class="legendSwatch"></span>薄い赤色の行＝復習推奨日を過ぎている論証。😰＝苦手フラグ。◎完璧／○できた＝暗記済みにする（◎はさらに復習間隔を延長）／△あやしい＝復習間隔を短縮／✕ダメ＝明日また復習</div>
 <div class="searchBox">
-<input type="text" id="searchInputStudy" placeholder="🔍 タイトル・本文をキーワード検索">
+<input type="text" id="searchInputStudy" placeholder="🔍 タイトル・本文・出典をキーワード検索">
 <span class="searchClearBtn" id="searchClearStudy">クリア</span>
 <span class="searchResultCount" id="searchCountStudy"></span>
 </div>

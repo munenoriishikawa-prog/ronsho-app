@@ -2,7 +2,7 @@
 // 「問題演習」タブを開いたときに最初からチェックされている項目を、設定画面
 // (js/settings.js)から変更できるようにする（drive-sync.jsで同期対象）
 const QUIZ_DEFAULT_FILTERS_KEY = 'ronshoQuizDefaultFiltersV1';
-const QUIZ_DEFAULT_FILTER_FIELDS = ['random', 'hideMemorized', 'overdueOnly', 'excludeToday', 'weakOnly', 'skippedOnly'];
+const QUIZ_DEFAULT_FILTER_FIELDS = ['random', 'overdueOnly', 'excludeToday', 'skippedOnly'];
 // 重要度は他のチェックボックス項目と違い真偽値ではなく('all'/'2'/'1'/'0')、
 // かつ論証一覧・問題演習の両方で共有しているselectedImportance（js/core.js）に
 // 反映するため、他のQUIZ_DEFAULT_FILTER_FIELDSとは別に扱う
@@ -21,10 +21,8 @@ function saveQuizDefaultFilters(defaults) {
 (() => {
   const defaults = loadQuizDefaultFilters();
   if (quizRandomChk) quizRandomChk.checked = defaults.random;
-  if (quizHideMemorizedChk) quizHideMemorizedChk.checked = defaults.hideMemorized;
   if (quizOverdueOnlyChk) quizOverdueOnlyChk.checked = defaults.overdueOnly;
   if (quizExcludeTodayChk) quizExcludeTodayChk.checked = defaults.excludeToday;
-  if (quizWeakOnlyChk) quizWeakOnlyChk.checked = defaults.weakOnly;
   if (quizSkippedOnlyChk) quizSkippedOnlyChk.checked = defaults.skippedOnly;
   selectedImportance = defaults.importance === 'all' ? 'all' : Number(defaults.importance);
 })();
@@ -51,9 +49,6 @@ function isStudiedToday(e) {
   const history = log && log.history;
   if (!history || history.length === 0) return false;
   return history[history.length - 1] === todayStr();
-}
-function isWeakEntry(e) {
-  return !!(studyLog[e.title] && studyLog[e.title].starred);
 }
 function isSkippedEntry(e) {
   return !!(studyLog[e.title] && studyLog[e.title].skipped);
@@ -105,9 +100,6 @@ function buildQuizPool() {
   if (quizExcludeTodayChk.checked) {
     pool = pool.filter(e => !isStudiedToday(e));
   }
-  if (quizWeakOnlyChk.checked) {
-    pool = pool.filter(isWeakEntry);
-  }
   if (quizSkippedOnlyChk.checked) {
     pool = pool.filter(isSkippedEntry);
   } else {
@@ -119,9 +111,6 @@ function buildQuizPool() {
     pool = pool.filter(isOverdueEntry);
     quizMinCount = 0;
     return quizSequentialMode ? pool : shuffleArray(pool);
-  }
-  if (quizHideMemorizedChk.checked) {
-    pool = pool.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
   }
   if (pool.length === 0) {
     quizMinCount = 0;
@@ -157,8 +146,6 @@ function renderQuizPage() {
   }
   const extraNotes = [];
   if (quizExcludeTodayChk.checked) extraNotes.push('本日学習済みは除外');
-  if (quizHideMemorizedChk.checked) extraNotes.push('🙈暗記済みは除外');
-  if (quizWeakOnlyChk.checked) extraNotes.push('😰苦手のみ');
   if (quizSkippedOnlyChk.checked) extraNotes.push('⏭️スキップのみ');
   const extraNote = extraNotes.length ? '（' + extraNotes.join('・') + '）' : '';
   if (quizPool.length === 0) {
@@ -167,7 +154,7 @@ function renderQuizPage() {
       ? '<div class="quizEmpty">🎉 復習期限が来ている論証はありません' + extraNote + '。</div>'
       : (quizSkippedOnlyChk.checked
         ? '<div class="quizEmpty">⏭️ スキップした論証はありません。</div>'
-        : '<div class="quizEmpty">出題対象の論証がありません' + extraNote + '。範囲や「暗記済みも含める」設定を見直してください。</div>');
+        : '<div class="quizEmpty">出題対象の論証がありません' + extraNote + '。上の出題範囲（科目・分野・苦手／暗記済みなど）の設定を見直してください。</div>');
     return;
   }
   quizPriorityNote.innerHTML = quizOverdueMode

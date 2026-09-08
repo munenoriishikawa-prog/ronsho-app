@@ -87,7 +87,10 @@ function buildQuizLastStudyHtml(e) {
   }
   const lastDate = history[history.length - 1];
   const confLabel = QUIZ_CONFIDENCE_LABELS[log.confidence] || '';
-  return '<div class="quizLastStudy">🕒 前回学習：' + escapeHtml(lastDate) + '（' + daysAgoLabel(lastDate) + '）'
+  // 何月何日の何時何分に解答したかまで分かるよう、日付だけでなく時刻も表示する
+  const answeredAtParts = log.lastAnsweredAt ? formatImportedAt(log.lastAnsweredAt).split(' ') : null;
+  const timeLabel = (answeredAtParts && answeredAtParts[1]) ? (' ' + answeredAtParts[1]) : '';
+  return '<div class="quizLastStudy">🕒 前回学習：' + escapeHtml(lastDate) + escapeHtml(timeLabel) + '（' + daysAgoLabel(lastDate) + '）'
     + (confLabel ? ' ／ 前回の暗記度：<strong>' + confLabel + '</strong>' : '')
     + ' ／ 通算' + history.length + '回</div>';
 }

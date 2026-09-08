@@ -1545,10 +1545,15 @@ table.pastMatrixTable th, table.pastMatrixTable td {
 .pastMatrixCellInner {
   display: flex; align-items: center; justify-content: center; margin: 1px;
   width: 34px; height: 34px; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 800;
-  transition: transform 0.1s ease;
+  transition: box-shadow 0.1s ease, filter 0.1s ease;
 }
-.pastMatrixCell:not(.pastMatrixNa):hover .pastMatrixCellInner { transform: scale(1.08); }
-.pastMatrixCell:not(.pastMatrixNa):active .pastMatrixCellInner { transform: scale(0.92); }
+/* 以前は transform: scale() で拡大していたが、.pastMatrixTableWrap の
+   overflow-x: auto と組み合わさると、端の列にマウスを乗せる／タップする
+   たびに（拡大後の見た目上の領域がスクロール可能領域に含まれてしまい）
+   スクロールバーが出たり消えたりする不具合があった。レイアウト・スクロール
+   領域に影響しない box-shadow / filter だけで拡大しているように見せる */
+.pastMatrixCell:not(.pastMatrixNa):hover .pastMatrixCellInner { box-shadow: 0 0 0 3px rgba(0, 87, 231, 0.28); filter: brightness(1.06); }
+.pastMatrixCell:not(.pastMatrixNa):active .pastMatrixCellInner { filter: brightness(0.9); }
 .pastMatrixCellEmpty { box-shadow: inset 0 0 0 2px #dbe6f2; background: transparent !important; }
 /* マス（色付き／未実施の枠／対象外の「・」）の高さを完全に揃え、行の縦間隔が
    タブや行ごとにばらつかないようにする */

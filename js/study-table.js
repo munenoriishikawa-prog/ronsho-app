@@ -142,9 +142,24 @@ function getAllStudyDates() {
   });
   return map;
 }
+// 過去問ログ（js/past-exam.js）の解答日を、カレンダーの日別集計にも反映する。
+// 専用のデータは持たず、過去問ログ側のloadPastExamLogs()をそのまま日付で
+// グループ化するだけなので、過去問ログを記録/削除すればカレンダー側も
+// 自動的に連動する
+function getPastExamLogDateMap() {
+  const map = {};
+  if (typeof loadPastExamLogs !== 'function') return map;
+  loadPastExamLogs().forEach(l => {
+    if (!l.date) return;
+    if (!map[l.date]) map[l.date] = [];
+    map[l.date].push(l);
+  });
+  return map;
+}
 function getCombinedDaySummary(dateStr, dateMap) {
   const autoItems = (dateMap || getAllStudyDates())[dateStr] || [];
   const manualItems = manualLog[dateStr] || [];
+  const examItems = getPastExamLogDateMap()[dateStr] || [];
   const catCounts = {};
   autoItems.forEach(it => {
     const c = (it.subject || '未分類') + ' / ' + (it.category || '未分類');
@@ -154,8 +169,12 @@ function getCombinedDaySummary(dateStr, dateMap) {
     const c = (it.subject || '未分類') + ' / ' + (it.category || '未分類');
     catCounts[c] = (catCounts[c] || 0) + (Number(it.count) || 1);
   });
-  const totalCount = autoItems.length + manualItems.reduce((s, it) => s + (Number(it.count) || 1), 0);
-  return { autoItems, manualItems, catCounts, totalCount };
+  examItems.forEach(it => {
+    const c = '📝 過去問（' + (it.examType || '予備試験') + ' / ' + (it.subject || '未分類') + '）';
+    catCounts[c] = (catCounts[c] || 0) + 1;
+  });
+  const totalCount = autoItems.length + manualItems.reduce((s, it) => s + (Number(it.count) || 1), 0) + examItems.length;
+  return { autoItems, manualItems, examItems, catCounts, totalCount };
 }
 function getDailyStudyCounts() {
   const dateMap = getAllStudyDates();
@@ -342,7 +361,7 @@ function renderTrendChart() {
 function buildDayDetailHtml(dateStr) {
   const summary = getCombinedDaySummary(dateStr);
   let html = '<div class="reviewList"><h4>' + dateStr + ' の学習項目（合計 ' + summary.totalCount + '件）</h4>';
-  if (summary.autoItems.length === 0 && summary.manualItems.length === 0) {
+  if (summary.autoItems.length === 0 && summary.manualItems.length === 0 && summary.examItems.length === 0) {
     html += '<div class="reviewItem">この日の学習記録はまだありません。</div>';
   } else {
     summary.autoItems.forEach((it) => {
@@ -355,6 +374,12 @@ function buildDayDetailHtml(dateStr) {
       html += '<div class="reviewItem">'
         + '[手動] ' + escapeHtml(it.subject || '') + ' ｜ ' + escapeHtml(it.category || '') + ' ｜ ' + (Number(it.count) || 1) + '件'
         + ' <button type="button" class="deleteManualItemBtn" data-date="' + dateStr + '" data-index="' + mi + '" style="margin-left:10px;color:#d32f2f;">削除</button>'
+        + '</div>';
+    });
+    summary.examItems.forEach((it) => {
+      html += '<div class="reviewItem">'
+        + '📝 [過去問] ' + escapeHtml(it.examType || '予備試験') + ' ｜ ' + escapeHtml(it.subject || '') + ' ｜ ' + escapeHtml(it.year || '') + ' ｜ ' + (it.round || 1) + '回目'
+        + ' <button type="button" class="deleteExamDayItemBtn" data-key="' + escapeHtml(it.key) + '" style="margin-left:10px;color:#d32f2f;">削除</button>'
         + '</div>';
     });
   }
@@ -413,6 +438,12 @@ function renderCalendar() {
       categoryTotal[c] = (categoryTotal[c] || 0) + (Number(it.count) || 1);
     });
   });
+  Object.values(getPastExamLogDateMap()).forEach(items => {
+    items.forEach(it => {
+      const c = '📝 過去問（' + (it.examType || '予備試験') + ' / ' + (it.subject || '未分類') + '）';
+      categoryTotal[c] = (categoryTotal[c] || 0) + 1;
+    });
+  });
   html += '<h3>分野別 学習回数（全期間合計）</h3>';
   html += '<span class="speechDictToggle" id="categoryTotalToggleBtn">' + (categoryTotalListVisible ? '▼ 一覧を隠す' : '▶ 一覧を表示する') + '（' + Object.keys(categoryTotal).length + '件）</span>';
   html += '<div class="reviewList" id="categoryTotalListWrap" style="display:' + (categoryTotalListVisible ? '' : 'none') + ';">';
@@ -469,6 +500,9 @@ function recordStudy(idx, sourceEl) {
   // 同期の競合チェックで「どちらが新しいか」を日付だけでなく時刻まで
   // 判断できるよう、変更のたびに更新時刻を記録しておく
   studyLog[title].updatedAt = new Date().toISOString();
+  // 問題演習ページで「前回、何月何日の何時何分に解答したか」を表示するための
+  // 実際の解答時刻（updatedAtは苦手フラグ・メモ変更でも更新されるため別で持つ）
+  studyLog[title].lastAnsweredAt = studyLog[title].updatedAt;
   saveStudyLog();
   const newCount = studyLog[title].history.length;
   if (sourceEl) {
@@ -520,6 +554,9 @@ function setConfidence(idx, level, sourceEl) {
   studyLog[title].category = ent.category || studyLog[title].category || '';
   studyLog[title].subject = ent.subject || studyLog[title].subject || '';
   studyLog[title].updatedAt = new Date().toISOString();
+  // 問題演習ページで「前回、何月何日の何時何分に解答したか」を表示するための
+  // 実際の解答時刻（updatedAtは苦手フラグ・メモ変更でも更新されるため別で持つ）
+  studyLog[title].lastAnsweredAt = studyLog[title].updatedAt;
   saveStudyLog();
   // 暗記度に応じてXPを加算する（どの暗記度でも必ず増える）。
   // 新たに暗記済みになった回だけボーナスXPも加える
@@ -887,6 +924,22 @@ document.addEventListener('click', (e) => {
         renderStudyTable(entries);
         renderCalendar();
         renderTrendChart();
+      }
+    }
+    return;
+  }
+  const deleteExamBtn = e.target.closest('.deleteExamDayItemBtn');
+  if (deleteExamBtn) {
+    const key = deleteExamBtn.dataset.key;
+    if (typeof loadPastExamLogs === 'function' && typeof savePastExamLogs === 'function') {
+      const logs = loadPastExamLogs();
+      const idx = logs.findIndex(l => l.key === key);
+      if (idx !== -1) {
+        logs.splice(idx, 1);
+        savePastExamLogs(logs);
+        renderCalendar();
+        if (typeof renderPastLogs === 'function') renderPastLogs();
+        if (typeof renderPastMatrixTable === 'function') renderPastMatrixTable();
       }
     }
     return;

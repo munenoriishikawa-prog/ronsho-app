@@ -99,9 +99,12 @@ function parsePrecedentPasteText(text) {
   for (let i = 1; i < rawLines.length; i++) {
     const line = stripPrecedentCitationArtifacts(rawLines[i]);
     if (!line) continue;
+    // 箇条書き記号（*・-など）が付いている行はそれを取り除いてからラベルを
+    // 探すが、コピー元によっては記号が付かずに貼り付けられることもあるため、
+    // 記号の有無にかかわらず「ラベル：内容」の形になっていれば認識する
     const bulletMatch = line.match(/^[*・･\-•▪]\s*(.+)$/);
     const bulletBody = bulletMatch ? bulletMatch[1] : line;
-    const labelMatch = bulletMatch ? bulletBody.match(/^([^\s:：]{1,12})\s*[:：]\s*([\s\S]*)$/) : null;
+    const labelMatch = bulletBody.match(/^([^\s:：]{1,12})\s*[:：]\s*([\s\S]*)$/);
     if (labelMatch) {
       const mapped = precedentPasteLabelToField(labelMatch[1]);
       if (mapped) {

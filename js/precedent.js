@@ -58,6 +58,84 @@ function renderPrecedentSubjectFilter() {
   precedentSubjectFilter = sel.value;
 }
 
+/* ▼▼▼ 新規追加：AIの要約を貼り付けて自動入力
+   ChatGPTやGoogleのAI概要などで作った「判例名（判決日）」の見出し行＋
+   「事案」「判旨」「規範」などの箇条書き形式のテキストを解析し、判例名・
+   判決日・事案の概要・判旨の各欄に振り分けるだけの補助機能。専用のデータは
+   持たず、既存の入力欄に値を流し込むだけなので、保存前に必ず内容を確認・
+   修正できる（自動保存はしない） */
+const PRECEDENT_PASTE_SUMMARY_LABELS = ['事案の概要', '事案'];
+const PRECEDENT_PASTE_HOLDING_LABELS = ['判旨', '判決要旨', '要旨'];
+const PRECEDENT_PASTE_NORM_LABELS = ['規範', '法理'];
+// コピー元サイトの脚注・引用元表記（例："wikipedia+1"）が文末にそのまま
+// くっついてくることがあるため、その部分だけ取り除く
+function stripPrecedentCitationArtifacts(line) {
+  return line.replace(/[A-Za-z][A-Za-z0-9]{1,}\+\d+\s*$/, '').trim();
+}
+function precedentPasteLabelToField(label) {
+  if (PRECEDENT_PASTE_SUMMARY_LABELS.some(k => label.includes(k))) return { field: 'summary', prefix: '' };
+  if (PRECEDENT_PASTE_HOLDING_LABELS.some(k => label.includes(k))) return { field: 'holding', prefix: '' };
+  if (PRECEDENT_PASTE_NORM_LABELS.some(k => label.includes(k))) return { field: 'holding', prefix: '【規範】' };
+  return null;
+}
+function parsePrecedentPasteText(text) {
+  const rawLines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if (rawLines.length === 0) return null;
+  let name = '', date = '';
+  // 1行目は「判例名（判決日）」の見出しを想定し、括弧内を判決日として分離する
+  const titleMatch = rawLines[0].match(/^(.*?)[（(]\s*(.+?)\s*[）)]\s*$/);
+  if (titleMatch) {
+    name = titleMatch[1].trim();
+    date = titleMatch[2].trim();
+  } else {
+    name = rawLines[0];
+  }
+  const fields = { summary: [], holding: [] };
+  let currentField = null;
+  for (let i = 1; i < rawLines.length; i++) {
+    const line = stripPrecedentCitationArtifacts(rawLines[i]);
+    if (!line) continue;
+    const bulletMatch = line.match(/^[*・･\-•▪]\s*(.+)$/);
+    const bulletBody = bulletMatch ? bulletMatch[1] : line;
+    const labelMatch = bulletMatch ? bulletBody.match(/^([^\s:：]{1,12})\s*[:：]\s*([\s\S]*)$/) : null;
+    if (labelMatch) {
+      const mapped = precedentPasteLabelToField(labelMatch[1]);
+      if (mapped) {
+        currentField = mapped.field;
+        const content = (mapped.prefix ? mapped.prefix + ' ' : '') + labelMatch[2].trim();
+        if (content) fields[currentField].push(content);
+        continue;
+      }
+    }
+    // ラベルの無い続きの行は、直前のフィールドの続きとして扱う
+    if (currentField) fields[currentField].push(line);
+  }
+  return {
+    name,
+    date,
+    summary: fields.summary.join('\n'),
+    holding: fields.holding.join('\n')
+  };
+}
+function initPrecedentPasteFeature() {
+  const parseBtn = document.getElementById('precedentPasteParseBtn');
+  const pasteInput = document.getElementById('precedentPasteInput');
+  if (!parseBtn || !pasteInput) return;
+  parseBtn.addEventListener('click', () => {
+    const parsed = parsePrecedentPasteText(pasteInput.value);
+    if (!parsed) {
+      alert('貼り付けたテキストから判例名・判決日などを読み取れませんでした。「判例名（判決日）」の見出し行があるか確認してください。');
+      return;
+    }
+    document.getElementById('precedentNameInput').value = parsed.name;
+    document.getElementById('precedentDateInput').value = parsed.date;
+    if (parsed.summary) document.getElementById('precedentSummaryInput').value = parsed.summary;
+    if (parsed.holding) document.getElementById('precedentHoldingInput').value = parsed.holding;
+    status.textContent = '📋 貼り付けた内容から自動入力しました。内容を確認してから保存してください。';
+  });
+}
+/* ▲▲▲ 新規追加：AIの要約を貼り付けて自動入力 ここまで ▲▲▲ */
+
 function resetPrecedentForm() {
   precedentEditingId = null;
   document.getElementById('precedentNameInput').value = '';
@@ -65,6 +143,8 @@ function resetPrecedentForm() {
   document.getElementById('precedentSubjectInput').value = '';
   document.getElementById('precedentSummaryInput').value = '';
   document.getElementById('precedentHoldingInput').value = '';
+  const pasteInputEl = document.getElementById('precedentPasteInput');
+  if (pasteInputEl) pasteInputEl.value = '';
   document.getElementById('precedentSaveBtn').textContent = '保存する';
   document.getElementById('precedentCancelEditBtn').style.display = 'none';
 }
@@ -72,7 +152,9 @@ function resetPrecedentForm() {
 function openPrecedentFormForEdit(p) {
   const form = document.getElementById('precedentForm');
   const addToggleBtn = document.getElementById('precedentAddToggleBtn');
+  const pasteBlock = document.getElementById('precedentPasteBlock');
   if (form && !form.classList.contains('pastLogFormOpen')) {
+    if (pasteBlock) pasteBlock.classList.add('pastLogFormOpen');
     form.classList.add('pastLogFormOpen');
     document.getElementById('precedentFormBody').classList.add('pastLogFormOpen');
     document.getElementById('precedentFormActions').classList.add('pastLogFormOpen');
@@ -164,6 +246,7 @@ function initPrecedentFeature() {
   const form = document.getElementById('precedentForm');
   const formBody = document.getElementById('precedentFormBody');
   const formActions = document.getElementById('precedentFormActions');
+  const pasteBlock = document.getElementById('precedentPasteBlock');
   const saveBtn = document.getElementById('precedentSaveBtn');
   const cancelEditBtn = document.getElementById('precedentCancelEditBtn');
   const subjectFilterSel = document.getElementById('precedentSubjectFilter');
@@ -171,6 +254,7 @@ function initPrecedentFeature() {
 
   addToggleBtn.addEventListener('click', () => {
     const open = form.classList.toggle('pastLogFormOpen');
+    if (pasteBlock) pasteBlock.classList.toggle('pastLogFormOpen', open);
     formBody.classList.toggle('pastLogFormOpen', open);
     formActions.classList.toggle('pastLogFormOpen', open);
     addToggleBtn.textContent = open ? '－ 閉じる' : '＋ 判例を追加';
@@ -204,6 +288,7 @@ function initPrecedentFeature() {
     savePrecedents();
     resetPrecedentForm();
     form.classList.remove('pastLogFormOpen');
+    if (pasteBlock) pasteBlock.classList.remove('pastLogFormOpen');
     formBody.classList.remove('pastLogFormOpen');
     formActions.classList.remove('pastLogFormOpen');
     addToggleBtn.textContent = '＋ 判例を追加';
@@ -225,4 +310,5 @@ function initPrecedentFeature() {
   renderPrecedentPage();
 }
 initPrecedentFeature();
+initPrecedentPasteFeature();
 /* ▲▲▲ 新規追加：判例一覧機能 ここまで ▲▲▲ */

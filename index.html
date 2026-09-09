@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v26.31（判例の自動入力の読み取り不具合を修正）</title>
+<title>論証集アプリ v26.32（判例の科目を自動入力）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -22,7 +22,7 @@ try {
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.31</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.32</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -226,7 +226,7 @@ try {
 <div class="past-log-header" id="precedentPasteBlock">
 <textarea id="precedentPasteInput" class="editBodyArea precedentTextarea" placeholder="ChatGPTやGoogleのAI概要などで作った判例の要約を、ここに貼り付けてください。&#10;例：&#10;泉佐野市民会館事件（最判平成7年3月7日）&#10;&#10;* 事案: ……&#10;* 判旨: ……&#10;* 結論: ……&#10;* 特徴（百選的理由）: ……"></textarea>
 <button type="button" id="precedentPasteParseBtn">📋 貼り付けた内容から自動入力</button>
-<div class="past-log-small-note">「判例名（判決日）」の見出し行と、「事案」「判旨」「結論」「規範」「特徴（百選的理由）」などの箇条書きから、下のフォームへ自動で振り分けます。振り分け後は必ず内容を確認・修正してから保存してください。</div>
+<div class="past-log-small-note">「判例名（判決日）」の見出し行と、「事案」「判旨」「結論」「規範」「特徴（百選的理由）」などの箇条書きから、下のフォームへ自動で振り分けます。科目は「科目:」ラベルがあればそれを使い、無ければ本文中の科目名（憲法・民法など）から推測します。振り分け後は必ず内容を確認・修正してから保存してください。</div>
 </div>
 <div class="past-log-header" id="precedentForm">
 <input type="text" id="precedentNameInput" placeholder="判例名（任意）例：三菱樹脂事件" style="width:220px;">

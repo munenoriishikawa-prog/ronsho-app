@@ -125,14 +125,18 @@ function parsePrecedentBasicInfoLine(line) {
 function precedentIndentLine(line) {
   return line.startsWith('　') ? line : '　' + line;
 }
+// String.prototype.trim()は全角スペース（U+3000）もJavaScript上「空白文字」
+// として先頭・末尾から削ってしまうため、これで事案・判旨・結論欄に保存した
+// 段落先頭の字下げ（自動入力・手入力を問わず）が保存時に消えてしまっていた。
+// 先頭は半角の空白・改行だけを取り除き、全角スペースの字下げは保持する
+function precedentTrimPreserveIndent(s) {
+  return s.replace(/^[ \t\r\n]+/, '').replace(/\s+$/, '');
+}
 function precedentIndentParagraphStart(lines) {
   if (lines.length === 0) return '';
   const arr = lines.slice();
   arr[0] = precedentIndentLine(arr[0]);
   return arr.join('\n');
-}
-function precedentIndentEachLine(lines) {
-  return lines.map(precedentIndentLine).join('\n');
 }
 function parsePrecedentPasteText(text) {
   const rawLines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
@@ -203,10 +207,9 @@ function parsePrecedentPasteText(text) {
     summary: precedentIndentParagraphStart(fields.summary),
     holding: precedentIndentParagraphStart(fields.holding),
     conclusion: precedentIndentParagraphStart(fields.conclusion),
-    // 特徴・出題趣旨での言及は箇条書き（1行＝1項目）のことが多いため、
-    // 各行（各項目）の先頭をそれぞれ字下げする
-    feature: precedentIndentEachLine(fields.feature),
-    examMentions: precedentIndentEachLine(fields.examMentions)
+    // 特徴・出題趣旨での言及は箇条書き（1行＝1項目）のため、字下げしない
+    feature: fields.feature.join('\n'),
+    examMentions: fields.examMentions.join('\n')
   };
 }
 function initPrecedentPasteFeature() {
@@ -372,9 +375,9 @@ function initPrecedentFeature() {
     const name = document.getElementById('precedentNameInput').value.trim();
     const date = document.getElementById('precedentDateInput').value.trim();
     const subject = document.getElementById('precedentSubjectInput').value.trim();
-    const summary = document.getElementById('precedentSummaryInput').value.trim();
-    const holding = document.getElementById('precedentHoldingInput').value.trim();
-    const conclusion = document.getElementById('precedentConclusionInput').value.trim();
+    const summary = precedentTrimPreserveIndent(document.getElementById('precedentSummaryInput').value);
+    const holding = precedentTrimPreserveIndent(document.getElementById('precedentHoldingInput').value);
+    const conclusion = precedentTrimPreserveIndent(document.getElementById('precedentConclusionInput').value);
     const feature = document.getElementById('precedentFeatureInput').value.trim();
     const examMentions = document.getElementById('precedentExamMentionsInput').value.trim();
     if (!date && !name) {

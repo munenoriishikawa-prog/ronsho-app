@@ -67,6 +67,8 @@ function renderPrecedentSubjectFilter() {
 const PRECEDENT_PASTE_SUMMARY_LABELS = ['事案の概要', '事案'];
 const PRECEDENT_PASTE_HOLDING_LABELS = ['判旨', '判決要旨', '要旨'];
 const PRECEDENT_PASTE_NORM_LABELS = ['規範', '法理'];
+const PRECEDENT_PASTE_CONCLUSION_LABELS = ['結論'];
+const PRECEDENT_PASTE_FEATURE_LABELS = ['特徴', '百選的理由', 'ポイント'];
 // コピー元サイトの脚注・引用元表記（例："wikipedia+1"）が文末にそのまま
 // くっついてくることがあるため、その部分だけ取り除く
 function stripPrecedentCitationArtifacts(line) {
@@ -76,6 +78,8 @@ function precedentPasteLabelToField(label) {
   if (PRECEDENT_PASTE_SUMMARY_LABELS.some(k => label.includes(k))) return { field: 'summary', prefix: '' };
   if (PRECEDENT_PASTE_HOLDING_LABELS.some(k => label.includes(k))) return { field: 'holding', prefix: '' };
   if (PRECEDENT_PASTE_NORM_LABELS.some(k => label.includes(k))) return { field: 'holding', prefix: '【規範】' };
+  if (PRECEDENT_PASTE_CONCLUSION_LABELS.some(k => label.includes(k))) return { field: 'conclusion', prefix: '' };
+  if (PRECEDENT_PASTE_FEATURE_LABELS.some(k => label.includes(k))) return { field: 'feature', prefix: '' };
   return null;
 }
 function parsePrecedentPasteText(text) {
@@ -90,7 +94,7 @@ function parsePrecedentPasteText(text) {
   } else {
     name = rawLines[0];
   }
-  const fields = { summary: [], holding: [] };
+  const fields = { summary: [], holding: [], conclusion: [], feature: [] };
   let currentField = null;
   for (let i = 1; i < rawLines.length; i++) {
     const line = stripPrecedentCitationArtifacts(rawLines[i]);
@@ -114,7 +118,9 @@ function parsePrecedentPasteText(text) {
     name,
     date,
     summary: fields.summary.join('\n'),
-    holding: fields.holding.join('\n')
+    holding: fields.holding.join('\n'),
+    conclusion: fields.conclusion.join('\n'),
+    feature: fields.feature.join('\n')
   };
 }
 function initPrecedentPasteFeature() {
@@ -131,6 +137,8 @@ function initPrecedentPasteFeature() {
     document.getElementById('precedentDateInput').value = parsed.date;
     if (parsed.summary) document.getElementById('precedentSummaryInput').value = parsed.summary;
     if (parsed.holding) document.getElementById('precedentHoldingInput').value = parsed.holding;
+    if (parsed.conclusion) document.getElementById('precedentConclusionInput').value = parsed.conclusion;
+    if (parsed.feature) document.getElementById('precedentFeatureInput').value = parsed.feature;
     status.textContent = '📋 貼り付けた内容から自動入力しました。内容を確認してから保存してください。';
   });
 }
@@ -143,6 +151,8 @@ function resetPrecedentForm() {
   document.getElementById('precedentSubjectInput').value = '';
   document.getElementById('precedentSummaryInput').value = '';
   document.getElementById('precedentHoldingInput').value = '';
+  document.getElementById('precedentConclusionInput').value = '';
+  document.getElementById('precedentFeatureInput').value = '';
   const pasteInputEl = document.getElementById('precedentPasteInput');
   if (pasteInputEl) pasteInputEl.value = '';
   document.getElementById('precedentSaveBtn').textContent = '保存する';
@@ -166,6 +176,8 @@ function openPrecedentFormForEdit(p) {
   document.getElementById('precedentSubjectInput').value = p.subject || '';
   document.getElementById('precedentSummaryInput').value = p.summary || '';
   document.getElementById('precedentHoldingInput').value = p.holding || '';
+  document.getElementById('precedentConclusionInput').value = p.conclusion || '';
+  document.getElementById('precedentFeatureInput').value = p.feature || '';
   document.getElementById('precedentSaveBtn').textContent = '更新する';
   document.getElementById('precedentCancelEditBtn').style.display = 'inline-block';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -208,6 +220,10 @@ function renderPrecedentPage() {
   } else {
     html += '<div class="quizBody"><strong>【事案の概要】</strong><br>' + (escapeHtml(p.summary || '（未入力）').replace(/\n/g, '<br>')) + '</div>';
     html += '<div class="quizBody"><strong>【判旨】</strong><br>' + (escapeHtml(p.holding || '（未入力）').replace(/\n/g, '<br>')) + '</div>';
+    // 結論・特徴（百選的理由）は任意項目のため、入力済みのときだけ表示する
+    // （既存の判例には無い項目なので、常に表示すると「（未入力）」だらけになってしまう）
+    if (p.conclusion) html += '<div class="quizBody"><strong>【結論】</strong><br>' + escapeHtml(p.conclusion).replace(/\n/g, '<br>') + '</div>';
+    if (p.feature) html += '<div class="quizBody"><strong>【特徴・百選的理由】</strong><br>' + escapeHtml(p.feature).replace(/\n/g, '<br>') + '</div>';
   }
   html += '</div>';
   area.innerHTML = html;
@@ -267,6 +283,8 @@ function initPrecedentFeature() {
     const subject = document.getElementById('precedentSubjectInput').value.trim();
     const summary = document.getElementById('precedentSummaryInput').value.trim();
     const holding = document.getElementById('precedentHoldingInput').value.trim();
+    const conclusion = document.getElementById('precedentConclusionInput').value.trim();
+    const feature = document.getElementById('precedentFeatureInput').value.trim();
     if (!date && !name) {
       alert('判例名か判決日のどちらかは入力してください。');
       return;
@@ -274,13 +292,13 @@ function initPrecedentFeature() {
     if (precedentEditingId) {
       const idx = precedents.findIndex(p => p.id === precedentEditingId);
       if (idx !== -1) {
-        precedents[idx] = { ...precedents[idx], name, date, subject, summary, holding };
+        precedents[idx] = { ...precedents[idx], name, date, subject, summary, holding, conclusion, feature };
       }
       status.textContent = '✏️ 判例を更新しました。';
     } else {
       precedents.push({
         id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-        name, date, subject, summary, holding,
+        name, date, subject, summary, holding, conclusion, feature,
         createdAt: new Date().toISOString()
       });
       status.textContent = '⚖️ 判例を追加しました。';

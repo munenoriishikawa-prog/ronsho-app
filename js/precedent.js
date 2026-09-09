@@ -119,6 +119,21 @@ function parsePrecedentBasicInfoLine(line) {
   }
   return { name: line, date: '' };
 }
+// 和文の段落は文頭を全角スペース1文字分下げるのが慣習のため、貼り付け
+// 内容を自動入力するときに合わせておく。既に全角スペースで始まっている
+// 行（貼り付け元で既に字下げ済みの場合）には重ねて付けない
+function precedentIndentLine(line) {
+  return line.startsWith('　') ? line : '　' + line;
+}
+function precedentIndentParagraphStart(lines) {
+  if (lines.length === 0) return '';
+  const arr = lines.slice();
+  arr[0] = precedentIndentLine(arr[0]);
+  return arr.join('\n');
+}
+function precedentIndentEachLine(lines) {
+  return lines.map(precedentIndentLine).join('\n');
+}
 function parsePrecedentPasteText(text) {
   const rawLines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   if (rawLines.length === 0) return null;
@@ -182,11 +197,16 @@ function parsePrecedentPasteText(text) {
     name,
     date,
     subject,
-    summary: fields.summary.join('\n'),
-    holding: fields.holding.join('\n'),
-    conclusion: fields.conclusion.join('\n'),
-    feature: fields.feature.join('\n'),
-    examMentions: fields.examMentions.join('\n')
+    // 事案・判旨・結論は複数行にまたがっていても1つの段落として貼り付け
+    // られることが多いため、段落先頭（1行目）だけを全角スペース1文字分
+    // 字下げする（和文の段落インデントの慣習に合わせる）
+    summary: precedentIndentParagraphStart(fields.summary),
+    holding: precedentIndentParagraphStart(fields.holding),
+    conclusion: precedentIndentParagraphStart(fields.conclusion),
+    // 特徴・出題趣旨での言及は箇条書き（1行＝1項目）のことが多いため、
+    // 各行（各項目）の先頭をそれぞれ字下げする
+    feature: precedentIndentEachLine(fields.feature),
+    examMentions: precedentIndentEachLine(fields.examMentions)
   };
 }
 function initPrecedentPasteFeature() {

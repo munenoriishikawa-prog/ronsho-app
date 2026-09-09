@@ -64,12 +64,14 @@ function renderPrecedentSubjectFilter() {
    判決日・事案の概要・判旨の各欄に振り分けるだけの補助機能。専用のデータは
    持たず、既存の入力欄に値を流し込むだけなので、保存前に必ず内容を確認・
    修正できる（自動保存はしない） */
+const PRECEDENT_PASTE_BASIC_LABELS = ['基本情報'];
 const PRECEDENT_PASTE_SUMMARY_LABELS = ['事案の概要', '事案'];
 const PRECEDENT_PASTE_HOLDING_LABELS = ['判旨', '判決要旨', '要旨'];
 const PRECEDENT_PASTE_NORM_LABELS = ['規範', '法理'];
 const PRECEDENT_PASTE_CONCLUSION_LABELS = ['結論'];
 const PRECEDENT_PASTE_FEATURE_LABELS = ['特徴', '百選的理由', 'ポイント'];
 const PRECEDENT_PASTE_SUBJECT_LABELS = ['科目', '分野'];
+const PRECEDENT_PASTE_EXAM_MENTION_LABELS = ['採点実感', '出題趣旨'];
 // 「科目:」のようなラベルが本文中に無いことが多いため、その場合は既存の
 // 論証一覧・カレンダー等でも使っている科目名（js/core.jsのSUBJECT_EMOJIの
 // キー）が本文中のどこかに出てきていないかを探し、最も早く出てきたものを
@@ -91,31 +93,63 @@ function stripPrecedentCitationArtifacts(line) {
   return line.replace(/[A-Za-z][A-Za-z0-9]{1,}\+\d+\s*$/, '').trim();
 }
 function precedentPasteLabelToField(label) {
+  if (PRECEDENT_PASTE_BASIC_LABELS.some(k => label.includes(k))) return { field: 'basic', prefix: '' };
   if (PRECEDENT_PASTE_SUMMARY_LABELS.some(k => label.includes(k))) return { field: 'summary', prefix: '' };
   if (PRECEDENT_PASTE_HOLDING_LABELS.some(k => label.includes(k))) return { field: 'holding', prefix: '' };
   if (PRECEDENT_PASTE_NORM_LABELS.some(k => label.includes(k))) return { field: 'holding', prefix: '【規範】' };
   if (PRECEDENT_PASTE_CONCLUSION_LABELS.some(k => label.includes(k))) return { field: 'conclusion', prefix: '' };
   if (PRECEDENT_PASTE_FEATURE_LABELS.some(k => label.includes(k))) return { field: 'feature', prefix: '' };
   if (PRECEDENT_PASTE_SUBJECT_LABELS.some(k => label.includes(k))) return { field: 'subject', prefix: '' };
+  if (PRECEDENT_PASTE_EXAM_MENTION_LABELS.some(k => label.includes(k))) return { field: 'examMentions', prefix: '' };
   return null;
+}
+// 「泉佐野市民会館事件（最判平成7年3月7日）」のように名前と判決日が
+// 括弧でひとまとまりになった形式、および「泉佐野市民会館事件・最判平成7年
+// 3月7日・民集49巻3号687頁」のように「・」区切りで名前・判決日・出典が
+// 並ぶ形式の両方から、判例名と判決日（出典を含む）を取り出す
+function parsePrecedentBasicInfoLine(line) {
+  // 「泉佐野市民会館事件（最判平成7年3月7日・民集49巻3号687頁）」のように
+  // 括弧内に「・」を含む出典が入ることがあるため、括弧形式を優先して判定し、
+  // 括弧が無い場合だけ「・」区切り形式とみなす
+  const titleMatch = line.match(/^(.*?)[（(]\s*(.+?)\s*[）)]\s*$/);
+  if (titleMatch) return { name: titleMatch[1].trim(), date: titleMatch[2].trim() };
+  if (line.includes('・')) {
+    const parts = line.split('・').map(s => s.trim()).filter(Boolean);
+    return { name: parts[0] || '', date: parts.slice(1).join('・') };
+  }
+  return { name: line, date: '' };
 }
 function parsePrecedentPasteText(text) {
   const rawLines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   if (rawLines.length === 0) return null;
-  let name = '', date = '';
-  // 1行目は「判例名（判決日）」の見出しを想定し、括弧内を判決日として分離する
-  const titleMatch = rawLines[0].match(/^(.*?)[（(]\s*(.+?)\s*[）)]\s*$/);
-  if (titleMatch) {
-    name = titleMatch[1].trim();
-    date = titleMatch[2].trim();
-  } else {
-    name = rawLines[0];
-  }
-  const fields = { summary: [], holding: [], conclusion: [], feature: [], subject: [] };
+  const fields = { basic: [], summary: [], holding: [], conclusion: [], feature: [], subject: [], examMentions: [] };
   let currentField = null;
-  for (let i = 1; i < rawLines.length; i++) {
+  // 「【6-1】基本情報」のような番号付き見出し行から始まる形式では、判例名・
+  // 判決日は見出しの下の本文（basicフィールド）から取り出すため、1行目を
+  // 見出し無しの「判例名（判決日）」として扱わない。見出しが無い旧形式の
+  // 場合だけ、1行目をそのまま判例名・判決日の見出し行として扱う
+  const firstLineIsSectionHeader = /^【[^】]*】/.test(rawLines[0]);
+  let legacyName = '', legacyDate = '';
+  let startIdx = 0;
+  if (!firstLineIsSectionHeader) {
+    const legacy = parsePrecedentBasicInfoLine(rawLines[0]);
+    legacyName = legacy.name;
+    legacyDate = legacy.date;
+    startIdx = 1;
+  }
+  for (let i = startIdx; i < rawLines.length; i++) {
     const line = stripPrecedentCitationArtifacts(rawLines[i]);
     if (!line) continue;
+    // 「【6-2】事案（3〜4行）」のような番号付き見出し行。見出し自体には
+    // 内容が無く、次の行から本文が続く形式のため、見出し行だけを認識して
+    // 対象フィールドを切り替える（末尾の「（3〜4行）」等の注記は無視する）
+    const sectionHeaderMatch = line.match(/^【[^】]*】\s*(.+)$/);
+    if (sectionHeaderMatch) {
+      const headerLabel = sectionHeaderMatch[1].replace(/[（(][^）)]*[）)]\s*$/, '').trim();
+      const mapped = precedentPasteLabelToField(headerLabel);
+      currentField = mapped ? mapped.field : null;
+      continue;
+    }
     // 箇条書き記号（*・-など）が付いている行はそれを取り除いてからラベルを
     // 探すが、コピー元によっては記号が付かずに貼り付けられることもあるため、
     // 記号の有無にかかわらず「ラベル：内容」の形になっていれば認識する
@@ -134,6 +168,12 @@ function parsePrecedentPasteText(text) {
     // ラベルの無い続きの行は、直前のフィールドの続きとして扱う
     if (currentField) fields[currentField].push(line);
   }
+  let name = legacyName, date = legacyDate;
+  if (fields.basic.length > 0) {
+    const basicInfo = parsePrecedentBasicInfoLine(fields.basic[0]);
+    name = basicInfo.name;
+    date = basicInfo.date;
+  }
   // 「科目:」のような明示的なラベルがあればそれを優先し、無ければ本文全体
   // から科目名を推測する
   const explicitSubject = fields.subject.join('\n').trim();
@@ -145,7 +185,8 @@ function parsePrecedentPasteText(text) {
     summary: fields.summary.join('\n'),
     holding: fields.holding.join('\n'),
     conclusion: fields.conclusion.join('\n'),
-    feature: fields.feature.join('\n')
+    feature: fields.feature.join('\n'),
+    examMentions: fields.examMentions.join('\n')
   };
 }
 function initPrecedentPasteFeature() {
@@ -165,6 +206,7 @@ function initPrecedentPasteFeature() {
     if (parsed.holding) document.getElementById('precedentHoldingInput').value = parsed.holding;
     if (parsed.conclusion) document.getElementById('precedentConclusionInput').value = parsed.conclusion;
     if (parsed.feature) document.getElementById('precedentFeatureInput').value = parsed.feature;
+    if (parsed.examMentions) document.getElementById('precedentExamMentionsInput').value = parsed.examMentions;
     status.textContent = '📋 貼り付けた内容から自動入力しました。内容を確認してから保存してください。';
   });
 }
@@ -179,6 +221,7 @@ function resetPrecedentForm() {
   document.getElementById('precedentHoldingInput').value = '';
   document.getElementById('precedentConclusionInput').value = '';
   document.getElementById('precedentFeatureInput').value = '';
+  document.getElementById('precedentExamMentionsInput').value = '';
   const pasteInputEl = document.getElementById('precedentPasteInput');
   if (pasteInputEl) pasteInputEl.value = '';
   document.getElementById('precedentSaveBtn').textContent = '保存する';
@@ -204,6 +247,7 @@ function openPrecedentFormForEdit(p) {
   document.getElementById('precedentHoldingInput').value = p.holding || '';
   document.getElementById('precedentConclusionInput').value = p.conclusion || '';
   document.getElementById('precedentFeatureInput').value = p.feature || '';
+  document.getElementById('precedentExamMentionsInput').value = p.examMentions || '';
   document.getElementById('precedentSaveBtn').textContent = '更新する';
   document.getElementById('precedentCancelEditBtn').style.display = 'inline-block';
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -250,6 +294,7 @@ function renderPrecedentPage() {
     // （既存の判例には無い項目なので、常に表示すると「（未入力）」だらけになってしまう）
     if (p.conclusion) html += '<div class="quizBody"><strong>【結論】</strong><br>' + escapeHtml(p.conclusion).replace(/\n/g, '<br>') + '</div>';
     if (p.feature) html += '<div class="quizBody"><strong>【特徴・百選的理由】</strong><br>' + escapeHtml(p.feature).replace(/\n/g, '<br>') + '</div>';
+    if (p.examMentions) html += '<div class="quizBody"><strong>【出題趣旨・採点実感での言及】</strong><br>' + escapeHtml(p.examMentions).replace(/\n/g, '<br>') + '</div>';
   }
   html += '</div>';
   area.innerHTML = html;
@@ -311,6 +356,7 @@ function initPrecedentFeature() {
     const holding = document.getElementById('precedentHoldingInput').value.trim();
     const conclusion = document.getElementById('precedentConclusionInput').value.trim();
     const feature = document.getElementById('precedentFeatureInput').value.trim();
+    const examMentions = document.getElementById('precedentExamMentionsInput').value.trim();
     if (!date && !name) {
       alert('判例名か判決日のどちらかは入力してください。');
       return;
@@ -318,13 +364,13 @@ function initPrecedentFeature() {
     if (precedentEditingId) {
       const idx = precedents.findIndex(p => p.id === precedentEditingId);
       if (idx !== -1) {
-        precedents[idx] = { ...precedents[idx], name, date, subject, summary, holding, conclusion, feature };
+        precedents[idx] = { ...precedents[idx], name, date, subject, summary, holding, conclusion, feature, examMentions };
       }
       status.textContent = '✏️ 判例を更新しました。';
     } else {
       precedents.push({
         id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-        name, date, subject, summary, holding, conclusion, feature,
+        name, date, subject, summary, holding, conclusion, feature, examMentions,
         createdAt: new Date().toISOString()
       });
       status.textContent = '⚖️ 判例を追加しました。';

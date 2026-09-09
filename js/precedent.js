@@ -69,6 +69,22 @@ const PRECEDENT_PASTE_HOLDING_LABELS = ['判旨', '判決要旨', '要旨'];
 const PRECEDENT_PASTE_NORM_LABELS = ['規範', '法理'];
 const PRECEDENT_PASTE_CONCLUSION_LABELS = ['結論'];
 const PRECEDENT_PASTE_FEATURE_LABELS = ['特徴', '百選的理由', 'ポイント'];
+const PRECEDENT_PASTE_SUBJECT_LABELS = ['科目', '分野'];
+// 「科目:」のようなラベルが本文中に無いことが多いため、その場合は既存の
+// 論証一覧・カレンダー等でも使っている科目名（js/core.jsのSUBJECT_EMOJIの
+// キー）が本文中のどこかに出てきていないかを探し、最も早く出てきたものを
+// 科目として推測する（見つからなければ空欄のままにする）
+const PRECEDENT_PASTE_KNOWN_SUBJECTS = (typeof SUBJECT_EMOJI === 'object' && SUBJECT_EMOJI)
+  ? Object.keys(SUBJECT_EMOJI)
+  : ['民法', '刑法', '憲法', '商法', '民事訴訟法', '刑事訴訟法', '行政法', '労働法', '実務基礎民事', '実務基礎刑事'];
+function inferPrecedentSubject(fullText) {
+  let best = '', bestIdx = Infinity;
+  PRECEDENT_PASTE_KNOWN_SUBJECTS.forEach(s => {
+    const idx = fullText.indexOf(s);
+    if (idx !== -1 && idx < bestIdx) { bestIdx = idx; best = s; }
+  });
+  return best;
+}
 // コピー元サイトの脚注・引用元表記（例："wikipedia+1"）が文末にそのまま
 // くっついてくることがあるため、その部分だけ取り除く
 function stripPrecedentCitationArtifacts(line) {
@@ -80,6 +96,7 @@ function precedentPasteLabelToField(label) {
   if (PRECEDENT_PASTE_NORM_LABELS.some(k => label.includes(k))) return { field: 'holding', prefix: '【規範】' };
   if (PRECEDENT_PASTE_CONCLUSION_LABELS.some(k => label.includes(k))) return { field: 'conclusion', prefix: '' };
   if (PRECEDENT_PASTE_FEATURE_LABELS.some(k => label.includes(k))) return { field: 'feature', prefix: '' };
+  if (PRECEDENT_PASTE_SUBJECT_LABELS.some(k => label.includes(k))) return { field: 'subject', prefix: '' };
   return null;
 }
 function parsePrecedentPasteText(text) {
@@ -94,7 +111,7 @@ function parsePrecedentPasteText(text) {
   } else {
     name = rawLines[0];
   }
-  const fields = { summary: [], holding: [], conclusion: [], feature: [] };
+  const fields = { summary: [], holding: [], conclusion: [], feature: [], subject: [] };
   let currentField = null;
   for (let i = 1; i < rawLines.length; i++) {
     const line = stripPrecedentCitationArtifacts(rawLines[i]);
@@ -117,9 +134,14 @@ function parsePrecedentPasteText(text) {
     // ラベルの無い続きの行は、直前のフィールドの続きとして扱う
     if (currentField) fields[currentField].push(line);
   }
+  // 「科目:」のような明示的なラベルがあればそれを優先し、無ければ本文全体
+  // から科目名を推測する
+  const explicitSubject = fields.subject.join('\n').trim();
+  const subject = explicitSubject || inferPrecedentSubject(rawLines.join('\n'));
   return {
     name,
     date,
+    subject,
     summary: fields.summary.join('\n'),
     holding: fields.holding.join('\n'),
     conclusion: fields.conclusion.join('\n'),
@@ -138,6 +160,7 @@ function initPrecedentPasteFeature() {
     }
     document.getElementById('precedentNameInput').value = parsed.name;
     document.getElementById('precedentDateInput').value = parsed.date;
+    if (parsed.subject) document.getElementById('precedentSubjectInput').value = parsed.subject;
     if (parsed.summary) document.getElementById('precedentSummaryInput').value = parsed.summary;
     if (parsed.holding) document.getElementById('precedentHoldingInput').value = parsed.holding;
     if (parsed.conclusion) document.getElementById('precedentConclusionInput').value = parsed.conclusion;

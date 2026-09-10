@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>論証集アプリ v26.45（問題演習の絞り込みプルダウンを1行に統一）</title>
+<title>論証集アプリ v26.46（問題演習のチェック項目名を短縮）</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0057e7">
 <link rel="icon" href="assets/icon-192.png">
@@ -22,7 +22,7 @@ try {
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.45</span></h1>
+<h1><span class="appIcon">📚</span><span class="appTitleText">論証集アプリ v26.46</span></h1>
 <div id="status"></div>
 <div id="syncConflictBanner" class="syncConflictBanner"></div>
 <div id="backupReminderBanner" class="backupReminderBanner"></div>
@@ -85,8 +85,8 @@ try {
 <label><input type="radio" name="quizMode" id="quizModeNormalRadio" value="normal" checked> 📖 通常</label>
 <label><input type="radio" name="quizMode" id="quizModeBlankRadio" value="blank"> ✏️ 穴埋め</label>
 <label><input type="checkbox" id="quizRandomChk"> 🔀 ランダム</label>
-<label><input type="checkbox" id="quizOverdueOnlyChk"> ⏰ 復習期限超過のみ</label>
-<label><input type="checkbox" id="quizExcludeTodayChk"> 🚫 本日学習済みを除外</label>
+<label><input type="checkbox" id="quizOverdueOnlyChk" title="復習期限超過のみ"> ⏰ 超過のみ</label>
+<label><input type="checkbox" id="quizExcludeTodayChk" title="本日未学習のみ"> 🚫 未学習のみ</label>
 <label><input type="checkbox" id="quizSkippedOnlyChk"> ⏭️ スキップのみ</label>
 <button id="quizStartBtn">▶ スタート／やり直す</button>
 </div>
@@ -358,10 +358,10 @@ try {
 <div class="dupCheckIntro">「問題演習」タブを開いたときに最初からチェックされている項目です。</div>
 <div class="settingsInlineRow">
 <label><input type="checkbox" id="quizDefaultRandomChk"> 🔀 ランダム</label>
-<label><input type="checkbox" id="quizDefaultOverdueOnlyChk"> ⏰ 復習期限超過のみ</label>
+<label><input type="checkbox" id="quizDefaultOverdueOnlyChk" title="復習期限超過のみ"> ⏰ 超過のみ</label>
 </div>
 <div class="settingsInlineRow">
-<label><input type="checkbox" id="quizDefaultExcludeTodayChk"> 🚫 本日学習済みを除外</label>
+<label><input type="checkbox" id="quizDefaultExcludeTodayChk" title="本日未学習のみ"> 🚫 未学習のみ</label>
 <label><input type="checkbox" id="quizDefaultSkippedOnlyChk"> ⏭️ スキップのみ</label>
 </div>
 <div class="settingsInlineRow">

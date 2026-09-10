@@ -1333,15 +1333,16 @@ input[type=file] { display:none; }
   display: flex;
   gap: 10px;
 }
-.quizMemoBtn, .quizSkipBtn, .quizDeleteBtn {
+.quizMemoBtn, .quizSkipBtn, .quizDeleteBtn, .quizBookmarkToggle {
   cursor: pointer;
   font-size: 22px;
   opacity: 0.3;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.quizMemoBtn:hover, .quizSkipBtn:hover, .quizDeleteBtn:hover { opacity: 0.7; transform: scale(1.15); }
+.quizMemoBtn:hover, .quizSkipBtn:hover, .quizDeleteBtn:hover, .quizBookmarkToggle:hover { opacity: 0.7; transform: scale(1.15); }
 .quizMemoBtn.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(0, 87, 231, 0.5)); }
 .quizSkipBtn.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.6)); }
+.quizBookmarkToggle.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(8, 145, 178, 0.6)); }
 .quizProgress { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
 .quizNavRow { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 12px; }
 .quizNavBtn {
@@ -1420,8 +1421,8 @@ input[type=file] { display:none; }
 .quizImportedAt { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
 .quizSourceEditBtn { cursor: pointer; opacity: 0.5; }
 .quizSourceEditBtn:hover { opacity: 1; }
-.quizJudgeRow { display: flex; gap: 12px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
-.quizJudgeRow button { padding: 10px 20px; font-size: 13px; border-radius: 999px; display:flex; align-items:center; gap:6px; }
+.quizJudgeRow { display: flex; gap: 10px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+.quizJudgeRow button { width: 44px; height: 44px; padding: 0; font-size: 13px; border-radius: 50%; display:flex; align-items:center; justify-content:center; }
 .speechControls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
 .speechControls label { font-size: 12px; color: var(--text-secondary2); display: flex; align-items: center; gap: 4px; }
 .speechControls select { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 13px; }
@@ -1514,11 +1515,6 @@ input[type=file] { display:none; }
 .quizWeakBtn { background: var(--card-bg); color: var(--weak-text); border: 2px solid #ff9f1c; }
 .quizWeakBtn .quizJudgeIcon { background: transparent; font-size: 15px; }
 .quizWeakBtn.active { background: linear-gradient(135deg, #ffb74d, #ff7043); color: #fff; border-color: transparent; }
-.quizBookmarkBtn { background: var(--card-bg); color: #0e6172; border: 2px solid #0891b2; }
-.quizBookmarkBtn .quizJudgeIcon { background: transparent; font-size: 15px; }
-.quizBookmarkBtn.active { background: linear-gradient(135deg, #22b8d6, #0891b2); color: #fff; border-color: transparent; }
-.quizBookmarkBtn:hover { background: #ecfeff; color: #0e6172; border-color: #0891b2; transform: translateY(-1px) scale(1.03); }
-.quizBookmarkBtn.active:hover { background: linear-gradient(135deg, #4fd0e9, #22b8d6); color: #fff; transform: translateY(-1px) scale(1.03); }
 .quizPerfectBtn:hover { background: linear-gradient(135deg, #8b5cf6, #c4b5fd); color: #fff; transform: translateY(-1px) scale(1.03); }
 .quizGoodBtn:hover { background: linear-gradient(135deg, #4ade80, #38bdf8); color: #fff; transform: translateY(-1px) scale(1.03); }
 .quizUnsureBtn:hover { background: linear-gradient(135deg, #ffe066, #ffb14d); color: #78350f; transform: translateY(-1px) scale(1.03); }

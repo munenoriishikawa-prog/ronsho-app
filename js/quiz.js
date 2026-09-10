@@ -220,12 +220,14 @@ function renderQuizPage() {
       + ' <span class="quizSourceEditBtn" id="quizSourceEditBtn" title="出典を編集">✏️</span></div>';
     html += '<div class="quizImportedAt">📥 読込日時：' + escapeHtml(formatImportedAt(e.importedAt)) + '</div>';
     const isWeak = !!(studyLog[e.title] && studyLog[e.title].starred);
+    const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
     html += '<div class="quizJudgeRow">'
       + '<button type="button" class="quizPerfectBtn" id="quizPerfectBtn"><span class="quizJudgeIcon">◎</span>完璧</button>'
       + '<button type="button" class="quizGoodBtn" id="quizGoodBtn"><span class="quizJudgeIcon">○</span>できた</button>'
       + '<button type="button" class="quizUnsureBtn" id="quizUnsureBtn"><span class="quizJudgeIcon">△</span>あやしい</button>'
       + '<button type="button" class="quizBadBtn" id="quizBadBtn"><span class="quizJudgeIcon">✕</span>ダメ</button>'
       + '<button type="button" class="quizWeakBtn' + (isWeak ? ' active' : '') + '" id="quizWeakBtn"><span class="quizJudgeIcon">😰</span>苦手</button>'
+      + '<button type="button" class="quizBookmarkBtn' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn"><span class="quizJudgeIcon">🔖</span>ブックマーク</button>'
       + '</div>';
   }
   }
@@ -284,6 +286,12 @@ function renderQuizPage() {
   if (weakBtn) weakBtn.addEventListener('click', () => {
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) toggleStar(idx);
+    renderQuizPage();
+  });
+  const bookmarkBtn = document.getElementById('quizBookmarkBtn');
+  if (bookmarkBtn) bookmarkBtn.addEventListener('click', () => {
+    const idx = entries.findIndex(x => x.title === e.title);
+    if (idx !== -1) toggleBookmark(idx);
     renderQuizPage();
   });
   const memoBtn = document.getElementById('quizMemoBtn');

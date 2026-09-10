@@ -47,9 +47,9 @@ let selectedSubject = 'all';
 let selectedCsvSubject = 'all';
 let selectedCategory = 'all';
 let selectedTag = 'all';
-// 「すべて表示」「😰苦手のみ」「🙈暗記済みを除く」「✅暗記済みのみ」は互いに
-// 排他的な4択。この端末のデフォルト（STAR_FILTER_DEFAULT_KEY）から初期化する
-const STAR_FILTER_MODES = ['all', 'weak', 'hideMemorized', 'memorizedOnly'];
+// 「すべて表示」「😰苦手のみ」「🙈暗記済みを除く」「✅暗記済みのみ」「🔖ブックマークのみ」は
+// 互いに排他的な5択。この端末のデフォルト（STAR_FILTER_DEFAULT_KEY）から初期化する
+const STAR_FILTER_MODES = ['all', 'weak', 'hideMemorized', 'memorizedOnly', 'bookmarked'];
 const STAR_FILTER_DEFAULT_KEY = 'ronshoStarFilterDefaultV1';
 function loadStarFilterDefault() {
   const raw = localStorage.getItem(STAR_FILTER_DEFAULT_KEY);
@@ -1014,7 +1014,7 @@ function renderCategoryTabsHtml() {
 function renderStarTabsHtml() {
   // 「すべて表示」は文字通り暗記済みも含めて全件を表示する（デフォルト）。
   // 苦手のみ／暗記済みを除く／暗記済みのみ、は互いに排他的な4択。
-  const modeLabels = { all: 'すべて表示', weak: '😰 苦手のみ', hideMemorized: '🙈 暗記済みを除く', memorizedOnly: '✅ 暗記済みのみ' };
+  const modeLabels = { all: 'すべて表示', weak: '😰 苦手のみ', hideMemorized: '🙈 暗記済みを除く', memorizedOnly: '✅ 暗記済みのみ', bookmarked: '🔖 ブックマークのみ' };
   let html = '<select class="starTabSelect">';
   STAR_FILTER_MODES.forEach(m => {
     html += '<option value="' + m + '"' + (starFilterMode === m ? ' selected' : '') + '>' + modeLabels[m] + '</option>';
@@ -1113,6 +1113,8 @@ function filterEntries(data, searchQuery) {
     result = result.filter(e => !(studyLog[e.title] && studyLog[e.title].memorized));
   } else if (starFilterMode === 'memorizedOnly') {
     result = result.filter(e => studyLog[e.title] && studyLog[e.title].memorized);
+  } else if (starFilterMode === 'bookmarked') {
+    result = result.filter(e => studyLog[e.title] && studyLog[e.title].bookmarked);
   }
   if (selectedImportance !== 'all') {
     result = result.filter(e => (e.importance || 0) === selectedImportance);

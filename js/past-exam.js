@@ -194,6 +194,7 @@ function upsertPastExamLogEntry(examType, subject, year, round, date) {
   const logs = loadPastExamLogs();
   const key = examType + '|' + subject + '|' + year + '|' + round + '|' + date;
   const existingIdx = logs.findIndex(l => l.key === key);
+  const isNewLog = existingIdx === -1;
   const newItem = {
     key: key,
     examType: examType,
@@ -205,6 +206,9 @@ function upsertPastExamLogEntry(examType, subject, year, round, date) {
   };
   if (existingIdx >= 0) logs[existingIdx] = newItem; else logs.push(newItem);
   savePastExamLogs(logs);
+  // 既存の記録を上書き（メモ変更など）しただけの場合は加算しない。
+  // 新しく1回分のログが増えたとき（＝過去問を1回解いたとき）だけXPを付与する
+  if (isNewLog && typeof awardPastExamXp === 'function') awardPastExamXp();
 }
 
 let pastMatrixCurrentType = loadPastExamDefaultType();

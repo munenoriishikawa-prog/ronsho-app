@@ -99,6 +99,11 @@ function awardXp(level) {
 function awardMemorizedBonusXp() {
   saveXp(loadXp() + XP_MEMORIZED_BONUS);
 }
+// 過去問を1回解く（過去問ログに新しい記録を1件追加する）たびに呼ぶ、固定量のXP
+const XP_PAST_EXAM = 100;
+function awardPastExamXp() {
+  saveXp(loadXp() + XP_PAST_EXAM);
+}
 function computeXp() {
   return loadXp();
 }
@@ -115,6 +120,20 @@ function migrateLegacyXpIfNeeded() {
   localStorage.setItem(XP_MIGRATED_KEY, '1');
   const legacyXp = computeTotalStudyCount() * 10 + computeMemorizedCount() * 50;
   if (legacyXp > loadXp()) saveXp(legacyXp);
+}
+// 過去問1回につき100XPを付与する仕組みを追加した際、それより前に記録されて
+// いた過去問ログ（過去の分）にはXPが付与されていなかったため、初回起動時に
+// 一度だけ「その時点の過去問ログ件数×100」をまとめて遡及加算する。
+// XP_MIGRATED_KEYと同じく端末ごとのローカルな移行済みフラグとして持ち、
+// 同期対象には含めない（同期される'xp'自体は既に同期対象のため、複数端末
+// それぞれで一度ずつ実行されても、実際に加算されるのは初回同期後の状態次第で
+// 変わり得るが、二重加算を防ぐことを優先しフラグは端末ごとに独立させている）
+const XP_PAST_EXAM_MIGRATED_KEY = 'ronshoXpPastExamMigratedV1';
+function migratePastExamXpIfNeeded() {
+  if (localStorage.getItem(XP_PAST_EXAM_MIGRATED_KEY)) return;
+  localStorage.setItem(XP_PAST_EXAM_MIGRATED_KEY, '1');
+  const logs = (typeof loadPastExamLogs === 'function') ? loadPastExamLogs() : [];
+  if (logs.length > 0) saveXp(loadXp() + logs.length * XP_PAST_EXAM);
 }
 function getLevelInfo(xp) {
   let level = 1;

@@ -3,6 +3,7 @@ loadStudyLog();
 loadManualLog();
 loadEntries();
 if (typeof migrateLegacyXpIfNeeded === 'function') migrateLegacyXpIfNeeded();
+if (typeof migratePastExamXpIfNeeded === 'function') migratePastExamXpIfNeeded();
 if (entries.length > 0) {
   downloadBtn.style.display = 'inline-block';
   downloadLogBtn.style.display = 'inline-block';

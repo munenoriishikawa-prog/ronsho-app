@@ -79,6 +79,11 @@ function daysAgoLabel(dateStr) {
   if (diff > 0) return diff + '日前';
   return dateStr;
 }
+// ナビ行に収めた際に見切れないよう、今年学習した分は年を省略して短くする
+function formatLastStudyDate(dateStr) {
+  const currentYearPrefix = new Date().getFullYear() + '-';
+  return dateStr.startsWith(currentYearPrefix) ? dateStr.slice(currentYearPrefix.length) : dateStr;
+}
 function buildQuizLastStudyHtml(e) {
   const log = studyLog[e.title];
   const history = log && log.history;
@@ -90,7 +95,7 @@ function buildQuizLastStudyHtml(e) {
   // 何月何日の何時何分に解答したかまで分かるよう、日付だけでなく時刻も表示する
   const answeredAtParts = log.lastAnsweredAt ? formatImportedAt(log.lastAnsweredAt).split(' ') : null;
   const timeLabel = (answeredAtParts && answeredAtParts[1]) ? (' ' + answeredAtParts[1]) : '';
-  return '<div class="quizLastStudy">🕒 前回学習：' + escapeHtml(lastDate) + escapeHtml(timeLabel) + '（' + daysAgoLabel(lastDate) + '）'
+  return '<div class="quizLastStudy">🕒 前回学習：' + escapeHtml(formatLastStudyDate(lastDate)) + escapeHtml(timeLabel) + '（' + daysAgoLabel(lastDate) + '）'
     + (confLabel ? ' ／ 前回の暗記度：<strong>' + confLabel + '</strong>' : '')
     + ' ／ 通算' + history.length + '回</div>';
 }

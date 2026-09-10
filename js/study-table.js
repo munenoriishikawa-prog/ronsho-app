@@ -4,6 +4,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const savedDate = history.length ? history[history.length - 1] : '';
   const memorizedSaved = log.memorized || false;
   const starred = log.starred || false;
+  const bookmarked = log.bookmarked || false;
   const memo = log.memo || '';
   const reviewInfo = getNextReviewInfo(e.title);
   const today = todayStr();
@@ -18,6 +19,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
     : '';
   const titleHtml = buildImportanceStarsHtml(e.importance) + highlightSearch(escapeHtml(e.title), searchQuery);
   const starHtml = '<span class="starToggle' + (starred ? ' active' : '') + '" data-idx="' + idx + '" title="苦手フラグ">😰</span>';
+  const bookmarkHtml = '<span class="bookmarkToggle' + (bookmarked ? ' active' : '') + '" data-idx="' + idx + '" title="ブックマーク">🔖</span>';
   const memoTitle = memo ? ('メモ：' + memo) : 'メモを追加';
   const memoHtml = '<span class="memoToggle' + (memo ? ' active' : '') + '" data-idx="' + idx + '" title="' + escapeHtml(memoTitle) + '">🗒️</span>';
   const skipped = !!log.skipped;
@@ -36,7 +38,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   const importedAtHtml = '<span class="importedAtIcon" title="📥 読込日時: ' + escapeHtml(formatImportedAt(e.importedAt)) + '">📥</span>';
   const titleCellContent = isEditing
     ? '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">'
-    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + memoHtml + compareToggleHtml + editToggleHtml + skipHtml + deleteToggleHtml + importedAtHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
+    : '<div class="titleCellWrap"><div class="titleIconsRow">' + starHtml + bookmarkHtml + memoHtml + compareToggleHtml + editToggleHtml + skipHtml + deleteToggleHtml + importedAtHtml + '</div><div class="titleText">' + titleHtml + '</div></div>';
   // 出典も検索対象(filterEntries)になっているため、検索結果に出典しか
   // 一致していない行があっても「なぜ表示されているか」が分かるよう、
   // 出典が設定されている場合はここに表示する（ハイライトも適用する）
@@ -51,7 +53,7 @@ function buildRowHtml(e, idx, showUndo, collapseBody, searchQuery) {
   } else {
     bodyCellContent = highlightSearch(e.bodyHtml, searchQuery) + buildEntryTagsBlockHtml(e) + sourceHtml;
   }
-  return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + '" data-idx="' + idx + '">'
+  return '<tr class="entryRow' + (overdue ? ' overdueRow' : '') + (starred ? ' starredRow' : '') + (bookmarked ? ' bookmarkedRow' : '') + '" data-idx="' + idx + '">'
     + '<td class="checkCell">' + buildConfidenceGroupHtml(idx, log.confidence || null) + '</td>'
     + '<td class="verticalCol subjectCell" data-idx="' + idx + '" title="タップして科目を編集">' + escapeHtml(e.subject || '未設定') + '</td>'
     + '<td class="verticalCol">' + escapeHtml(e.category || (studyLog[e.title] && studyLog[e.title].category) || '') + '</td>'
@@ -722,6 +724,19 @@ function toggleStar(idx) {
   status.textContent = studyLog[title].starred ? '😰 「' + title + '」を苦手フラグに追加しました。' : '「' + title + '」の苦手フラグを外しました。';
   renderStudyTable(entries);
 }
+function toggleBookmark(idx) {
+  const ent = entries[idx];
+  if (!ent) return;
+  const title = ent.title;
+  if (!studyLog[title]) studyLog[title] = { history: [] };
+  studyLog[title].bookmarked = !studyLog[title].bookmarked;
+  studyLog[title].category = ent.category || studyLog[title].category || '';
+  studyLog[title].subject = ent.subject || studyLog[title].subject || '';
+  studyLog[title].updatedAt = new Date().toISOString();
+  saveStudyLog();
+  status.textContent = studyLog[title].bookmarked ? '🔖 「' + title + '」をブックマークしました。' : '「' + title + '」のブックマークを外しました。';
+  renderStudyTable(entries);
+}
 function toggleSkip(idx) {
   const ent = entries[idx];
   if (!ent) return;
@@ -847,6 +862,12 @@ function attachTableClickHandler(wrapEl) {
     if (starToggle) {
       e.stopPropagation();
       toggleStar(Number(starToggle.dataset.idx));
+      return;
+    }
+    const bookmarkToggle = e.target.closest('.bookmarkToggle');
+    if (bookmarkToggle) {
+      e.stopPropagation();
+      toggleBookmark(Number(bookmarkToggle.dataset.idx));
       return;
     }
     const memoToggle = e.target.closest('.memoToggle');

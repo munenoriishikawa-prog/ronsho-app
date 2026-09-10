@@ -521,6 +521,7 @@ function renderOrphanedStudyLog() {
     const flags = [];
     if (log && log.memorized) flags.push('✅ 暗記済み');
     if (log && log.starred) flags.push('😰 苦手');
+    if (log && log.bookmarked) flags.push('🔖 ブックマーク');
     if (log && log.history && log.history.length) flags.push('学習' + log.history.length + '回');
     const snapMeta = [];
     if (snap) {

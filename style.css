@@ -369,6 +369,9 @@ th {
 .entryRow.overdueRow:hover { background: #ffe4e4; }
 .entryRow.starredRow { box-shadow: inset 4px 0 0 #ff9f1c; }
 .entryRow.starredRow.overdueRow { box-shadow: inset 4px 0 0 #ff9f1c; }
+.entryRow.bookmarkedRow { box-shadow: inset 4px 0 0 #0891b2; }
+.entryRow.bookmarkedRow.overdueRow { box-shadow: inset 4px 0 0 #0891b2; }
+.entryRow.starredRow.bookmarkedRow { box-shadow: inset 4px 0 0 #ff9f1c, inset 8px 0 0 #0891b2; }
 .entryRow.justClicked {
   background: #cfe6ff !important;
   box-shadow: inset 0 0 0 3px rgba(0, 87, 231, 0.25);
@@ -877,6 +880,9 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .starToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .starToggle:hover { opacity: 0.7; transform: scale(1.2); }
 .starToggle.active { opacity: 1; }
+.bookmarkToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
+.bookmarkToggle:hover { opacity: 0.7; transform: scale(1.2); }
+.bookmarkToggle.active { opacity: 1; }
 .memoToggle { cursor: pointer; font-size: 15px; flex-shrink: 0; opacity: 0.3; transition: opacity 0.15s ease, transform 0.15s ease; }
 .memoToggle:hover { opacity: 0.7; transform: scale(1.2); }
 .memoToggle.active { opacity: 1; }
@@ -1504,6 +1510,11 @@ input[type=file] { display:none; }
 .quizWeakBtn { background: var(--card-bg); color: var(--weak-text); border: 2px solid #ff9f1c; }
 .quizWeakBtn .quizJudgeIcon { background: transparent; font-size: 15px; }
 .quizWeakBtn.active { background: linear-gradient(135deg, #ffb74d, #ff7043); color: #fff; border-color: transparent; }
+.quizBookmarkBtn { background: var(--card-bg); color: #0e6172; border: 2px solid #0891b2; }
+.quizBookmarkBtn .quizJudgeIcon { background: transparent; font-size: 15px; }
+.quizBookmarkBtn.active { background: linear-gradient(135deg, #22b8d6, #0891b2); color: #fff; border-color: transparent; }
+.quizBookmarkBtn:hover { background: #ecfeff; color: #0e6172; border-color: #0891b2; transform: translateY(-1px) scale(1.03); }
+.quizBookmarkBtn.active:hover { background: linear-gradient(135deg, #4fd0e9, #22b8d6); color: #fff; transform: translateY(-1px) scale(1.03); }
 .quizPerfectBtn:hover { background: linear-gradient(135deg, #8b5cf6, #c4b5fd); color: #fff; transform: translateY(-1px) scale(1.03); }
 .quizGoodBtn:hover { background: linear-gradient(135deg, #4ade80, #38bdf8); color: #fff; transform: translateY(-1px) scale(1.03); }
 .quizUnsureBtn:hover { background: linear-gradient(135deg, #ffe066, #ffb14d); color: #78350f; transform: translateY(-1px) scale(1.03); }

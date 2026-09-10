@@ -163,7 +163,7 @@ function renderQuizPage() {
   quizPriorityNote.innerHTML = quizOverdueMode
     ? '⏰ 復習推奨日を過ぎている論点 <strong>' + quizPool.length + '件</strong>' + extraNote + ' のみを出題しています。'
     : (quizSequentialMode
-      ? '📖 論証の順番通り <strong>' + quizPool.length + '件</strong>' + extraNote + ' を出題しています。'
+      ? ''
       : '📌 学習回数が最も少ない（<strong>' + quizMinCount + '回</strong>）論点 <strong>' + quizPool.length + '件</strong>' + extraNote + ' のみを出題しています。この回数のものを一通り学習すると、次回はより多く学習した論点が対象から外れ、新しい最少回数のグループが出題されます。');
   if (quizIndex >= quizPool.length) {
     quizArea.innerHTML = '<div class="quizCard"><div class="quizFinished">🎉 全' + quizPool.length + '問終了しました！お疲れさまでした。もう一度「スタート／やり直す」を押すと出題を最初からやり直せます。</div></div>';
@@ -193,9 +193,6 @@ function renderQuizPage() {
     + '<span class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</span>'
     + '<button type="button" class="quizNavBtn" id="quizNextBtn" title="次の問題"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>▶</button>'
     + '</div>';
-  // タッチ操作の端末（スマホ・タブレット）でだけCSSで表示されるヒント。
-  // マウス操作のPCでは常に非表示（style.cssの@media (hover:none)側で制御）
-  html += '<div class="quizSwipeHint">👉 カードを左右にスワイプでも切り替えられます</div>';
   html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
   html += buildQuizLastStudyHtml(e);
   if (isEditingThis) {

@@ -36,6 +36,7 @@
   const BACKUP_REMINDER_DAYS_KEY = 'ronshoBackupReminderDaysV1';
   const BACKUP_LAST_AT_KEY = 'ronshoLastBackupAtV1';
   const BACKUP_SNOOZE_AT_KEY = 'ronshoBackupSnoozeAtV1';
+  const PROGRESS_VIEW_MODE_KEY = 'ronshoProgressViewModeV1';
   // 論証・学習記録以外の項目（カウントダウン・重複チェックのアーカイブなど）。
   // これらは1件ずつの個別選択までは対応せず、競合時は「その他の項目」として
   // まとめて📱／☁️のどちらかを選んでもらう
@@ -65,7 +66,8 @@
     pastExamDefaultType: '📄 過去問ログの既定種別',
     backupReminderDays: '📦 バックアップ催促の間隔',
     lastBackupAt: '📦 最終バックアップ日',
-    backupSnoozeAt: '📦 バックアップ催促のスヌーズ状態'
+    backupSnoozeAt: '📦 バックアップ催促のスヌーズ状態',
+    progressViewMode: '📚 科目別暗記完了率の表示切替'
   };
 
   let revision = Number(localStorage.getItem(REVISION_KEY) || 0);
@@ -153,7 +155,8 @@
     pastExamDefaultType: readRaw(PAST_EXAM_DEFAULT_TYPE_KEY, ''),
     backupReminderDays: readRaw(BACKUP_REMINDER_DAYS_KEY, ''),
     lastBackupAt: readRaw(BACKUP_LAST_AT_KEY, ''),
-    backupSnoozeAt: readRaw(BACKUP_SNOOZE_AT_KEY, '')
+    backupSnoozeAt: readRaw(BACKUP_SNOOZE_AT_KEY, ''),
+    progressViewMode: readRaw(PROGRESS_VIEW_MODE_KEY, '')
   });
 
   const hasLocalData = () => {
@@ -226,6 +229,7 @@
       writeRaw(BACKUP_REMINDER_DAYS_KEY, data.backupReminderDays);
       writeRaw(BACKUP_LAST_AT_KEY, data.lastBackupAt);
       writeRaw(BACKUP_SNOOZE_AT_KEY, data.backupSnoozeAt);
+      writeRaw(PROGRESS_VIEW_MODE_KEY, data.progressViewMode);
       // テーマ・ペットは、専用の公開APIがあれば呼んで見た目にもすぐ反映する。
       // それ以外の設定（既定フィルタ等）は、次にその画面を開いたときに
       // 反映される（他の同期項目と同様、都度の即時反映までは行わない）
@@ -246,6 +250,7 @@
       try { speechDict = data.speechDict || [] } catch (_) {}
       try { orphanEntryArchive = data.orphanEntryArchive || {} } catch (_) {}
       try { precedents = data.precedents || [] } catch (_) {}
+      try { if (typeof PROGRESS_VIEW_MODES !== 'undefined' && PROGRESS_VIEW_MODES.includes(data.progressViewMode)) progressViewMode = data.progressViewMode; } catch (_) {}
       if (typeof saveEntries === 'function') saveEntries();
       if (typeof renderAll === 'function') renderAll(true);
       if (typeof renderCountdownCard === 'function') renderCountdownCard();

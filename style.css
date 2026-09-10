@@ -687,6 +687,53 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .subjectCatDetailCounts { min-width: 92px; flex-shrink: 0; color: var(--text-secondary); }
 .subjectCatDetailBarWrap { flex: 1; }
 .subjectCatDetailPct { min-width: 32px; text-align: right; font-weight: 700; color: #0057e7; }
+/* ▼▼▼ 新規追加：科目別 暗記完了率の「重要度別」トグル表示 ここから ▼▼▼ */
+.progressViewToggle { display: flex; gap: 6px; margin-bottom: 12px; }
+.progressViewToggleBtn {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--tint-7);
+  color: var(--text-secondary2);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.progressViewToggleBtn.active { background: #0057e7; border-color: #0057e7; color: #fff; }
+.importanceMatrixScroll { overflow-x: auto; }
+.importanceMatrixTable { width: 100%; min-width: 360px; border-collapse: collapse; font-size: 12px; background: transparent; table-layout: auto; }
+/* 全体スタイルのth,tdは他の縦書きヘッダー用テーブル向けの指定
+   （writing-mode等）を持つため、この表では明示的に上書きする */
+.importanceMatrixTable th, .importanceMatrixTable td {
+  border: none;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  vertical-align: middle;
+  letter-spacing: normal;
+  height: auto;
+  position: static;
+}
+.importanceMatrixTable thead th {
+  background: transparent;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--tint-2);
+}
+.importanceMatrixSubjectCell { text-align: left; padding-left: 4px; }
+.importanceMatrixTable tbody td { padding: 7px 8px; text-align: center; border-bottom: 1px solid var(--tint-2); font-weight: 700; }
+.importanceMatrixTable tbody tr:last-child td { border-bottom: none; }
+.importanceMatrixOverallCol { color: #0057e7; }
+.importanceMatrixCell-0 { color: var(--text-secondary); }
+.importanceMatrixCell-1 { color: #38bdf8; }
+.importanceMatrixCell-2 { color: #7c3aed; }
+/* ▲▲▲ 科目別 暗記完了率の「重要度別」トグル表示 ここまで ▲▲▲ */
 .studyCountBarOuter.thin { height: 8px; }
 .countdownCardInner {
   margin-bottom: 0;

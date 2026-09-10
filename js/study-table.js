@@ -286,29 +286,48 @@ function buildTrendSvg(labels, leftSeries, rightSeries) {
   svg += '</svg>';
   return svg;
 }
-const TREND_SUBJECT_COLORS = ['#0057e7', '#00a86b', '#f59e0b', '#e11d48', '#7c3aed', '#0891b2', '#65a30d', '#db2777', '#ea580c', '#334155', '#9333ea'];
+// Tableau10相当の、色数が多くても互いに衝突しにくい定番の識別用パレット
+const TREND_SUBJECT_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#59a14f', '#b07aa1', '#76b7b2', '#edc948', '#ff9da7', '#9c755f', '#af7aa1', '#bab0ac'];
 // 科目別の学習回数の推移用に、複数系列を1つの折れ線グラフに重ねて描く。
-// 単位（学習回数）が全系列で共通なので、buildTrendSvg()と違って軸は1本だけでよい
+// 単位（学習回数）が全系列で共通なので、buildTrendSvg()と違って軸は1本だけでよい。
+// 系列数が多いと線が交錯して見づらくなるため、薄いグリッド線と目盛りを添えて
+// 読み取りやすくしている
 function buildMultiLineTrendSvg(labels, seriesList) {
-  const w = 680, h = 200, padL = 40, padR = 16, padT = 16, padB = 28;
+  const w = 680, h = 230, padL = 34, padR = 16, padT = 16, padB = 28;
   const innerW = w - padL - padR, innerH = h - padT - padB;
   const stepX = labels.length > 1 ? innerW / (labels.length - 1) : innerW;
   const maxVal = Math.max(1, ...seriesList.map(s => Math.max(0, ...s.values)));
+  // 目盛りをきりのいい数にする（例: 実際の最大値37→40、137→150）
+  function niceMax(v) {
+    const magnitude = Math.pow(10, Math.floor(Math.log10(Math.max(v, 1))));
+    const norm = v / magnitude;
+    const step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+    return step * magnitude;
+  }
+  const axisMax = niceMax(maxVal);
   function pointsOf(values) {
-    return values.map((v, i) => ({ x: padL + i * stepX, y: padT + innerH - (v / maxVal) * innerH, v, label: labels[i] }));
+    return values.map((v, i) => ({ x: padL + i * stepX, y: padT + innerH - (v / axisMax) * innerH, v, label: labels[i] }));
   }
   function pathOf(points) {
     return points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
   }
   let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" style="max-width:720px;">';
-  seriesList.forEach(series => {
+  // 背景の薄いグリッド線（0%・50%・100%）と、それに対応する件数の目盛り
+  [0, 0.5, 1].forEach(f => {
+    const y = padT + innerH - innerH * f;
+    svg += '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (w - padR) + '" y2="' + y.toFixed(1) + '" stroke="currentColor" stroke-opacity="0.12" stroke-width="1"/>';
+    svg += '<text x="' + (padL - 6) + '" y="' + (y + 3).toFixed(1) + '" font-size="9" fill="#4a6a90" text-anchor="end">' + Math.round(axisMax * f) + '</text>';
+  });
+  // 交錯した線が見やすいよう、期間合計が多い（=目立たせたい）系列ほど後から
+  // 描画し、他の線の上に重なるようにする
+  const ordered = seriesList.slice().sort((a, b) => a.values.reduce((s, v) => s + v, 0) - b.values.reduce((s, v) => s + v, 0));
+  ordered.forEach(series => {
     const points = pointsOf(series.values);
-    svg += '<path d="' + pathOf(points) + '" fill="none" stroke="' + series.color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
+    svg += '<path d="' + pathOf(points) + '" fill="none" stroke="' + series.color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.92"/>';
     points.forEach(p => {
-      svg += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.8" fill="' + series.color + '"><title>' + escapeHtml(series.name) + ' ' + escapeHtml(p.label) + '：' + p.v + '件</title></circle>';
+      svg += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.6" fill="' + series.color + '" stroke="var(--card-bg,#fff)" stroke-width="1"><title>' + escapeHtml(series.name) + ' ' + escapeHtml(p.label) + '：' + p.v + '件</title></circle>';
     });
   });
-  svg += '<text x="4" y="' + (padT + 4) + '" font-size="9" fill="#4a6a90">' + maxVal + '件</text>';
   labels.forEach((label, i) => {
     if (i % Math.ceil(labels.length / 8) === 0 || i === labels.length - 1) {
       const x = padL + i * stepX;
@@ -415,7 +434,10 @@ function renderTrendChart() {
     if (series.length === 0) {
       bodyHtml = '<div class="trendSummary">この期間の学習記録はまだありません。</div>';
     } else {
-      const legendHtml = '<div class="trendLegend">' + series.map(s => {
+      // 凡例は学習回数の多い科目から並べ、読み取りやすくする
+      // （グラフ本体は逆に少ない科目から描き、多い科目の線を上に重ねている）
+      const legendOrder = series.slice().sort((a, b) => b.values.reduce((s, v) => s + v, 0) - a.values.reduce((s, v) => s + v, 0));
+      const legendHtml = '<div class="trendLegend">' + legendOrder.map(s => {
         const subjectTotal = s.values.reduce((a, v) => a + v, 0);
         return '<span class="trendLegendItem"><span class="trendLegendSwatch" style="background:' + s.color + ';"></span>' + getSubjectEmoji(s.name) + ' ' + escapeHtml(s.name) + '（' + subjectTotal + '件）</span>';
       }).join('') + '</div>';

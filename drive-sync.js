@@ -631,6 +631,63 @@
     }
   }
 
+  // ▼▼▼ 新規追加：学習中の端末を競合時に優先する仕組み ここから ▼▼▼
+  // 学習記録（studyLog）のupdatedAtが直近この時間以内に更新されていれば、
+  // 「今まさにこの端末で学習している最中」とみなす。学習に集中している間に
+  // 競合の確認ポップアップで中断させられたり、選択を誤って進行中の学習記録を
+  // 失ったりすることがないよう、この間だけは確認なしで「この端末を優先」した
+  // 自動マージを行う（学習中でなければ、従来どおり確認ポップアップを出す）
+  const ACTIVE_STUDY_WINDOW_MS = 3 * 60 * 1000;
+  const AUTO_RESOLVE_MAX_RETRY = 3;
+  function getLatestStudyLogUpdatedAt(studyLogObj) {
+    let latest = 0;
+    Object.values(studyLogObj || {}).forEach(log => {
+      const t = log && log.updatedAt ? Date.parse(log.updatedAt) : NaN;
+      if (!isNaN(t) && t > latest) latest = t;
+    });
+    return latest;
+  }
+  function isActivelyStudying() {
+    const latest = getLatestStudyLogUpdatedAt(read(STUDYLOG_KEY, {}));
+    return latest > 0 && (Date.now() - latest) <= ACTIVE_STUDY_WINDOW_MS;
+  }
+  // 手動マージ（buildManualMergeSnapshot）と同じ既定ルール（この端末にしか
+  // ない論証は残す・クラウドにしかない論証は取り込む・本文や学習記録が
+  // 競合する場合はこの端末を優先）を、選択操作なしでそのまま適用する
+  async function autoResolveConflictFavoringActiveStudy(remoteData, remoteRevision, remoteUpdatedAt, retryCount) {
+    const localData = snapshot();
+    const diff = computeSyncDiff(localData, remoteData);
+    const merged = buildManualMergeSnapshot(diff, localData, remoteData, new Map(), 'local');
+    try {
+      // 選択の間に更に更新されている可能性があるため、最新のrevisionを取り直してから保存する
+      const r = await fetch(SYNC_URL, { cache: 'no-store' });
+      const remote = await r.json();
+      const r2 = await fetch(SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ revision: remote.revision || 0, data: merged })
+      });
+      const result = await r2.json();
+      if (result.ok) {
+        revision = result.result.revision;
+        localStorage.setItem(REVISION_KEY, String(revision));
+        applyRemoteData(merged);
+        markSynced(merged);
+        state('📖 学習中のため、この端末の学習記録を優先して自動的に同期しました（' + new Date().toLocaleTimeString() + '）');
+        return;
+      }
+      if (result.latest && (retryCount || 0) < AUTO_RESOLVE_MAX_RETRY) {
+        await autoResolveConflictFavoringActiveStudy(result.latest.data, result.latest.revision || 0, result.latest.updatedAt, (retryCount || 0) + 1);
+        return;
+      }
+      // 短時間に何度も競合が起きるなど想定外の状況では、安全側に倒して通常の確認ポップアップを出す
+      if (result.latest) showSyncConflictModal(result.latest.data, result.latest.revision || 0, result.latest.updatedAt);
+    } catch (e) {
+      state(isOfflineError(e) ? '📴 オフラインのため保存できません（オンラインになってからもう一度お試しください）' : ('保存に失敗しました: ' + e.message));
+    }
+  }
+  // ▲▲▲ 学習中の端末を競合時に優先する仕組み ここまで ▲▲▲
+
   // オフライン中は無駄にfetchを試みて待たされることのないよう、事前に
   // navigator.onLineで分かる範囲は早めに弾く（判定が不確実なブラウザもあるため、
   // 最終的な保証はfetch失敗時のcatch側で行う。ここはあくまで高速化のための先読み）
@@ -655,6 +712,11 @@
     if (!r.ok) throw new Error('保存に失敗しました');
     const result = await r.json();
     if (!result.ok && result.reason === 'conflict') {
+      if (result.latest && isActivelyStudying()) {
+        // 学習中はポップアップで中断させず、この端末を優先して自動的にマージする
+        await autoResolveConflictFavoringActiveStudy(result.latest.data, result.latest.revision || 0, result.latest.updatedAt);
+        return;
+      }
       if (result.latest) showSyncConflictModal(result.latest.data, result.latest.revision || 0, result.latest.updatedAt);
       state('⚠️クラウド側で更新があるため、確認が必要です（' + new Date().toLocaleTimeString() + '）');
       return;
@@ -697,7 +759,12 @@
       state('☁️ クラウドの更新を取り込みました（' + new Date().toLocaleTimeString() + '）');
       return;
     }
-    // 両方で変わっている＝本当の競合。自動統合はせず、ユーザーに選んでもらう
+    // 両方で変わっている＝本当の競合。学習中はこの端末を優先して自動的に
+    // マージし、そうでなければ従来どおりユーザーに選んでもらう
+    if (isActivelyStudying()) {
+      await autoResolveConflictFavoringActiveStudy(remote.data, remoteRevision, remote.updatedAt);
+      return;
+    }
     showSyncConflictModal(remote.data, remoteRevision, remote.updatedAt);
   }
 
@@ -761,6 +828,7 @@
     pushToCloud, pullFromCloud, snapshot, applyRemoteData, adoptRemoteWholesale,
     hasUnsyncedLocalChanges, computeSyncDiff, canonicalJSON,
     showSyncConflictModal, hideSyncConflictModal, buildManualMergeSnapshot,
+    isActivelyStudying, autoResolveConflictFavoringActiveStudy,
     getRevision: () => revision,
     setRevision: (v) => { revision = v; localStorage.setItem(REVISION_KEY, String(v)); },
     getLast: () => last,

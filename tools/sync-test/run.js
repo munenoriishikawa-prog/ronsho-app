@@ -293,6 +293,48 @@ async function e2e() {
     check('確認ポップアップが表示される', dev.getEl('driveSyncConflictModal').innerHTML.includes('driveSyncConflictBox'));
   }
 
+  console.log('\n■ E6b: 学習中（直近の学習記録の更新から間もない）は、競合してもポップアップを出さずこの端末を優先して自動マージする（pullFromCloud）');
+  {
+    const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法'), mkEntry('クラウド側の新規', '本文cloud', '民法')], 11);
+    const gas = makeMockGas(cloud);
+    const dev = loadDevice(gas);
+    dev.setLocal(K.entries, [mkEntry('民法A', '本文A', '民法')]);
+    dev.api.setRevision(10);
+    dev.api.markSynced(dev.api.snapshot());
+    // この端末側でオフライン中に変更（同期前）。studyLogのupdatedAtを「たった今」にして学習中を再現する
+    dev.setLocal(K.entries, [mkEntry('民法A', '本文A', '民法'), mkEntry('端末側の新規', '本文local', '民法')]);
+    dev.setLocal(K.studyLog, { '民法A': { memorized: true, history: ['2026-08-25'], updatedAt: new Date().toISOString() } });
+    check('学習中と判定される', dev.api.isActivelyStudying() === true);
+    await dev.api.pullFromCloud(false);
+    check('確認ポップアップは表示されない', dev.getEl('driveSyncConflictModal').innerHTML === '');
+    check('端末側の内容は残る', dev.getLocal(K.entries, []).some(e => e.title === '端末側の新規'));
+    check('クラウド側にしかなかった論証も自動的に取り込まれる（既定のマージ結果と同じ）', dev.getLocal(K.entries, []).some(e => e.title === 'クラウド側の新規'));
+    check('revisionはクラウドに確定する', dev.api.getRevision() === gas.store.revision);
+  }
+
+  console.log('\n■ E6c: 学習中でも、自動マージが立て続けに競合し続ける想定外の状況では、最終的に確認ポップアップにフォールバックする');
+  {
+    const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法')], 10);
+    const gas = makeMockGas(cloud);
+    const dev = loadDevice(gas);
+    dev.setLocal(K.entries, [mkEntry('民法A', '本文A', '民法'), mkEntry('端末側の新規', '本文local', '民法')]);
+    dev.setLocal(K.studyLog, { '民法A': { memorized: true, history: ['2026-08-25'], updatedAt: new Date().toISOString() } });
+    dev.api.setRevision(9); // 古いrevisionのまま(直前に別の変更がpushされていた状況)
+    // pushのたびに必ず競合させ、自動リトライの上限に達しても解決しない状況を再現する。
+    // gas.fetchImplではなく、実際にsandboxが参照しているdev.sandbox.fetchを差し替える
+    // 必要がある（loadDevice()の時点でgas.fetchImplの参照値がsandboxに渡し済みのため）
+    const origFetch = dev.sandbox.fetch;
+    dev.sandbox.fetch = async (url, opts) => {
+      if (opts && opts.method === 'POST') {
+        gas.postCount++;
+        return { ok: true, json: async () => ({ ok: false, reason: 'conflict', latest: deepCopy(gas.store) }) };
+      }
+      return origFetch(url, opts);
+    };
+    await dev.api.pushToCloud();
+    check('自動マージが上限まで試みられても解決しなければ確認ポップアップにフォールバックする', dev.getEl('driveSyncConflictModal').innerHTML.includes('driveSyncConflictBox'));
+  }
+
   console.log('\n■ E7: DOM（ポップアップ用の要素）が無い環境でも confirm() にフォールバックして動作する');
   {
     const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法'), mkEntry('クラウド側の新規', '本文cloud', '民法')], 11);

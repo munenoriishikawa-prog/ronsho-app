@@ -86,6 +86,10 @@ let quizOverdueMode = false;
 let quizSequentialMode = true;
 let quizComboCount = 0;
 let trendMode = 'week';
+// 「学習・暗記率の推移」グラフを、全体表示と科目別の学習回数の内訳表示の
+// どちらで見せるか。trendMode（週次/月次）と同じく画面を離れると初期状態に
+// 戻る、この画面だけの一時的な表示切替（永続化はしない）
+let trendViewMode = 'overall';
 // 位置(idx)ではなくタイトルで編集対象を保持する。同期でentries配列が
 // 丸ごと入れ替わっても（applyRemoteData）、編集中の論証を見失わないため。
 let editingEntryTitle = null;

@@ -1088,6 +1088,7 @@ mark.searchHit { background: #fff176; color: #4a3c00; border-radius: 2px; paddin
 .trendHeader { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
 .trendTitle { font-size: 15px; font-weight: 700; color: var(--text); }
 .trendToggle { display: flex; gap: 6px; }
+.trendToggleGroup { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
 .trendToggleBtn { padding: 4px 12px; font-size: 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--tint-1); color: var(--text-secondary2); cursor: pointer; }
 .trendToggleBtn.active { background: linear-gradient(135deg, #0057e7, #00c2ff); color: #fff; border-color: transparent; font-weight: 700; }
 .trendSummary { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }

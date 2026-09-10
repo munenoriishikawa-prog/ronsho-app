@@ -1342,15 +1342,19 @@ input[type=file] { display:none; }
 .quizMemoBtn:hover, .quizSkipBtn:hover, .quizDeleteBtn:hover { opacity: 0.7; transform: scale(1.15); }
 .quizMemoBtn.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(0, 87, 231, 0.5)); }
 .quizSkipBtn.active { opacity: 1; filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.6)); }
-.quizProgress { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
-.quizNavRow { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
+.quizProgress { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+.quizNavRow { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 12px; }
 .quizNavBtn {
   background: var(--tint-9);
   color: #0057e7;
   border: 1px solid #cfe0fb;
-  padding: 6px 16px;
-  font-size: 12px;
-  border-radius: 999px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 50%;
+  flex: none;
 }
 .quizNavBtn:hover:not(:disabled) { background: var(--tint-10); }
 .quizNavBtn:disabled { opacity: 0.35; cursor: default; }

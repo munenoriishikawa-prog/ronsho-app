@@ -181,13 +181,15 @@ function renderQuizPage() {
     + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
     + '<span class="quizDeleteBtn" id="quizDeleteBtn" title="この論証を削除">🗑️</span>'
     + '</div>';
-  html += '<div class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</div>';
   if (quizComboCount >= 2) {
     html += '<div class="quizCombo">🔥 ' + quizComboCount + '連続できた！</div>';
   }
+  // 進捗表示とページ送りボタンを1行にまとめ、専有する縦の高さを詰めている
+  // （◀▶自体がそれぞれ前の問題／次の問題ボタンを兼ねる）
   html += '<div class="quizNavRow">'
-    + '<button type="button" class="quizNavBtn" id="quizPrevBtn"' + (quizIndex === 0 ? ' disabled' : '') + '>◀ 前の問題</button>'
-    + '<button type="button" class="quizNavBtn" id="quizNextBtn"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>次の問題 ▶</button>'
+    + '<button type="button" class="quizNavBtn" id="quizPrevBtn" title="前の問題"' + (quizIndex === 0 ? ' disabled' : '') + '>◀</button>'
+    + '<span class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</span>'
+    + '<button type="button" class="quizNavBtn" id="quizNextBtn" title="次の問題"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>▶</button>'
     + '</div>';
   // タッチ操作の端末（スマホ・タブレット）でだけCSSで表示されるヒント。
   // マウス操作のPCでは常に非表示（style.cssの@media (hover:none)側で制御）

@@ -253,6 +253,9 @@
 
   let speciesIndex = loadSpeciesIndex();
   let outer = null, inner = null, x = 0, y = 0, pendingTimer = null;
+  let wasDragging = false;
+  const LONG_PRESS_MS = 450;
+  const DRAG_MOVE_CANCEL_PX = 10;
   let bubble = null, bubbleHideTimer = null, bubbleFollowRaf = null;
 
   // ペットの移動中も吹き出しの位置が追従するよう、表示中は毎フレーム座標を更新する
@@ -417,7 +420,61 @@
       scheduleNext(200);
     }, waitMs);
   }
+  function onPointerDown(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    const pointerId = e.pointerId;
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+    const startLeft = x;
+    const startTop = y;
+    let dragging = false;
+    const longPressTimer = setTimeout(() => {
+      dragging = true;
+      clearTimeout(pendingTimer);
+      outer.style.transition = 'none';
+      outer.style.cursor = 'grabbing';
+      outer.style.touchAction = 'none';
+      inner.classList.remove('walking', 'jumping', 'idleSway');
+      try { outer.setPointerCapture(pointerId); } catch (err) { /* noop */ }
+    }, LONG_PRESS_MS);
+    function onMove(ev) {
+      if (ev.pointerId !== pointerId) return;
+      const dx = ev.clientX - startClientX;
+      const dy = ev.clientY - startClientY;
+      if (!dragging) {
+        if (Math.hypot(dx, dy) > DRAG_MOVE_CANCEL_PX) clearTimeout(longPressTimer);
+        return;
+      }
+      ev.preventDefault();
+      const { w, h } = spriteSize(speciesIndex);
+      const maxX = Math.max(0, window.innerWidth - w);
+      const maxY = Math.max(0, window.innerHeight - h - BOTTOM_MARGIN_PX);
+      x = Math.min(maxX, Math.max(0, startLeft + dx));
+      y = Math.min(maxY, Math.max(0, startTop + dy));
+      outer.style.left = x + 'px';
+      outer.style.top = y + 'px';
+    }
+    function onUp(ev) {
+      if (ev.pointerId !== pointerId) return;
+      clearTimeout(longPressTimer);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+      if (dragging) {
+        outer.style.cursor = 'pointer';
+        outer.style.touchAction = '';
+        try { outer.releasePointerCapture(pointerId); } catch (err) { /* noop */ }
+        wasDragging = true;
+        setTimeout(() => { wasDragging = false; }, 50);
+        scheduleNext(MIN_STOP_MS + Math.random() * (MAX_STOP_MS - MIN_STOP_MS));
+      }
+    }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+  }
   function onClickReact() {
+    if (wasDragging) return;
     inner.classList.remove('jumping', 'idleSway');
     inner.classList.add('reacting');
     setTimeout(() => inner.classList.remove('reacting'), 500);
@@ -449,7 +506,7 @@
     if (outer) return;
     outer = document.createElement('div');
     outer.id = 'deskPet';
-    outer.title = 'なでてみる';
+    outer.title = 'なでてみる（長押しで移動）';
     outer.style.pointerEvents = 'auto';
     outer.style.cursor = 'pointer';
     inner = document.createElement('div');
@@ -466,6 +523,7 @@
     outer.style.left = x + 'px';
     outer.style.top = y + 'px';
     outer.addEventListener('click', onClickReact);
+    outer.addEventListener('pointerdown', onPointerDown);
     scheduleNext(1000);
   }
   function destroyPet() {

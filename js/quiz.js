@@ -175,26 +175,34 @@ function renderQuizPage() {
   const isSkipped = !!(studyLog[e.title] && studyLog[e.title].skipped);
   const quizMemo = (studyLog[e.title] && studyLog[e.title].memo) || '';
   const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
+  if (quizToolsMenuOpenTitle !== e.title) { quizToolsMenuOpen = false; quizToolsMenuOpenTitle = e.title; }
   let html = '<div class="quizCard">';
   html += '<div class="quizCardTools">'
-    + '<span class="quizBookmarkToggle' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="ブックマーク">🔖</span>'
-    + '<span class="quizMemoBtn' + (quizMemo ? ' active' : '') + '" id="quizMemoBtn" title="' + escapeHtml(quizMemo ? ('メモ：' + quizMemo) : 'メモを追加') + '">🗒️</span>'
-    + '<span class="quizSkipBtn' + (isSkipped ? ' active' : '') + '" id="quizSkipBtn" title="スキップ（問題演習から除外）">⏭️</span>'
-    + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
-    + '<span class="quizDeleteBtn" id="quizDeleteBtn" title="この論証を削除">🗑️</span>'
-    + '</div>';
+    + '<span class="quizToolsMenuBtn' + (quizToolsMenuOpen ? ' active' : '') + '" id="quizToolsMenuBtn" title="' + (quizToolsMenuOpen ? 'メニューを閉じる' : 'メニューを開く') + '">⋮</span>';
+  if (quizToolsMenuOpen) {
+    html += '<div class="quizToolsMenuPanel" id="quizToolsMenuPanel">'
+      + '<span class="quizBookmarkToggle' + (isBookmarked ? ' active' : '') + '" id="quizBookmarkBtn" title="ブックマーク">🔖</span>'
+      + '<span class="quizMemoBtn' + (quizMemo ? ' active' : '') + '" id="quizMemoBtn" title="' + escapeHtml(quizMemo ? ('メモ：' + quizMemo) : 'メモを追加') + '">🗒️</span>'
+      + '<span class="quizSkipBtn' + (isSkipped ? ' active' : '') + '" id="quizSkipBtn" title="スキップ（問題演習から除外）">⏭️</span>'
+      + '<span class="quizEditBtn' + (isEditingThis ? ' active' : '') + '" id="quizEditBtn" title="内容を編集">✏️</span>'
+      + '<span class="quizDeleteBtn" id="quizDeleteBtn" title="この論証を削除">🗑️</span>'
+      + '</div>';
+  }
+  html += '</div>';
   if (quizComboCount >= 2) {
     html += '<div class="quizCombo">🔥 ' + quizComboCount + '連続できた！</div>';
   }
-  // 進捗表示とページ送りボタンを1行にまとめ、専有する縦の高さを詰めている
-  // （◀▶自体がそれぞれ前の問題／次の問題ボタンを兼ねる）
+  // 進捗表示とページ送りボタンに加え、左端に科目・分野、右端に前回の学習履歴を
+  // まとめて1行に収めている（◀▶自体がそれぞれ前の問題／次の問題ボタンを兼ねる）
   html += '<div class="quizNavRow">'
+    + '<div class="quizNavMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>'
+    + '<div class="quizNavCenter">'
     + '<button type="button" class="quizNavBtn" id="quizPrevBtn" title="前の問題"' + (quizIndex === 0 ? ' disabled' : '') + '>◀</button>'
     + '<span class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</span>'
     + '<button type="button" class="quizNavBtn" id="quizNextBtn" title="次の問題"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>▶</button>'
+    + '</div>'
+    + '<div class="quizNavHistory">' + buildQuizLastStudyHtml(e) + '</div>'
     + '</div>';
-  html += '<div class="quizMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>';
-  html += buildQuizLastStudyHtml(e);
   if (isEditingThis) {
     html += '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">';
     html += buildBodyEditorHtml(e, idx);
@@ -287,11 +295,19 @@ function renderQuizPage() {
     if (idx !== -1) toggleStar(idx);
     renderQuizPage();
   });
+  const toolsMenuBtn = document.getElementById('quizToolsMenuBtn');
+  if (toolsMenuBtn) toolsMenuBtn.addEventListener('click', (evt) => {
+    evt.stopPropagation();
+    quizToolsMenuOpen = !quizToolsMenuOpen;
+    quizToolsMenuOpenTitle = e.title;
+    renderQuizPage();
+  });
   const bookmarkBtn = document.getElementById('quizBookmarkBtn');
   if (bookmarkBtn) bookmarkBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) toggleBookmark(idx);
+    quizToolsMenuOpen = false;
     renderQuizPage();
   });
   const memoBtn = document.getElementById('quizMemoBtn');
@@ -299,6 +315,7 @@ function renderQuizPage() {
     evt.stopPropagation();
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx !== -1) editMemo(idx);
+    quizToolsMenuOpen = false;
     renderQuizPage();
   });
   const skipBtn = document.getElementById('quizSkipBtn');
@@ -311,6 +328,7 @@ function renderQuizPage() {
       quizIndex++;
       quizRevealed = false;
     }
+    quizToolsMenuOpen = false;
     renderQuizPage();
   });
   const sourceEditBtn = document.getElementById('quizSourceEditBtn');
@@ -326,11 +344,13 @@ function renderQuizPage() {
     const idx = entries.findIndex(x => x.title === e.title);
     if (idx === -1) return;
     editingEntryTitle = editingEntryTitle === e.title ? null : e.title;
+    quizToolsMenuOpen = false;
     renderQuizPage();
   });
   const quizDeleteBtn = document.getElementById('quizDeleteBtn');
   if (quizDeleteBtn) quizDeleteBtn.addEventListener('click', (evt) => {
     evt.stopPropagation();
+    quizToolsMenuOpen = false;
     if (deleteEntryConfirmed(e)) renderAll(true);
   });
   if (isEditingThis) {
@@ -415,4 +435,12 @@ function renderQuizPage() {
   }, { passive: true });
 })();
 // ▲▲▲ 問題演習カードのスワイプ操作 ここまで ▲▲▲
+
+// カード右上の「⋮」メニューの外側をクリック／タップしたら閉じる
+document.addEventListener('click', (evt) => {
+  if (!quizToolsMenuOpen) return;
+  if (evt.target.closest('.quizCardTools')) return;
+  quizToolsMenuOpen = false;
+  renderQuizPage();
+});
 

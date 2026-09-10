@@ -85,6 +85,10 @@ let quizMinCount = 0;
 let quizOverdueMode = false;
 let quizSequentialMode = true;
 let quizComboCount = 0;
+// カード右上の「⋮」メニュー（🔖🗒️⏭️✏️🗑️）の開閉状態。カードが切り替わったら
+// 自動的に閉じるよう、どの論証で開いたかもあわせて保持する（永続化はしない）
+let quizToolsMenuOpen = false;
+let quizToolsMenuOpenTitle = null;
 let trendMode = 'week';
 // 「学習・暗記率の推移」グラフを、全体表示と科目別の学習回数の内訳表示の
 // どちらで見せるか。trendMode（週次/月次）と同じく画面を離れると初期状態に

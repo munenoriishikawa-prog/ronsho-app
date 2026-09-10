@@ -186,6 +186,30 @@ function getDailyStudyCounts() {
   });
   return counts;
 }
+// getDailyStudyCounts()の科目別版。「学習・暗記率の推移」グラフの科目別表示用に、
+// 日付ごと・科目ごとの学習回数を集計する（自動記録＋手動学習ログの両方を含む。
+// 暗記率はdailyStatsが日ごとの合計しか記録していないため、科目別の推移は
+// 学習回数のみに限られる）
+function getDailyStudyCountsBySubject() {
+  const dateMap = getAllStudyDates();
+  const counts = {};
+  Object.keys(dateMap).forEach(d => {
+    dateMap[d].forEach(it => {
+      const s = it.subject || 'その他';
+      if (!counts[d]) counts[d] = {};
+      counts[d][s] = (counts[d][s] || 0) + 1;
+    });
+  });
+  Object.keys(manualLog).forEach(d => {
+    manualLog[d].forEach(it => {
+      const s = it.subject || 'その他';
+      const c = Number(it.count) || 1;
+      if (!counts[d]) counts[d] = {};
+      counts[d][s] = (counts[d][s] || 0) + c;
+    });
+  });
+  return counts;
+}
 // --- 学習推移グラフ ---
 // 週次/月次の各バケットのラベルと、バケットの最終日(当日を含む週・月は本日)を返す。
 // 学習回数の推移(期間ごとの合計)にも、暗記率の推移(期間末時点の値)にも使う
@@ -262,6 +286,38 @@ function buildTrendSvg(labels, leftSeries, rightSeries) {
   svg += '</svg>';
   return svg;
 }
+const TREND_SUBJECT_COLORS = ['#0057e7', '#00a86b', '#f59e0b', '#e11d48', '#7c3aed', '#0891b2', '#65a30d', '#db2777', '#ea580c', '#334155', '#9333ea'];
+// 科目別の学習回数の推移用に、複数系列を1つの折れ線グラフに重ねて描く。
+// 単位（学習回数）が全系列で共通なので、buildTrendSvg()と違って軸は1本だけでよい
+function buildMultiLineTrendSvg(labels, seriesList) {
+  const w = 680, h = 200, padL = 40, padR = 16, padT = 16, padB = 28;
+  const innerW = w - padL - padR, innerH = h - padT - padB;
+  const stepX = labels.length > 1 ? innerW / (labels.length - 1) : innerW;
+  const maxVal = Math.max(1, ...seriesList.map(s => Math.max(0, ...s.values)));
+  function pointsOf(values) {
+    return values.map((v, i) => ({ x: padL + i * stepX, y: padT + innerH - (v / maxVal) * innerH, v, label: labels[i] }));
+  }
+  function pathOf(points) {
+    return points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+  }
+  let svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" style="max-width:720px;">';
+  seriesList.forEach(series => {
+    const points = pointsOf(series.values);
+    svg += '<path d="' + pathOf(points) + '" fill="none" stroke="' + series.color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
+    points.forEach(p => {
+      svg += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="2.8" fill="' + series.color + '"><title>' + escapeHtml(series.name) + ' ' + escapeHtml(p.label) + '：' + p.v + '件</title></circle>';
+    });
+  });
+  svg += '<text x="4" y="' + (padT + 4) + '" font-size="9" fill="#4a6a90">' + maxVal + '件</text>';
+  labels.forEach((label, i) => {
+    if (i % Math.ceil(labels.length / 8) === 0 || i === labels.length - 1) {
+      const x = padL + i * stepX;
+      svg += '<text x="' + x.toFixed(1) + '" y="' + (h - 8) + '" font-size="9" fill="#4a6a90" text-anchor="middle">' + escapeHtml(label) + '</text>';
+    }
+  });
+  svg += '</svg>';
+  return svg;
+}
 // 「今日の伸びしろ」機能が日々記録しているdailyStats（各日の暗記済み件数の
 // スナップショット）を再利用し、記録がある日を最新のものから遡って引き継ぐ
 // (株価チャートのように、記録の無い日は直前の記録値をそのまま延ばす)ことで
@@ -299,35 +355,85 @@ function buildAlignedMemorizedPctValues(buckets) {
   for (let i = 0; i < firstKnownIdx; i++) raw[i] = raw[firstKnownIdx];
   return raw.map(v => Math.round(v * 10) / 10);
 }
-// --- 学習推移・暗記率の推移グラフ（1つのグラフにまとめて表示） ---
+// 週(7日)/月ごとに、日付→値のマップから該当バケット分を合計する共通処理。
+// 全体の学習回数・科目別の学習回数のどちらの集計にも使う
+function sumDailyValueInBucket(dateToValue, b, mode) {
+  let sum = 0;
+  if (mode === 'week') {
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(b.start);
+      day.setDate(b.start.getDate() + d);
+      sum += dateToValue[formatLocalDate(day)] || 0;
+    }
+  } else {
+    Object.keys(dateToValue).forEach(dateStr => {
+      const dd = new Date(dateStr + 'T00:00:00');
+      if (dd.getFullYear() === b.start.getFullYear() && dd.getMonth() === b.start.getMonth()) sum += dateToValue[dateStr];
+    });
+  }
+  return sum;
+}
+function trendToggleGroupHtml() {
+  return '<div class="trendToggleGroup">'
+    + '<div class="trendToggle">'
+    + '<button type="button" class="trendToggleBtn' + (trendViewMode === 'overall' ? ' active' : '') + '" data-view="overall">全体</button>'
+    + '<button type="button" class="trendToggleBtn' + (trendViewMode === 'subject' ? ' active' : '') + '" data-view="subject">科目別</button>'
+    + '</div>'
+    + '<div class="trendToggle">'
+    + '<button type="button" class="trendToggleBtn' + (trendMode === 'week' ? ' active' : '') + '" data-trend="week">週次</button>'
+    + '<button type="button" class="trendToggleBtn' + (trendMode === 'month' ? ' active' : '') + '" data-trend="month">月次</button>'
+    + '</div>'
+    + '</div>';
+}
+// --- 学習推移・暗記率の推移グラフ（全体表示／科目別の学習回数表示をトグルで切替） ---
 function renderTrendChart() {
   if (!trendWrap) return;
-  const dailyCounts = getDailyStudyCounts();
   const buckets = getTrendBuckets(trendMode);
-  const labels = [];
-  const countValues = [];
-  buckets.forEach(b => {
-    let sum = 0;
-    if (trendMode === 'week') {
-      for (let d = 0; d < 7; d++) {
-        const day = new Date(b.start);
-        day.setDate(b.start.getDate() + d);
-        sum += dailyCounts[formatLocalDate(day)] || 0;
-      }
+  const labels = buckets.map(b => b.label);
+  const modeLabel = trendMode === 'week' ? '週次（直近8週間）' : '月次（直近12ヶ月）';
+  const headerHtml = '<div class="trendHeader">'
+    + '<div class="trendTitle">📈 学習・暗記率の推移（' + modeLabel + '）</div>'
+    + trendToggleGroupHtml()
+    + '</div>';
+
+  if (trendViewMode === 'subject') {
+    // 科目別は、日々の学習記録に科目が紐づく「学習回数」のみ集計できる。
+    // 暗記率はdailyStatsが全体の合計しか記録しておらず、科目ごとの推移を
+    // 復元する手段が無いため、ここでは対象外である旨を明示する
+    const dailyCountsBySubject = getDailyStudyCountsBySubject();
+    const subjects = getUniqueSubjects();
+    const series = subjects.map((s, i) => {
+      const dateToValue = {};
+      Object.keys(dailyCountsBySubject).forEach(d => { dateToValue[d] = dailyCountsBySubject[d][s] || 0; });
+      return {
+        name: s,
+        color: TREND_SUBJECT_COLORS[i % TREND_SUBJECT_COLORS.length],
+        values: buckets.map(b => sumDailyValueInBucket(dateToValue, b, trendMode))
+      };
+    }).filter(s => s.values.some(v => v > 0));
+    let bodyHtml;
+    if (series.length === 0) {
+      bodyHtml = '<div class="trendSummary">この期間の学習記録はまだありません。</div>';
     } else {
-      Object.keys(dailyCounts).forEach(dateStr => {
-        const dd = new Date(dateStr + 'T00:00:00');
-        if (dd.getFullYear() === b.start.getFullYear() && dd.getMonth() === b.start.getMonth()) sum += dailyCounts[dateStr];
-      });
+      const legendHtml = '<div class="trendLegend">' + series.map(s => {
+        const subjectTotal = s.values.reduce((a, v) => a + v, 0);
+        return '<span class="trendLegendItem"><span class="trendLegendSwatch" style="background:' + s.color + ';"></span>' + getSubjectEmoji(s.name) + ' ' + escapeHtml(s.name) + '（' + subjectTotal + '件）</span>';
+      }).join('') + '</div>';
+      const svg = buildMultiLineTrendSvg(labels, series);
+      bodyHtml = legendHtml
+        + '<div class="trendSummary">学習回数（科目別）。暗記率は科目ごとの推移記録が無いため全体表示のみとなります。</div>'
+        + '<div class="trendSvgWrap">' + svg + '</div>';
     }
-    labels.push(b.label);
-    countValues.push(sum);
-  });
+    trendWrap.innerHTML = '<div class="trendCard">' + headerHtml + bodyHtml + '</div>';
+    return;
+  }
+
+  const dailyCounts = getDailyStudyCounts();
+  const countValues = buckets.map(b => sumDailyValueInBucket(dailyCounts, b, trendMode));
   const total = countValues.reduce((a, b) => a + b, 0);
   const avg = countValues.length ? Math.round((total / countValues.length) * 10) / 10 : 0;
   const pctValues = buildAlignedMemorizedPctValues(buckets);
 
-  const modeLabel = trendMode === 'week' ? '週次（直近8週間）' : '月次（直近12ヶ月）';
   const leftSeries = { values: countValues, color: '#0057e7', formatValue: v => v + '件' };
   let svg, pctSummaryHtml, legendHtml;
   if (pctValues) {
@@ -346,13 +452,7 @@ function renderTrendChart() {
     legendHtml = '<div class="trendSummary">暗記率の記録はまだありません。日をまたいでアプリを開くと少しずつ記録されます。</div>';
   }
   trendWrap.innerHTML = '<div class="trendCard">'
-    + '<div class="trendHeader">'
-    + '<div class="trendTitle">📈 学習・暗記率の推移（' + modeLabel + '）</div>'
-    + '<div class="trendToggle">'
-    + '<button type="button" class="trendToggleBtn' + (trendMode === 'week' ? ' active' : '') + '" data-trend="week">週次</button>'
-    + '<button type="button" class="trendToggleBtn' + (trendMode === 'month' ? ' active' : '') + '" data-trend="month">月次</button>'
-    + '</div>'
-    + '</div>'
+    + headerHtml
     + legendHtml
     + '<div class="trendSummary">学習回数 期間合計 ' + total + '件 ／ 平均 ' + avg + '件' + pctSummaryHtml + '</div>'
     + '<div class="trendSvgWrap">' + svg + '</div>'
@@ -836,7 +936,8 @@ document.addEventListener('click', (e) => {
   }
   const trendToggleBtn = e.target.closest('.trendToggleBtn');
   if (trendToggleBtn) {
-    trendMode = trendToggleBtn.dataset.trend;
+    if (trendToggleBtn.dataset.trend) trendMode = trendToggleBtn.dataset.trend;
+    else if (trendToggleBtn.dataset.view) trendViewMode = trendToggleBtn.dataset.view;
     renderTrendChart();
     return;
   }

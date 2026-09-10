@@ -59,6 +59,19 @@ function saveStarFilterDefault(v) {
   localStorage.setItem(STAR_FILTER_DEFAULT_KEY, v);
 }
 let starFilterMode = loadStarFilterDefault();
+// ホームの「📚 科目別 暗記完了率」を、科目別の一覧表示と重要度別（なし/⭐/⭐⭐）の
+// マトリクス表示のどちらで見せるかのトグル。端末をまたいでも同じ見た目になるよう
+// 同期対象のローカル設定として永続化する（他の既定値設定と同じ生の文字列形式）
+const PROGRESS_VIEW_MODES = ['subject', 'importance'];
+const PROGRESS_VIEW_MODE_KEY = 'ronshoProgressViewModeV1';
+function loadProgressViewMode() {
+  const raw = localStorage.getItem(PROGRESS_VIEW_MODE_KEY);
+  return PROGRESS_VIEW_MODES.includes(raw) ? raw : 'subject';
+}
+function saveProgressViewMode(v) {
+  localStorage.setItem(PROGRESS_VIEW_MODE_KEY, v);
+}
+let progressViewMode = loadProgressViewMode();
 let minYearFrequency = 0;
 let sortByFrequency = false;
 let selectedImportance = 'all';
@@ -127,6 +140,47 @@ function buildStudyCountBarHtml(list) {
   return '<div class="studyCountBarOuter">' + segHtml + '</div>'
     + '<div class="studyCountLegend">' + legendHtml + '</div>';
 }
+// ▼▼▼ 新規追加：科目別 暗記完了率の「重要度別」マトリクス表示 ここから ▼▼▼
+const IMPORTANCE_LEVELS_FOR_MATRIX = [2, 1, 0];
+const IMPORTANCE_LEVEL_LABELS = { 2: '⭐⭐', 1: '⭐', 0: 'なし' };
+function computeSubjectImportanceStats(subjectStats, subjectOrderList) {
+  const result = {};
+  subjectOrderList.forEach(s => {
+    const levels = { 0: { total: 0, memorized: 0 }, 1: { total: 0, memorized: 0 }, 2: { total: 0, memorized: 0 } };
+    const st = subjectStats[s];
+    (st ? st.entries : []).forEach(e => {
+      const imp = e.importance || 0;
+      const lv = levels[imp] || (levels[imp] = { total: 0, memorized: 0 });
+      lv.total++;
+      if (studyLog[e.title] && studyLog[e.title].memorized) lv.memorized++;
+    });
+    result[s] = levels;
+  });
+  return result;
+}
+function buildImportanceMatrixHtml(subjectStats, subjectOrderList) {
+  const impStats = computeSubjectImportanceStats(subjectStats, subjectOrderList);
+  const headCells = IMPORTANCE_LEVELS_FOR_MATRIX.map(lv => '<th class="importanceMatrixHeadCell">' + IMPORTANCE_LEVEL_LABELS[lv] + '</th>').join('');
+  const rowsHtml = subjectOrderList.map(s => {
+    const st = subjectStats[s];
+    const overallPct = st.total > 0 ? Math.round((st.memorized / st.total) * 100) : 0;
+    const cellsHtml = IMPORTANCE_LEVELS_FOR_MATRIX.map(lv => {
+      const l = impStats[s][lv];
+      const pctLabel = l.total > 0 ? Math.round((l.memorized / l.total) * 100) + '%' : '―';
+      return '<td class="importanceMatrixCell importanceMatrixCell-' + lv + '">' + pctLabel + '</td>';
+    }).join('');
+    return '<tr>'
+      + '<td class="importanceMatrixSubjectCell">' + getSubjectEmoji(s) + ' ' + escapeHtml(s) + '</td>'
+      + '<td class="importanceMatrixCell importanceMatrixOverallCol">' + overallPct + '%</td>'
+      + cellsHtml
+      + '</tr>';
+  }).join('');
+  return '<div class="importanceMatrixScroll"><table class="importanceMatrixTable">'
+    + '<thead><tr><th class="importanceMatrixHeadCell importanceMatrixSubjectCell">科目</th><th class="importanceMatrixHeadCell importanceMatrixOverallCol">全体</th>' + headCells + '</tr></thead>'
+    + '<tbody>' + rowsHtml + '</tbody>'
+    + '</table></div>';
+}
+// ▲▲▲ 科目別 暗記完了率の「重要度別」マトリクス表示 ここまで ▲▲▲
 let expandedProgressSubjects = new Set();
 function getSubjectCategoryStats(st) {
   const order = [];
@@ -177,6 +231,7 @@ function buildSubjectItemHtml(s, st, compact) {
 function renderProgressSummary() {
   const el = document.getElementById('subjectProgressBody');
   const overallEl = document.getElementById('overallProgressCardWrap');
+  const toggleEl = document.getElementById('progressViewToggle');
   if (!el) return;
   // 科目別の進捗を再描画するタイミングは、弱点診断の材料（暗記率・苦手フラグ・
   // 復習期限超過）が変わるタイミングとほぼ同じなので、ここにまとめて呼ぶ
@@ -186,6 +241,7 @@ function renderProgressSummary() {
     el.innerHTML = '';
     if (titleEl) titleEl.textContent = '';
     if (overallEl) overallEl.innerHTML = '';
+    if (toggleEl) toggleEl.innerHTML = '';
     return;
   }
   // ホーム上部の全体カードは、科目タブなどの絞り込みに関わらず常に全体の値を表示する
@@ -214,6 +270,10 @@ function renderProgressSummary() {
     }
   }
   const subjectHtml = subjectRows.join('');
+  if (toggleEl) {
+    toggleEl.innerHTML = '<button type="button" class="progressViewToggleBtn' + (progressViewMode === 'subject' ? ' active' : '') + '" data-view="subject">科目別</button>'
+      + '<button type="button" class="progressViewToggleBtn' + (progressViewMode === 'importance' ? ' active' : '') + '" data-view="importance">重要度別</button>';
+  }
   if (overallEl) {
     overallEl.innerHTML = '<div class="progressCard">'
       + '<div class="progressBigPct">' + pct + '%</div>'
@@ -224,7 +284,7 @@ function renderProgressSummary() {
       + '</div>';
   }
   if (titleEl) titleEl.textContent = '📚 科目別 暗記完了率・学習回数';
-  el.innerHTML = subjectHtml;
+  el.innerHTML = progressViewMode === 'importance' ? buildImportanceMatrixHtml(subjectStats, subjectOrderList) : subjectHtml;
 }
 // ▼▼▼ 新規追加：科目別の弱点自動診断
 // 専用のデータは持たず、既存のstudyLog（暗記済みフラグ・苦手フラグ）と
@@ -289,6 +349,16 @@ function renderWeaknessDiagnosis() {
 }
 // ▲▲▲ 科目別の弱点自動診断 ここまで ▲▲▲
 document.getElementById('progressSummary').addEventListener('click', (e) => {
+  const toggleBtn = e.target.closest('.progressViewToggleBtn');
+  if (toggleBtn) {
+    const mode = toggleBtn.dataset.view;
+    if (PROGRESS_VIEW_MODES.includes(mode) && mode !== progressViewMode) {
+      progressViewMode = mode;
+      saveProgressViewMode(mode);
+      renderProgressSummary();
+    }
+    return;
+  }
   const nameEl = e.target.closest('.subjectProgressName.clickable');
   if (!nameEl) return;
   const s = nameEl.dataset.subject;

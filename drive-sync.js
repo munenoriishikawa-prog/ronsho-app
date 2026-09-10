@@ -340,7 +340,13 @@
         { kind: 'onlyRemote', icon: '☁️', label: 'クラウドにしかない論証', titles: onlyRemoteTitles },
         { kind: 'edited', icon: '✏️', label: '同じタイトルで本文の内容が違う論証', titles: [...editedTitles] },
         { kind: 'studyLog', icon: '📊', label: '学習記録（暗記済み・学習回数など）が違う論証', titles: studyLogDiffTitles }
-      ].filter(g => g.titles.length > 0)
+      ].filter(g => g.titles.length > 0),
+      // 上記のどのグループにも該当せず、同期対象の他の項目にも差が無ければ、
+      // 本当は中身が同じ（revision番号がずれていただけ）ということ。
+      // 「競合が起きたのに何が違うのか分からない」という状況を無くすため、
+      // この判定を使って中身が同じ場合はそもそも競合ポップアップを出さない
+      isReallyIdentical: onlyLocalTitles.length === 0 && onlyRemoteTitles.length === 0
+        && editedTitles.size === 0 && studyLogDiffTitles.length === 0 && otherFieldLabels.length === 0
     };
   }
   const DIFF_ROWS_SHOWN_MAX = 20;
@@ -712,12 +718,26 @@
     if (!r.ok) throw new Error('保存に失敗しました');
     const result = await r.json();
     if (!result.ok && result.reason === 'conflict') {
-      if (result.latest && isActivelyStudying()) {
-        // 学習中はポップアップで中断させず、この端末を優先して自動的にマージする
-        await autoResolveConflictFavoringActiveStudy(result.latest.data, result.latest.revision || 0, result.latest.updatedAt);
-        return;
+      if (result.latest) {
+        // revision番号がずれていただけで、中身（論証・学習記録・その他の同期項目）に
+        // 実質的な違いが無い場合は、ポップアップを出さずクラウドのrevisionに
+        // 合わせるだけにする。「競合が起きたのに何も違いが表示されない」を防ぐため、
+        // ポップアップを出すときは必ず何かしらの差分がある状態にする
+        const diff = computeSyncDiff(data, result.latest.data);
+        if (diff.isReallyIdentical) {
+          revision = result.latest.revision || revision;
+          localStorage.setItem(REVISION_KEY, String(revision));
+          markSynced(data);
+          state('同期しました（' + new Date().toLocaleTimeString() + '）');
+          return;
+        }
+        if (isActivelyStudying()) {
+          // 学習中はポップアップで中断させず、この端末を優先して自動的にマージする
+          await autoResolveConflictFavoringActiveStudy(result.latest.data, result.latest.revision || 0, result.latest.updatedAt);
+          return;
+        }
+        showSyncConflictModal(result.latest.data, result.latest.revision || 0, result.latest.updatedAt);
       }
-      if (result.latest) showSyncConflictModal(result.latest.data, result.latest.revision || 0, result.latest.updatedAt);
       state('⚠️クラウド側で更新があるため、確認が必要です（' + new Date().toLocaleTimeString() + '）');
       return;
     }
@@ -759,8 +779,20 @@
       state('☁️ クラウドの更新を取り込みました（' + new Date().toLocaleTimeString() + '）');
       return;
     }
-    // 両方で変わっている＝本当の競合。学習中はこの端末を優先して自動的に
-    // マージし、そうでなければ従来どおりユーザーに選んでもらう
+    // 両方のrevisionが変わっている。ただし中身（論証・学習記録・その他の同期項目）に
+    // 実質的な違いが無ければ、revision番号がずれていただけの見せかけの競合なので、
+    // ポップアップを出さずクラウドのrevisionに合わせるだけにする
+    const localDataForDiff = snapshot();
+    const diff = computeSyncDiff(localDataForDiff, remote.data);
+    if (diff.isReallyIdentical) {
+      revision = remoteRevision;
+      localStorage.setItem(REVISION_KEY, String(revision));
+      markSynced(localDataForDiff);
+      state('同期済み（' + new Date().toLocaleTimeString() + '）');
+      return;
+    }
+    // 本当に中身が違う競合。学習中はこの端末を優先して自動的にマージし、
+    // そうでなければ従来どおりユーザーに選んでもらう
     if (isActivelyStudying()) {
       await autoResolveConflictFavoringActiveStudy(remote.data, remoteRevision, remote.updatedAt);
       return;

@@ -335,6 +335,46 @@ async function e2e() {
     check('自動マージが上限まで試みられても解決しなければ確認ポップアップにフォールバックする', dev.getEl('driveSyncConflictModal').innerHTML.includes('driveSyncConflictBox'));
   }
 
+  console.log('\n■ E6d: revision番号がずれているだけで中身に実質的な違いが無い場合、確認ポップアップを出さずに黙って同期する（pushToCloud）');
+  {
+    // クラウドは既に revision 11 だが、中身（entries・studyLog・その他の同期項目）は
+    // この端末の内容と完全に同じ。この端末側のrevisionだけが古いまま
+    // （何らかの理由で更新前のrevisionを持っている）状況を再現する。
+    // 「その他の同期項目」の既定値まで完全に一致させるため、一度この端末の
+    // snapshot()をそのままクラウド側のデータとして使う
+    const sameEntries = [mkEntry('民法A', '本文A', '民法'), mkEntry('民法B', '本文B', '民法')];
+    const seedDev = loadDevice(null);
+    seedDev.setLocal(K.entries, sameEntries);
+    const cloud = { revision: 11, updatedAt: '2026-08-25T00:00:00.000Z', data: seedDev.api.snapshot() };
+    const gas = makeMockGas(cloud);
+    const dev = loadDevice(gas);
+    dev.setLocal(K.entries, sameEntries);
+    dev.api.setRevision(10);
+    await dev.api.pushToCloud();
+    check('確認ポップアップは表示されない（中身は同じなので競合として扱わない）', dev.getEl('driveSyncConflictModal').innerHTML === '');
+    check('revisionはクラウドの値に追従する', dev.api.getRevision() === 11);
+  }
+
+  console.log('\n■ E6e: revision番号がずれているだけで中身に実質的な違いが無い場合、確認ポップアップを出さずに黙って同期する（pullFromCloud）');
+  {
+    const sameEntries = [mkEntry('民法A', '本文A', '民法')];
+    const seedDev = loadDevice(null);
+    seedDev.setLocal(K.entries, sameEntries);
+    const cloud = { revision: 11, updatedAt: '2026-08-25T00:00:00.000Z', data: seedDev.api.snapshot() };
+    const gas = makeMockGas(cloud);
+    const dev = loadDevice(gas);
+    dev.setLocal(K.entries, sameEntries);
+    dev.api.setRevision(10);
+    // markSynced()に実際とは違うスナップショットを渡し、
+    // 「この端末で未同期の変更がある」と判定される状態を意図的に作る
+    // （中身は実際にはクラウドと同じだが、直前の同期記録とは異なる、という状況）
+    dev.api.markSynced({ entries: [mkEntry('別の内容', '別の本文', '民法')], studyLog: {} });
+    check('この端末には未同期の変更があると判定される', dev.api.hasUnsyncedLocalChanges() === true);
+    await dev.api.pullFromCloud(false);
+    check('確認ポップアップは表示されない（中身は同じなので競合として扱わない）', dev.getEl('driveSyncConflictModal').innerHTML === '');
+    check('revisionはクラウドの値に追従する', dev.api.getRevision() === 11);
+  }
+
   console.log('\n■ E7: DOM（ポップアップ用の要素）が無い環境でも confirm() にフォールバックして動作する');
   {
     const cloud = makeCloudStore([mkEntry('民法A', '本文A', '民法'), mkEntry('クラウド側の新規', '本文cloud', '民法')], 11);

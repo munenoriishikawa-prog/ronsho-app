@@ -79,6 +79,11 @@ function daysAgoLabel(dateStr) {
   if (diff > 0) return diff + '日前';
   return dateStr;
 }
+// ナビ行に収めた際に見切れないよう、今年学習した分は年を省略して短くする
+function formatLastStudyDate(dateStr) {
+  const currentYearPrefix = new Date().getFullYear() + '-';
+  return dateStr.startsWith(currentYearPrefix) ? dateStr.slice(currentYearPrefix.length) : dateStr;
+}
 function buildQuizLastStudyHtml(e) {
   const log = studyLog[e.title];
   const history = log && log.history;
@@ -90,7 +95,7 @@ function buildQuizLastStudyHtml(e) {
   // 何月何日の何時何分に解答したかまで分かるよう、日付だけでなく時刻も表示する
   const answeredAtParts = log.lastAnsweredAt ? formatImportedAt(log.lastAnsweredAt).split(' ') : null;
   const timeLabel = (answeredAtParts && answeredAtParts[1]) ? (' ' + answeredAtParts[1]) : '';
-  return '<div class="quizLastStudy">🕒 前回学習：' + escapeHtml(lastDate) + escapeHtml(timeLabel) + '（' + daysAgoLabel(lastDate) + '）'
+  return '<div class="quizLastStudy">🕒 前回学習：' + escapeHtml(formatLastStudyDate(lastDate)) + escapeHtml(timeLabel) + '（' + daysAgoLabel(lastDate) + '）'
     + (confLabel ? ' ／ 前回の暗記度：<strong>' + confLabel + '</strong>' : '')
     + ' ／ 通算' + history.length + '回</div>';
 }
@@ -177,7 +182,19 @@ function renderQuizPage() {
   const isBookmarked = !!(studyLog[e.title] && studyLog[e.title].bookmarked);
   if (quizToolsMenuOpenTitle !== e.title) { quizToolsMenuOpen = false; quizToolsMenuOpenTitle = e.title; }
   let html = '<div class="quizCard">';
-  html += '<div class="quizCardTools">'
+  if (quizComboCount >= 2) {
+    html += '<div class="quizCombo">🔥 ' + quizComboCount + '連続できた！</div>';
+  }
+  // 進捗表示とページ送りボタンに加え、左端に科目・分野、右端にツールメニューの
+  // 「⋮」を1行にまとめている（◀▶自体がそれぞれ前の問題／次の問題ボタンを兼ねる）
+  html += '<div class="quizNavRow">'
+    + '<div class="quizNavMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>'
+    + '<div class="quizNavCenter">'
+    + '<button type="button" class="quizNavBtn" id="quizPrevBtn" title="前の問題"' + (quizIndex === 0 ? ' disabled' : '') + '>◀</button>'
+    + '<span class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</span>'
+    + '<button type="button" class="quizNavBtn" id="quizNextBtn" title="次の問題"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>▶</button>'
+    + '</div>'
+    + '<div class="quizNavTools">'
     + '<span class="quizToolsMenuBtn' + (quizToolsMenuOpen ? ' active' : '') + '" id="quizToolsMenuBtn" title="' + (quizToolsMenuOpen ? 'メニューを閉じる' : 'メニューを開く') + '">⋮</span>';
   if (quizToolsMenuOpen) {
     html += '<div class="quizToolsMenuPanel" id="quizToolsMenuPanel">'
@@ -188,21 +205,9 @@ function renderQuizPage() {
       + '<span class="quizDeleteBtn" id="quizDeleteBtn" title="この論証を削除">🗑️</span>'
       + '</div>';
   }
-  html += '</div>';
-  if (quizComboCount >= 2) {
-    html += '<div class="quizCombo">🔥 ' + quizComboCount + '連続できた！</div>';
-  }
-  // 進捗表示とページ送りボタンに加え、左端に科目・分野、右端に前回の学習履歴を
-  // まとめて1行に収めている（◀▶自体がそれぞれ前の問題／次の問題ボタンを兼ねる）
-  html += '<div class="quizNavRow">'
-    + '<div class="quizNavMeta">' + escapeHtml(e.subject || '') + ' ｜ ' + escapeHtml(e.category || '') + '</div>'
-    + '<div class="quizNavCenter">'
-    + '<button type="button" class="quizNavBtn" id="quizPrevBtn" title="前の問題"' + (quizIndex === 0 ? ' disabled' : '') + '>◀</button>'
-    + '<span class="quizProgress">' + (quizIndex + 1) + ' / ' + quizPool.length + '問</span>'
-    + '<button type="button" class="quizNavBtn" id="quizNextBtn" title="次の問題"' + (quizIndex >= quizPool.length - 1 ? ' disabled' : '') + '>▶</button>'
-    + '</div>'
-    + '<div class="quizNavHistory">' + buildQuizLastStudyHtml(e) + '</div>'
+  html += '</div>'
     + '</div>';
+  html += buildQuizLastStudyHtml(e);
   if (isEditingThis) {
     html += '<input type="text" class="editTitleInput" data-idx="' + idx + '" value="' + escapeHtml(e.title) + '">';
     html += buildBodyEditorHtml(e, idx);
@@ -439,7 +444,7 @@ function renderQuizPage() {
 // カード右上の「⋮」メニューの外側をクリック／タップしたら閉じる
 document.addEventListener('click', (evt) => {
   if (!quizToolsMenuOpen) return;
-  if (evt.target.closest('.quizCardTools')) return;
+  if (evt.target.closest('.quizNavTools')) return;
   quizToolsMenuOpen = false;
   renderQuizPage();
 });
